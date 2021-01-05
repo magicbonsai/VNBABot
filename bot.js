@@ -46,7 +46,7 @@ const dedueCommand = (prompt, msg) => {
       // scrape(words[1]);
       break;
 
-    case "help":
+    case "vnbahelp":
       msg.react(`✉`);
       if(process.env.environment === "DEVELOPMENT") {
         msg.author.send(devDocs)
@@ -105,4 +105,3 @@ const job_two = new CronJob("0 18 * * *", function() {
 
 job.start();
 job_two.start();
-job_fs.start();
