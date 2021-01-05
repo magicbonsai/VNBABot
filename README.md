@@ -1,14 +1,11 @@
-# DedueBot
+# VNBABot
 
-DedueBot is a discord bot.
+VNBAbot is a discord bot.  It handles box score generation from clips of NBA2k20 box scores, automated tweet generation for a twitter bot, and other minor tasks.
 
 ## Usage
 
-$slots: Roll a slot machine using custom emojis. \
-$snap: Snap a random user \
-$owstats [BattleNet ID]: Display a summary of the user's Overwatch stats \
-$play [YouTube link]: Play YouTube audio in the current channel\
-$pause: Pause the current audio\
-$stop: Stop the current audio\
-$waifu: Create a random waifu through waifulabs\
-$pokemon: Encounter a random pokemon\
+  $tweet: run an automated Roj tweet \
+  $roj [message] (dms only): Send a tweet via the VNBA Roj account \
+  $vnba [message] (dms only): Send a tweet via the VNBA Smithy account \
+  $scrape [video url] (2K box scores only): Run the box score scraper on a NBA2K20 box score \
+  $robin: Create a round robin tournament format \
