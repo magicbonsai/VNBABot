@@ -102,6 +102,7 @@ const job_two = new CronJob("0 18 * * *", function() {
   runRoj();
 });
 
-
-job.start();
-job_two.start();
+if(process.env.DAILY_TWEETS === 'YES') {
+  job.start();
+  job_two.start();
+}
