@@ -4,6 +4,7 @@ const help =
   $vnba [message] (dms only): Send a tweet via the VNBA Smithy account\n\
   $scrape [video url] (2K box scores only): Run the box score scraper on a NBA2K20 box score\n\
   $robin: Create a round robin tournament format\n\
+  $checkroster: Return the last individual who checked the roster out\n\
 ```";
 
 const devHelp = 
@@ -13,6 +14,7 @@ const devHelp =
   $vnba [message] (dms only): Send a tweet via the VNBA Smithy account\n\
   $scrape [video url] (2K box scores only): Run the box score scraper on a NBA2K20 box score\n\
   $robin: Create a round robin tournament format\n\
+  $checkroster: Return the last individual who checked the roster out\n\
 ```";
 
 module.exports = { help, devHelp };

@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const scrape = require("./app/helpers/boxScraper");
+const rosterCheckCommand = require("./app/helpers/rosterChecker");
 
 require("dotenv").config();
 const client = new Discord.Client();
@@ -68,6 +69,10 @@ const dedueCommand = (prompt, msg) => {
       ]);
 
       console.log(schedule.flat(2));
+      break;
+
+    case "checkroster":
+      rosterCheckCommand(msg);
       break;
 
     default:
