@@ -26,8 +26,11 @@ function rosterCheckCommand(msg = {}) {
         return true;
       });
       const { name, username, rosterName, checkoutTime, checkinTime } = lastEntry;
-      const message = `The last individual to check out the roster was ${name}(${username}) at ${checkoutTime}.`
-      msg.reply(message);
+      const message = `The last individual to check out the roster was ${name}(${username}) at ${checkoutTime}. `
+      const checkInMsg = !!checkinTime 
+        ? `They last checked the roster in at ${checkinTime}.` 
+        : "It does not look like they checked it back in yet.  You should check in with them to see if they are done."
+      msg.reply(message + checkInMsg);
     });
   })();
 }
