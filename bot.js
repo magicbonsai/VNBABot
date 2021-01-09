@@ -99,15 +99,17 @@ client.login(process.env.BOT_TOKEN);
 
 const job = new CronJob("0 15 * * *", function() {
   //will run at 11:00 AM everyday
-  runRoj();
+  if(!!process.env.DAILY_TWEETS) {
+    runRoj();
+  }
 });
 
 const job_two = new CronJob("0 18 * * *", function() {
   //will run at 2:00 PM everyday
-  runRoj();
+  if(!!process.env.DAILY_TWEETS) {
+    runRoj();
+  }
 });
 
-if(!!process.env.DAILY_TWEETS) {
-  job.start();
-  job_two.start();
-}
+job.start();
+job_two.start();
