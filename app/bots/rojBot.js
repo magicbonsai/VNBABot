@@ -36,7 +36,7 @@ function runRoj(setTweet) {
     getVNBANewsWeights.then(newsWeights => {
       players.getRows().then(playerRows => {
         const filteredPlayers = playerRows.filter(
-          player => player.Team !== "FA" && player.Team !== "Rookie"
+          player => player.Team !== "FA" && player.Team !== "Rookie" && player.Age !== "RETIRED"
         );
 
         const chosenNum = randomFloor(filteredPlayers.length - 1);
