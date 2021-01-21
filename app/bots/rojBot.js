@@ -33,10 +33,13 @@ function runRoj(setTweet) {
       });
     });
 
+    // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
+    const validTeams = (process.env.VALID_TEAMS || []).split(',');
+
     getVNBANewsWeights.then(newsWeights => {
       players.getRows().then(playerRows => {
         const filteredPlayers = playerRows.filter(
-          player => player.Team !== "FA" && player.Team !== "Rookie" && player.Age !== "RETIRED"
+          player => validTeams.includes(player.Team)
         );
 
         const chosenNum = randomFloor(filteredPlayers.length - 1);
