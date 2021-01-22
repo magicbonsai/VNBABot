@@ -33,13 +33,10 @@ function runRoj(setTweet) {
       });
     });
 
-    // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
-    const validTeams = (process.env.VALID_TEAMS || []).split(',');
-
     getVNBANewsWeights.then(newsWeights => {
       players.getRows().then(playerRows => {
         const filteredPlayers = playerRows.filter(
-          player => validTeams.includes(player.Team)
+          player => player.Team !== "FA" && player.Team !== "Rookie" && player.Age !== "RETIRED"
         );
 
         const chosenNum = randomFloor(filteredPlayers.length - 1);
@@ -61,213 +58,288 @@ function runRoj(setTweet) {
 const rojEvents = {
   // Injuries
 
-  Flu: function(player) {
-    // logic goes here
-    return `It appears that ${
-      player.Name
-    } has been ill with the flu an will now miss the next ${upToNum(2)} games.`;
+  Flu: {
+    valid: true,
+    fn: function(player) {
+      // logic goes here
+      return `It appears that ${
+        player.Name
+      } has been ill with the flu an will now miss the next ${upToNum(2)} games.`;
+    }
   },
 
-  "Torn ACL": function(player) {
-    return `BREAKING: ${player.Name} of the ${player.Team} has tragically suffered a torn ACL and is now expected to sit out the rest of the season.\
-     The ${player.Team} organization will work with ${player.Name} during the remainder of his season in rehab.`;
+  "Torn ACL": {
+    valid: true,
+    fn: function(player) {
+      return `BREAKING: ${player.Name} of the ${player.Team} has tragically suffered a torn ACL and is now expected to sit out the rest of the season.\
+      The ${player.Team} organization will work with ${player.Name} during the remainder of his season in rehab.`;
+    }
   },
 
-  "Back Spasms": function(player) {
-    return `BREAKING: ${player.Name} of the ${
-      player.Team
-    } has reportedly been dealing with back spasms and is expected to miss the next ${upToNum(
-      3
-    )} games as he recovers.`;
+  "Back Spasms": {
+    valid: true,
+    fn: function(player) {
+      return `BREAKING: ${player.Name} of the ${
+        player.Team
+      } has reportedly been dealing with back spasms and is expected to miss the next ${upToNum(
+        3
+      )} games as he recovers.`;
+    }
   },
 
-  "Missed Practice": function(player) {
-    return `${player.Name} of the ${
-      player.Team
-    } has reportedly missed the last ${
-      player.Team
-    } practice session and has been internally suspended for ${upToNum(
-      2
-    )} games by the ${player.Team} organization.`;
+  "Missed Practice": {
+    valid: true,
+    fn: function(player) {
+      return `${player.Name} of the ${
+        player.Team
+      } has reportedly missed the last ${
+        player.Team
+      } practice session and has been internally suspended for ${upToNum(
+        2
+      )} games by the ${player.Team} organization.`;
+    }
   },
 
-  "Failed Drug Test": function(player) {
-    return `BREAKING: ${player.Name} of the ${
-      player.Team
-    } has reportedly tested positive for PEDs and has been suspended by the NBA for ${upToNum(
-      4
-    )} games by the VNBA.`;
+  "Failed Drug Test": {
+    valid: true,
+    fn: function(player) {
+      return `BREAKING: ${player.Name} of the ${
+        player.Team
+      } has reportedly tested positive for PEDs and has been suspended by the NBA for ${upToNum(
+        4
+      )} games by the VNBA.`;
+    }
   },
 
-  concussion: function(player) {
+  concussion: {
+    valid: true,
+    fn: function(player) {
     return `${player.Name} of the ${
       player.Team
     } has been placed in the VNBA concussion protocal and is expected to miss the next ${upToNum(
       3
     )} games as he recovers.`;
+  }
+},
+
+  "Sore Hamstring": {
+    valid: true,
+    fn: function(player) {
+      return `${player.Name} of the ${
+        player.Team
+      } has been been suffering from a sore hamstring and is ruled out of games for the next ${upToNum(
+        2
+      )} games as he recovers.`;
+    }
   },
 
-  "Sore Hamstring": function(player) {
-    return `${player.Name} of the ${
-      player.Team
-    } has been been suffering from a sore hamstring and is ruled out of games for the next ${upToNum(
-      2
-    )} games as he recovers.`;
-  },
-
-  childbirth: function(player) {
-    return `Congratulations to ${player.Name} of the ${
-      player.Team
-    } for the birth of his ${chooseOne(["son", "daughter"])}. ${
-      player.Name
-    } will take the next ${upToNum(2)} games off to be with his child.`;
+  childbirth: {
+    valid: true,
+    fn: function(player) {
+      return `Congratulations to ${player.Name} of the ${
+        player.Team
+      } for the birth of his ${chooseOne(["son", "daughter"])}. ${
+        player.Name
+      } will take the next ${upToNum(2)} games off to be with his child.`;
+    }
   },
 
   // New FA
 
-  "New FA": function() {
-    return `${faker.name.firstName(
-      0
-    )} ${faker.name.lastName()}, who has been playing basketball in the country of\
-     ${faker.address.country()}, has officially declared that he will be entering the VNBA as a free agent.`;
+  "New FA": {
+    valid: true,
+    fn: function() {
+      return `${faker.name.firstName(
+        0
+      )} ${faker.name.lastName()}, who has been playing basketball in the country of\
+      ${faker.address.country()}, has officially declared for the VNBA season ${process.env.SEASON + 1} draft.`;
+    }
   },
 
-  meme: function() {
-    return `${faker.name.firstName(
-      0
-    )} ${faker.name.lastName()}, from the MEME-League, has officially declared that he will be entering the VNBA as a free agent.`;
+  meme: {
+    valid: true,
+    fn: function() {
+      return `${faker.name.firstName(
+        0
+      )} ${faker.name.lastName()}, from the MEME-League, has officially declared that he will be entering the VNBA as a free agent.`;
+    }
   },
 
   // Boosts
 
-  boost: function(player) {
-    return `Interesting development, ${player.Name} of the ${
-      player.Team
-    } has been putting in extra work at the gym to improve his ${randomTrait()}. (+5)`;
+  boost: {
+    valid: true,
+    fn: function(player) {
+      return `Interesting development, ${player.Name} of the ${
+        player.Team
+      } has been putting in extra work at the gym to improve his ${randomTrait()}. (+5)`;
+    }
   },
 
-  badge: function(player) {
-    return `According to sources, ${player.Name} of the ${
-      player.Team
-    } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
+  badge: {
+    valid: true,
+    fn: function(player) {
+      return `According to sources, ${player.Name} of the ${
+        player.Team
+      } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
+    }
   },
 
   // Miscellaneous
 
-  "Trade Request": function(player) {
-    return `BREAKING: ${player.Name} of the ${
-      player.Team
-    } has reportedly been unhappy with the ${
-      player.Team
-    } organization for some time now and has now formally requested a trade to a new team. The ${
-      player.Team
-    } are expected to move ${player.Name} within the next ${upToNum(6)} games.`;
+  "Trade Request": {
+    valid: true,
+    fn: function(player) {
+      return `BREAKING: ${player.Name} of the ${
+        player.Team
+      } has reportedly been unhappy with the ${
+        player.Team
+      } organization for some time now and has now formally requested a trade to a new team. The ${
+        player.Team
+      } are expected to move ${player.Name} within the next ${upToNum(6)} games.`;
+    }
   },
 
-  number: function(player) {
-    return `I'm hearing that ${player.Name} of the ${
-      player.Team
-    } has decided to change his Jersey number to ${randomFloor(99)}.`;
+  number: {
+    valid: true,
+    fn: function(player) {
+      return `I'm hearing that ${player.Name} of the ${
+        player.Team
+      } has decided to change his Jersey number to ${randomFloor(99)}.`;
+    }
   },
 
-  budget: function(player) {
-    return `With some sly budgeting, the ${
-      player.Team
-    } have managed to find an extra ${upToNum(5)} dollars for this season.`;
+  budget: {
+    valid: true,
+    fn: function(player) {
+      return `With some sly budgeting, the ${
+        player.Team
+      } have managed to find an extra ${upToNum(5)} dollars for this season.`;
+    }
   },
 
-  hotspot: function(player) {
-    return `I'm hearing from sources that the ${player.Team} have become the VNBA's hotspot for free agents. Must be a great place to play!`;
+  hotspot: {
+    valid: true,
+    fn: function(player) {
+      return `I'm hearing from sources that the ${player.Team} have become the VNBA's hotspot for free agents. Must be a great place to play!`;
+    }
   },
 
-  growth: function(player) {
-    return `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch since entering the VNBA!`;
+  growth: {
+    valid: true,
+    fn: function(player) {
+      return `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch since entering the VNBA!`;
+    }
   },
 
   // Inconsequential
 
-  advice: async function(player) {
-    return `Yesterday I sat down with ${player.Name} of the ${
-      player.Team
-    } and he shared a few words of wisdom: ${await fetch(
-      "https://api.adviceslip.com/advice"
-    )
-      .then(response => response.json())
-      .then(obj => obj.slip.advice)} Well said ${player.Name}.`;
+  advice:{ 
+    valid: false,
+    fn: async function(player) {
+      return `Yesterday I sat down with ${player.Name} of the ${
+        player.Team
+      } and he shared a few words of wisdom: ${await fetch(
+        "https://api.adviceslip.com/advice"
+      )
+        .then(response => response.json())
+        .then(obj => obj.slip.advice)} Well said ${player.Name}.`;
+    }
   },
 
-  saoty: function(player) {
-    return `Standing at ${player.Height} tall, and weighing ${player.Weight} pounds,\
-     ${player.Name} has been named Maxim's Sexiest VNBA Player of the Year. Congratulations to him and his beautiful face.`;
+  saoty: {
+    valid: false,
+    fn: function(player) {
+      return `Standing at ${player.Height} tall, and weighing ${player.Weight} pounds,\
+      ${player.Name} has been named Maxim's Sexiest VNBA Player of the Year. Congratulations to him and his beautiful face.`;
+    }
   },
 
-  interview: async function(player) {
-    return `The ${player.Team}, ${
-      player.Name
-    }'s postgame statement: ${await fetch(
-      "https://sports-autogen.herokuapp.com/gen"
-    )
-      .then(response => response.json())
-      .then(obj => obj)}.`;
+  interview: { 
+    valid: false,
+    fn: async function(player) {
+      return `The ${player.Team}, ${
+        player.Name
+      }'s postgame statement: ${await fetch(
+        "https://sports-autogen.herokuapp.com/gen"
+      )
+        .then(response => response.json())
+        .then(obj => obj)}.`;
+    }
   },
 
-  activity: async function(player) {
-    return `Yesterday on the RojPod I got to learn more about the personal life of the ${
-      player.Team
-    }' ${player.Name}. He said that when he's not on the court, ${
-      player.Name
-    } is using his time to '${await fetch(
-      "http://www.boredapi.com/api/activity/"
-    )
-      .then(response => response.json())
-      .then(obj => obj.activity)}'. What an interesting guy!`;
+  activity: {
+    valid: false,
+    fn: async function(player) {
+      return `Yesterday on the RojPod I got to learn more about the personal life of the ${
+        player.Team
+      }' ${player.Name}. He said that when he's not on the court, ${
+        player.Name
+      } is using his time to '${await fetch(
+        "http://www.boredapi.com/api/activity/"
+      )
+        .then(response => response.json())
+        .then(obj => obj.activity)}'. What an interesting guy!`;
+    }
   },
 
-  meal: async function(player) {
-    return `Last night on the RojPod I got to learn more about the diet of the ${
-      player.Team
-    }' ${
-      player.Name
-    }. He said his secret to a fit body was one meal: '${await fetch(
-      "https://www.themealdb.com/api/json/v1/1/random.php"
-    )
-      .then(response => response.json())
-      .then(
-        obj => obj.meals[0].strMeal
-      )}'. He says that some days, it's all he eats!`;
+  meal: {
+    valid: false,
+    fn: async function(player) {
+      return `Last night on the RojPod I got to learn more about the diet of the ${
+        player.Team
+      }' ${
+        player.Name
+      }. He said his secret to a fit body was one meal: '${await fetch(
+        "https://www.themealdb.com/api/json/v1/1/random.php"
+      )
+        .then(response => response.json())
+        .then(
+          obj => obj.meals[0].strMeal
+        )}'. He says that some days, it's all he eats!`;
+    }
   },
 
-  friend: function(player, playerTwo) {
-    return `In an interview with ${player.Name} of the ${player.Team}, I asked if there was anyone in the league that he considers a true friend. 
-    '${playerTwo.Name} is my boy, we've been close ever since the first time we played. I can safetly say that he is my closest friend`;
+  friend: {
+    valid: false,
+    fn: function(player, playerTwo) {
+      return `In an interview with ${player.Name} of the ${player.Team}, I asked if there was anyone in the league that he considers a true friend. 
+      '${playerTwo.Name} is my boy, we've been close ever since the first time we played. I can safetly say that he is my closest friend`;
+    }
   },
 
-  cause: function(player, playerTwo) {
-    return `${player.Name} and ${
-      playerTwo.Name
-    } are two players lending their voices to one important cause: ${randomCause()}.`;
+  cause: {
+    valid: false,
+    fn: function(player, playerTwo) {
+      return `${player.Name} and ${
+        playerTwo.Name
+      } are two players lending their voices to one important cause: ${randomCause()}.`;
+    }
   },
 
-  enemy: async function(player, playerTwo) {
-    return `In a league where emotions flare, ${player.Name} of the ${
-      player.Team
-    } had a few words for ${playerTwo.Name} of the ${
-      playerTwo.Team
-    }: '${await fetch(
-      "https://evilinsult.com/generate_insult.php?lang=en&type=json"
-    )
-      .then(response => response.json())
-      .then(obj => obj.insult)}'`;
+  enemy: {
+    valid: false,
+    fn: async function(player, playerTwo) {
+      return `In a league where emotions flare, ${player.Name} of the ${
+        player.Team
+      } had a few words for ${playerTwo.Name} of the ${
+        playerTwo.Team
+      }: '${await fetch(
+        "https://evilinsult.com/generate_insult.php?lang=en&type=json"
+      )
+        .then(response => response.json())
+        .then(obj => obj.insult)}'`;
+    }
   }
 };
 
 async function newsRoulette(event, player, playerTwo, rojUpdatesSheet) {
   let quote = "no news today";
-  const chosenEvent = rojEvents[event];
+  const {valid, fn} = rojEvents[event];
   const date = new Date().toLocaleString().split(",")[0];
-  quote = chosenEvent(player, playerTwo);
+  quote = fn(player, playerTwo);
 
-  if (process.env.ENVIRONMENT !== "DEVELOPMENT") {
+  if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
     await rojUpdatesSheet.addRow({
       Date: date,
       Player: player.Name,
