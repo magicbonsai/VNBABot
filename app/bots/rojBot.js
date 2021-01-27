@@ -11,6 +11,7 @@ const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
 
+
 function runRoj(setTweet) {
   (async function main() {
     await doc.useServiceAccountAuth({
@@ -23,6 +24,10 @@ function runRoj(setTweet) {
     const news = sheets[sheetIds.news];
     const players = sheets[sheetIds.players];
     const rojUpdates = sheets[sheetIds.updates];
+    
+    // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
+    const validTeams = (process.env.VALID_TEAMS || []).split(',');
+
 
     const getVNBANewsWeights = news.getRows().then(rows => {
       return rows.map(row => {
@@ -36,7 +41,7 @@ function runRoj(setTweet) {
     getVNBANewsWeights.then(newsWeights => {
       players.getRows().then(playerRows => {
         const filteredPlayers = playerRows.filter(
-          player => player.Team !== "FA" && player.Team !== "Rookie" && player.Age !== "RETIRED"
+          player => validTeams.includes(player.Team)
         );
 
         const chosenNum = randomFloor(filteredPlayers.length - 1);
