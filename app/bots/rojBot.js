@@ -322,6 +322,13 @@ const rojEvents = {
     }
   },
 
+  compliment: {
+    valid: false,
+    fn: async function(player, playerTwo) {
+      //todo
+    }
+  },
+
   enemy: {
     valid: false,
     fn: async function(player, playerTwo) {
@@ -330,7 +337,7 @@ const rojEvents = {
       } had a few words for ${playerTwo.Name} of the ${
         playerTwo.Team
       }: '${await fetch(
-        "https://evilinsult.com/generate_insult.php?lang=en&type=json"
+        "https://insult.mattbas.org/api/insult.json"
       )
         .then(response => response.json())
         .then(obj => obj.insult)}'`;
