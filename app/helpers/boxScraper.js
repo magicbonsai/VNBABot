@@ -109,12 +109,18 @@ function validateName(playerName) {
   const newName = [];
   let prevChar = false;
   for (let i = 0; i < strArr.length; i++) {
-    if (strArr[i] === "0") {
-      newName.push("O");
-    } else {
-      newName.push(strArr[i]);
-    }
+    switch (strArr[i]) {
+      case "0":
+        newName.push("O");
+        break;
+      case "1":
+        newName.push("I");
+        break;
+      default:
+        newName.push(strArr[i]);
+        break;
 
+    }
     prevChar = strArr[i];
   }
 
