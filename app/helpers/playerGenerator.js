@@ -199,11 +199,11 @@ function generatePlayer(playerType) {
         (async () => {
             await sheet.addRow({Name: name, Position: playerType, Height: formattedHeight, Weight: genWeight, Values: JSON.stringify(player) });
         })(); 
-        return {
+        return ({
             height: formattedHeight,
             weight: genWeight,
             name,
-        };
+        });
     })();
 }
 

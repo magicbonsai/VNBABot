@@ -157,14 +157,27 @@ const rojEvents = {
   "New FA": {
     valid: true,
     fn: function() {
-      const type = chooseOne(playerTypes) || playerTypes[0];
-      const { height, weight, name } = generatePlayer(type);
+    
+      return `${faker.name.firstName(
+        0
+      )} ${faker.name.lastName()}, who has been playing basketball in the country of\
+      ${faker.address.country()}, has officially declared for the VNBA season ${process.env.SEASON + 1} draft.`;
+    }
+  },
 
-      // return `${faker.name.firstName(
-      //   0
-      // )} ${faker.name.lastName()}, who has been playing basketball in the country of\
-      // ${faker.address.country()}, has officially declared for the VNBA season ${process.env.SEASON + 1} draft.`;
+  // Draft Prospect 
+
+  draft: {
+    valid: true,
+    fn: function() {
+      (async () => {
+        const type = chooseOne(playerTypes) || playerTypes[0];
+        const player = await generatePlayer(type);
+        console.log('player', player);
+      })();
+      const { height, weight, name } = player || {};
       return `Standing at ${height} and weighing ${weight} pounds, ${name}, a ${type} has declared for the VNBA ${process.env.SEASON + 1} draft. `;
+      
     }
   },
 
