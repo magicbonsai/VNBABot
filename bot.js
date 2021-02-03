@@ -77,8 +77,12 @@ const dedueCommand = (prompt, msg) => {
       break;
 
     case "generateplayer":
-      const data = generatePlayer();
-      msg.author.send("Generating a new player data.");
+      generatePlayer(words[1]);
+      if(process.env.environment === "PRODUCTION") {
+        msg.author.send("Generating a new player data.");
+      } else {
+        console.log("Generating a player data");
+      }
       break;
 
     default:
