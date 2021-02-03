@@ -1,6 +1,7 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
 const fetch = require("node-fetch");
+const generatePlayer = require("../helpers/playerGenerator");
 require("dotenv").config();
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
@@ -10,6 +11,8 @@ const doc = new GoogleSpreadsheet(
 const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
+
+const playerTypes = ["guard", "wing", "big"];
 
 
 function runRoj(setTweet) {
@@ -154,10 +157,14 @@ const rojEvents = {
   "New FA": {
     valid: true,
     fn: function() {
-      return `${faker.name.firstName(
-        0
-      )} ${faker.name.lastName()}, who has been playing basketball in the country of\
-      ${faker.address.country()}, has officially declared for the VNBA season ${process.env.SEASON + 1} draft.`;
+      const type = chooseOne(playerTypes) || playerTypes[0];
+      const { height, weight, name } = generatePlayer(type);
+
+      // return `${faker.name.firstName(
+      //   0
+      // )} ${faker.name.lastName()}, who has been playing basketball in the country of\
+      // ${faker.address.country()}, has officially declared for the VNBA season ${process.env.SEASON + 1} draft.`;
+      return `Standing at ${height} and weighing ${weight} pounds, ${name}, a ${type} has declared for the VNBA ${process.env.SEASON + 1} draft. `;
     }
   },
 

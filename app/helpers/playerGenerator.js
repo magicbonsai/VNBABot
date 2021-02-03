@@ -193,12 +193,17 @@ function generatePlayer(playerType) {
         const attributes = generateAttributes();
         const badges = generateBadges();
         const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
-        const { genHeight, genWeight, data: vitals } = generateClass(playerType)
+        const { genHeight, genWeight, data: vitals } = generateClass(playerType);
+        const formattedHeight = toFtInFromCm(genHeight)
         const player = [vitals, attributes, badges];
-        JSON.stringify(player);
         (async () => {
-            await sheet.addRow({Name: name, Position: playerType, Height: toFtInFromCm(genHeight), Weight: genWeight, Values: JSON.stringify(player) });
+            await sheet.addRow({Name: name, Position: playerType, Height: formattedHeight, Weight: genWeight, Values: JSON.stringify(player) });
         })(); 
+        return {
+            height: formattedHeight,
+            weight: genWeight,
+            name,
+        };
     })();
 }
 
