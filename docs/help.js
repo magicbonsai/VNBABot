@@ -5,6 +5,7 @@ const help =
   $scrape [video url] (2K box scores only): Run the box score scraper on a NBA2K20 box score\n\
   $robin: Create a round robin tournament format\n\
   $checkroster: Return the last individual who checked the roster out\n\
+  $generateplayer: create player data to import into nba2k20\n\
 ```";
 
 const devHelp = 
@@ -15,6 +16,7 @@ const devHelp =
   $scrape [video url] (2K box scores only): Run the box score scraper on a NBA2K20 box score\n\
   $robin: Create a round robin tournament format\n\
   $checkroster: Return the last individual who checked the roster out\n\
+  $generateplayer: create player data to import into nba2k20\n\
 ```";
 
 module.exports = { help, devHelp };
