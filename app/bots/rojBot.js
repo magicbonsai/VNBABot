@@ -169,15 +169,11 @@ const rojEvents = {
 
   draft: {
     valid: true,
-    fn: function() {
-      (async () => {
-        const type = chooseOne(playerTypes) || playerTypes[0];
-        const player = await generatePlayer(type);
-        console.log('player', player);
-      })();
+    fn: async function() {
+      const type = chooseOne(playerTypes) || playerTypes[0];
+      const player = await generatePlayer(type);
       const { height, weight, name } = player || {};
       return `Standing at ${height} and weighing ${weight} pounds, ${name}, a ${type} has declared for the VNBA ${process.env.SEASON + 1} draft. `;
-      
     }
   },
 
@@ -207,6 +203,13 @@ const rojEvents = {
       return `According to sources, ${player.Name} of the ${
         player.Team
       } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
+    }
+  },
+
+  hotzone: {
+    valid: true,
+    fn: function(player) {
+      return `According to sources, ${player.Name} of the ${player.Team} has been shooting really well under this zone: ${randomHotZone()}`
     }
   },
 
@@ -390,6 +393,27 @@ const upToNum = num => {
 
 const randomFloor = num => {
   return Math.floor(Math.random() * num);
+};
+
+const randomHotZone = () => {
+  const zones = [
+    "Under Basket",
+    "Close Left",
+    "Close Middle",
+    "Close Right",
+    "Mid Left",
+    "Mid Left-Center",
+    "Mid Center",
+    "Mid Right-Center",
+    "Mid Right",
+    "Three Left",
+    "Three Left-Center",
+    "Three Middle",
+    "Three Right-Center",
+    "Three Right",
+  ];
+
+  return chooseOne(zones);
 };
 
 const randomTrait = () => {

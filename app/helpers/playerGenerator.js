@@ -182,7 +182,7 @@ function generatePlayer(playerType) {
     const doc = new GoogleSpreadsheet(
         "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
       );
-    (async function main() {
+    return (async function main() {
         await doc.useServiceAccountAuth({
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
