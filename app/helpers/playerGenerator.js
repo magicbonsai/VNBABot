@@ -1,9 +1,14 @@
 const { GoogleSpreadsheet } = require("google-spreadsheet");
+const rwc = require('random-weighted-choice');
+const rn = require('random-normal');
+const faker = require("faker");
+faker.setLocale("en");
+
+// attribute formula
 // 0 - 222
 // (0 - 74) * 3, 25 -> 99 for nba2k stat 
 // => (stat - 25) * 3
 
-const rwc = require('random-weighted-choice');
 
 function shuffle(array) {
     var currentIndex = array.length, temporaryValue, randomIndex;
@@ -117,8 +122,63 @@ function generateBadges() {
     return data;
 };
 
-function generatePlayer() {
-    // 526907503
+const classes = {
+    guard:{
+        height: 191,
+        weight: 195,
+        hDeviation: 5,
+        wDeviation: 15,
+    }, 
+    wing: {
+        height: 201,
+        weight: 215,
+        hDeviation: 7,
+        wDeviation: 20,
+    },
+    big: {
+        height: 211,
+        weight: 255,
+        hDeviation: 5,
+        wDeviation: 25,
+
+    },
+};
+
+// class = guard, wing, big
+function generateClass(playerType) {
+    const {
+        height,
+        weight,
+        hDeviation,
+        wDeviation,
+    } = classes[playerType] || classes.wing;
+    const genHeight = rn({ mean: height, dev: hDeviation });
+    const genWeight = Math.floor(rn({ mean: weight, dev: wDeviation }));
+
+    const data = {
+        module: "PLAYER",
+        tab: "VITALS",
+        data: {
+            HEIGHT_CM: `${Math.floor(genHeight)}`,
+            WEIGHT_LBS: `${genWeight}`,
+        }
+    }
+    return ({
+        genHeight,
+        genWeight,
+        data,
+    });
+};
+
+function toFtInFromCm(value) {
+    const totalLength = Math.floor(value / 2.54);
+    const ft = Math.floor(totalLength / 12);
+    const inches = totalLength % 12;
+    return `${ft}'${inches}"`;
+};
+
+function generatePlayer(playerType) {
+    // 526907503 Generated Players sheetid
     const doc = new GoogleSpreadsheet(
         "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
       );
@@ -132,10 +192,12 @@ function generatePlayer() {
         const sheet = sheets[526907503];
         const attributes = generateAttributes();
         const badges = generateBadges();
-        const player = [attributes, badges];
+        const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
+        const { genHeight, genWeight, data: vitals } = generateClass(playerType)
+        const player = [vitals, attributes, badges];
         JSON.stringify(player);
         (async () => {
-            await sheet.addRow({ Values: JSON.stringify(player) });
+            await sheet.addRow({Name: name, Position: playerType, Height: toFtInFromCm(genHeight), Weight: genWeight, Values: JSON.stringify(player) });
         })(); 
     })();
 }

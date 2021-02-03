@@ -3,7 +3,8 @@ const sheetIds = {
   news: "1628701177",
   updates: "1780169714",
   rawStats: "1840998490",
-  rosterCheckIn: "319174534"
+  rosterCheckIn: "319174534",
+  generatedPlayers: "526907503"
 };
 
 module.exports = { sheetIds };
