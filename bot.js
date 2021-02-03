@@ -3,6 +3,7 @@ const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
+const generatePlayer = require("./app/helpers/playerGenerator");
 
 require("dotenv").config();
 const client = new Discord.Client();
@@ -73,6 +74,11 @@ const dedueCommand = (prompt, msg) => {
 
     case "checkroster":
       rosterCheckCommand(msg);
+      break;
+
+    case "generateplayer":
+      const data = generatePlayer();
+      msg.author.send("Generating a new player data.");
       break;
 
     default:
