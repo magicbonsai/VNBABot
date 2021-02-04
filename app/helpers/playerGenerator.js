@@ -3,6 +3,7 @@ const rwc = require('random-weighted-choice');
 const rn = require('random-normal');
 const faker = require("faker");
 faker.setLocale("en");
+const { sheetIds } = require('./sheetHelper');
 
 // attribute formula
 // 0 - 222
@@ -177,28 +178,52 @@ function toFtInFromCm(value) {
     return `${ft}'${inches}"`;
 };
 
-function generatePlayer(playerType) {
+const playerTypeNames = {
+    guard: ['PG', 'SG', 'PG/SG'],
+    wing: ['SF', 'PF', 'SG', 'SG/SF', 'SF/PF'],
+    big: ['PF', 'C', 'PF/C', 'C/PF']
+};
+
+const chooseOne = choices => {
+    return choices[Math.floor(Math.random() * choices.length)];
+  };
+
+function generatePlayer(playerType, addToSheet) {
     // 526907503 Generated Players sheetid
     const doc = new GoogleSpreadsheet(
         "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
       );
-    (async function main() {
+    const {
+        players: playersId,
+        generatedPlayers: genPlayersId,
+    } = sheetIds;
+    return (async function main() {
         await doc.useServiceAccountAuth({
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
         });
         await doc.loadInfo();
         const sheets = doc.sheetsById;
-        const sheet = sheets[526907503];
+        const generatedPlayersSheet = sheets[genPlayersId];
+        const playersSheet = sheets[playersId];
         const attributes = generateAttributes();
         const badges = generateBadges();
         const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
-        const { genHeight, genWeight, data: vitals } = generateClass(playerType)
+        const { genHeight, genWeight, data: vitals } = generateClass(playerType);
+        const formattedHeight = toFtInFromCm(genHeight)
         const player = [vitals, attributes, badges];
-        JSON.stringify(player);
+        const randomPosition = chooseOne(playerTypeNames[playerType]);
         (async () => {
-            await sheet.addRow({Name: name, Position: playerType, Height: toFtInFromCm(genHeight), Weight: genWeight, Values: JSON.stringify(player) });
+            await generatedPlayersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Values: JSON.stringify(player) });
+            if(!!addToSheet) {
+                await playersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Team: "Rookie",  Age: "0"  })
+            }
         })(); 
+        return ({
+            height: formattedHeight,
+            weight: genWeight,
+            name,
+        });
     })();
 }
 

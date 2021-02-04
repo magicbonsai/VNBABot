@@ -1,6 +1,7 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
 const fetch = require("node-fetch");
+const generatePlayer = require("../helpers/playerGenerator");
 require("dotenv").config();
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
@@ -10,6 +11,8 @@ const doc = new GoogleSpreadsheet(
 const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
+
+const playerTypes = ["guard", "wing", "big"];
 
 
 function runRoj(setTweet) {
@@ -154,10 +157,23 @@ const rojEvents = {
   "New FA": {
     valid: true,
     fn: function() {
+    
       return `${faker.name.firstName(
         0
       )} ${faker.name.lastName()}, who has been playing basketball in the country of\
       ${faker.address.country()}, has officially declared for the VNBA season ${process.env.SEASON + 1} draft.`;
+    }
+  },
+
+  // Draft Prospect 
+
+  draft: {
+    valid: true,
+    fn: async function() {
+      const type = chooseOne(playerTypes) || playerTypes[0];
+      const player = await generatePlayer(type, true);
+      const { height, weight, name } = player || {};
+      return `Standing at ${height} and weighing ${weight} pounds, ${name}, a ${type} has declared for the VNBA ${process.env.SEASON + 1} draft. `;
     }
   },
 
@@ -187,6 +203,13 @@ const rojEvents = {
       return `According to sources, ${player.Name} of the ${
         player.Team
       } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
+    }
+  },
+
+  hotzone: {
+    valid: true,
+    fn: function(player) {
+      return `According to sources, ${player.Name} of the ${player.Team} has been shooting hot under this zone: ${randomHotZone()}`
     }
   },
 
@@ -370,6 +393,27 @@ const upToNum = num => {
 
 const randomFloor = num => {
   return Math.floor(Math.random() * num);
+};
+
+const randomHotZone = () => {
+  const zones = [
+    "Under Basket",
+    "Close Left",
+    "Close Middle",
+    "Close Right",
+    "Mid Left",
+    "Mid Left-Center",
+    "Mid Center",
+    "Mid Right-Center",
+    "Mid Right",
+    "Three Left",
+    "Three Left-Center",
+    "Three Middle",
+    "Three Right-Center",
+    "Three Right",
+  ];
+
+  return chooseOne(zones);
 };
 
 const randomTrait = () => {
