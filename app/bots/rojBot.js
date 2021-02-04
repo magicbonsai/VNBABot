@@ -171,7 +171,7 @@ const rojEvents = {
     valid: true,
     fn: async function() {
       const type = chooseOne(playerTypes) || playerTypes[0];
-      const player = await generatePlayer(type);
+      const player = await generatePlayer(type, true);
       const { height, weight, name } = player || {};
       return `Standing at ${height} and weighing ${weight} pounds, ${name}, a ${type} has declared for the VNBA ${process.env.SEASON + 1} draft. `;
     }
@@ -209,7 +209,7 @@ const rojEvents = {
   hotzone: {
     valid: true,
     fn: function(player) {
-      return `According to sources, ${player.Name} of the ${player.Team} has been shooting really well under this zone: ${randomHotZone()}`
+      return `According to sources, ${player.Name} of the ${player.Team} has been shooting hot under this zone: ${randomHotZone()}`
     }
   },
 
