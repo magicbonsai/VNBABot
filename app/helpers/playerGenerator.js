@@ -188,7 +188,7 @@ const chooseOne = choices => {
     return choices[Math.floor(Math.random() * choices.length)];
   };
 
-function generatePlayer(playerType, addToSheet) {
+function generatePlayer(playerType = "wing", addToSheet) {
     // 526907503 Generated Players sheetid
     const doc = new GoogleSpreadsheet(
         "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
