@@ -101,11 +101,11 @@ const weights = [
 const personalityWeights = [
     {
         id: "0",
-        weight: 0.67,
+        weight: 0.85,
     },
     {
         id: "1",
-        weight: 0.33
+        weight: 0.15
     }
 ];
 
@@ -188,7 +188,7 @@ const chooseOne = choices => {
     return choices[Math.floor(Math.random() * choices.length)];
   };
 
-function generatePlayer(playerType = "wing", addToSheet) {
+function generatePlayer(playerType = chooseOne(["guard", "wing", "big"]), addToSheet) {
     // 526907503 Generated Players sheetid
     const doc = new GoogleSpreadsheet(
         "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
@@ -214,7 +214,7 @@ function generatePlayer(playerType = "wing", addToSheet) {
         const player = [vitals, attributes, badges];
         const randomPosition = chooseOne(playerTypeNames[playerType]);
         (async () => {
-            await generatedPlayersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Values: JSON.stringify(player) });
+            await generatedPlayersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Values: JSON.stringify(player), Role: playerType });
             if(!!addToSheet) {
                 await playersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Team: "Rookie",  Age: "0"  })
             }
