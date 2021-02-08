@@ -113,11 +113,12 @@ function validateName(playerName) {
       case "0":
         newName.push("O");
         break;
-      case "1":
-        newName.push("I");
-        break;
       case "l":
-        newName.push("I");
+        if (i === 0) {
+          newName.push("I");
+        } else {
+          newName.push(strArr[i]);
+        }
         break;
       default:
         newName.push(strArr[i]);
@@ -126,7 +127,6 @@ function validateName(playerName) {
     }
     prevChar = strArr[i];
   }
-
   return newName.join("");
 }
 
