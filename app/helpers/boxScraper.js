@@ -116,6 +116,9 @@ function validateName(playerName) {
       case "1":
         newName.push("I");
         break;
+      case "l":
+        newName.push("I");
+        break;
       default:
         newName.push(strArr[i]);
         break;
