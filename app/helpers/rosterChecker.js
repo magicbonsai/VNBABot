@@ -25,8 +25,8 @@ function rosterCheckCommand(msg = {}) {
         }
         return true;
       });
-      const { name, username, rosterName, checkoutTime, checkinTime } = lastEntry;
-      const message = `The last individual to check out the roster was ${name}(${username}) at ${checkoutTime}. `
+      const { name, date, username, rosterName, checkoutTime, checkinTime } = lastEntry;
+      const message = `The last individual to check out the roster was ${name}(${username}) at ${checkoutTime} on ${date}. `
       const checkInMsg = !!checkinTime 
         ? `They last checked the roster in at ${checkinTime}.` 
         : "It does not look like they checked it back in yet.  You should check in with them to see if they are done."
