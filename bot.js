@@ -24,9 +24,9 @@ const dedueCommand = (prompt, msg) => {
       runRoj(words[1]);
       break;
 
-    case "vnba":
+    case "smithy":
       if (msg.channel.type == "dm") {
-        msg.reply("Posting on twitter!");
+        msg.reply("Posting on Smithy twitter!");
         const tweet = words.slice(1).join(" ");
         postSmithyTweet(tweet);
       }
@@ -34,7 +34,7 @@ const dedueCommand = (prompt, msg) => {
 
     case "roj":
       if (msg.channel.type == "dm") {
-        msg.reply("Posting on twitter!");
+        msg.reply("Posting on Roj twitter!");
         const tweet = words.slice(1).join(" ");
         postRojTweet(tweet);
       }
