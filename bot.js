@@ -114,7 +114,14 @@ const job = new CronJob("0 15 * * *", function() {
   }
 });
 
-const job_two = new CronJob("0 18 * * *", function() {
+const job_two = new CronJob("0 17 * * *", function() {
+  //will run at 2:00 PM everyday
+  if(!!process.env.DAILY_TWEETS) {
+    runRoj();
+  }
+});
+
+const job_three = new CronJob("0 20 * * *", function() {
   //will run at 2:00 PM everyday
   if(!!process.env.DAILY_TWEETS) {
     runRoj();
@@ -123,3 +130,4 @@ const job_two = new CronJob("0 18 * * *", function() {
 
 job.start();
 job_two.start();
+job_three.start();
