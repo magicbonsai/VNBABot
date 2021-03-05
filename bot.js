@@ -4,6 +4,7 @@ const robin = require("roundrobin");
 const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const generatePlayer = require("./app/helpers/playerGenerator");
+const retirementCheck = require("./app/helpers/retirementCheck");
 
 require("dotenv").config();
 const client = new Discord.Client();
@@ -83,6 +84,10 @@ const dedueCommand = (prompt, msg) => {
       } else {
         console.log("Generating a player data");
       }
+      break;
+    
+    case "retirement":
+      retirementCheck();
       break;
 
     default:
