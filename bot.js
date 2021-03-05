@@ -84,6 +84,10 @@ const dedueCommand = (prompt, msg) => {
         console.log("Generating a player data");
       }
       break;
+    
+    case "retirement":
+      
+      break;
 
     default:
   }
