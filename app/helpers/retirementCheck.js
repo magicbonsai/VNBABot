@@ -2,6 +2,7 @@ const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const rwc = require('random-weighted-choice');
 const { sheetIds } = require("./sheetHelper");
+const { postRojTweet } = require("./tweetHelper")
 
 const doc = new GoogleSpreadsheet(
   "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
@@ -40,6 +41,7 @@ const weightsSeven = [
     }
 ];
 
+
 function retirementCalculator() {
     (async function main() {
       await doc.useServiceAccountAuth({
@@ -47,16 +49,43 @@ function retirementCalculator() {
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
       });
       await doc.loadInfo();
+      const validTeams = (process.env.VALID_TEAMS || []).split(',');
       const sheets = doc.sheetsById;
       const rawStats = sheets[sheetIds.rawStats];
       const players = sheets[sheetIds.players];
       await rawStats.loadHeaderRow();
   
       players.getRows().then(playerRows => {
-        const playersToCheck = playerRows.filter(({ Age }) => {
-          return Age !== 'RETIRED' && parseInt(Age) > 4;
+        const playersToCheck = playerRows.filter(player => {
+          const { Age, Team } = player;
+          return parseInt(Age) > 4 && validTeams.includes(Team);
         });
-        console.log('playersToCheck', playersToCheck);
+        const retiredPlayers = playersToCheck.filter(({ Age }) => {
+            switch(parseInt(Age)) {
+                case 5:
+                    return rwc(weightsFive) === "yes"
+                case 6:
+                    return rwc(weightsSix) === "yes"
+                case 7:
+                default:
+                    return rwc(weightsSeven) == "yes"
+            }
+        });
+        const retirementTweet = `These players will be retiring before the start of the next VNBA season: ${retiredPlayers.map(({ Name }) => Name).join(', ')}.  We hope the best of these players in their retirements.`
+        if(process.env.ENVIRONMENT === "PRODUCTION") {
+            postRojTweet(retirementTweet)
+        }
+        console.log(retirementTweet);
+        // WIP get row updating to work
+        // const rowsToUpdate = retiredPlayers.forEach(row => {
+        //   row.Team = "RETIRED"
+        // });
+        // console.log('test', rowsToUpdate);
+        // (async () => {
+        //   if (process.env.environment === "PRODUCTION") {
+        //     await rowsToUpdate.forEach(row => row.save());
+        //   }
+        // })();
       });
     })();
   }
