@@ -54,9 +54,10 @@ function runRoj(setTweet) {
         const result = setTweet || rwc(newsWeights);
         const status = newsRoulette(result, chosen, chosenTwo, rojUpdates);
         status.then(toPost => {
-          process.env.ENVIRONMENT === "DEVELOPMENT"
-            ? console.log(toPost)
-            : postRojTweet(toPost);
+          if(process.env.ENVIRONMENT === "PRODUCTION") {
+            postRojTweet(toPost);
+          }
+          console.log(toPost);
         });
       });
     });
