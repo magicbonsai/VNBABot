@@ -164,7 +164,7 @@ function generateClass(playerType) {
         data: {
             HEIGHT_CM: `${Math.floor(genHeight)}`,
             WEIGHT_LBS: `${genWeight}`,
-            WINGSPAN_CM: `${genWingspan}`,
+            WINGSPAN_CM: `${Math.floor(genWingspan)}`,
         }
     }
     return ({
