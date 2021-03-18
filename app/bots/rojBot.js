@@ -173,8 +173,8 @@ const rojEvents = {
     fn: async function() {
       const type = chooseOne(playerTypes) || playerTypes[0];
       const player = await generatePlayer(type, true);
-      const { height, weight, name } = player || {};
-      return `Standing at ${height} and weighing ${weight} pounds, ${name}, a ${type} has declared for the VNBA season ${process.env.SEASON} draft. `;
+      const { height, weight, wingspan, name } = player || {};
+      return `Standing at ${height} with a wingspan of ${wingspan}, and weighing ${weight} pounds, ${name}, a ${type} has declared for the VNBA season ${process.env.SEASON} draft. `;
     }
   },
 
