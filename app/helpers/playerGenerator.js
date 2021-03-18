@@ -1,6 +1,7 @@
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const rwc = require('random-weighted-choice');
 const rn = require('random-normal');
+const _ = require('lodash');
 const faker = require("faker");
 faker.setLocale("en");
 const { sheetIds } = require('./sheetHelper');
@@ -141,7 +142,6 @@ const classes = {
         weight: 255,
         hDeviation: 5,
         wDeviation: 25,
-
     },
 };
 
@@ -155,6 +155,8 @@ function generateClass(playerType) {
     } = classes[playerType] || classes.wing;
     const genHeight = rn({ mean: height, dev: hDeviation });
     const genWeight = Math.floor(rn({ mean: weight, dev: wDeviation }));
+    // wingspan numbers 0.94 to 1.14 ratio to height, mean is 1.04, stdev 0.0333333333
+    const genWingspan = _.clamp(rn({ mean: 1.04, dev: 0.05}), 0.94, 1.14) * genHeight;
 
     const data = {
         module: "PLAYER",
@@ -162,11 +164,13 @@ function generateClass(playerType) {
         data: {
             HEIGHT_CM: `${Math.floor(genHeight)}`,
             WEIGHT_LBS: `${genWeight}`,
+            WINGSPAN_CM: `${Math.floor(genWingspan)}`,
         }
     }
     return ({
         genHeight,
         genWeight,
+        genWingspan,
         data,
     });
 };
@@ -209,12 +213,13 @@ function generatePlayer(playerType = chooseOne(["guard", "wing", "big"]), addToS
         const attributes = generateAttributes();
         const badges = generateBadges();
         const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
-        const { genHeight, genWeight, data: vitals } = generateClass(playerType);
-        const formattedHeight = toFtInFromCm(genHeight)
+        const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(playerType);
+        const formattedHeight = toFtInFromCm(genHeight);
+        const formattedWingspan = toFtInFromCm(genWingspan);
         const player = [vitals, attributes, badges];
         const randomPosition = chooseOne(playerTypeNames[playerType]);
         (async () => {
-            await generatedPlayersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Values: JSON.stringify(player), Role: playerType });
+            await generatedPlayersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Wingspan: formattedWingspan, Values: JSON.stringify(player), Role: playerType });
             if(!!addToSheet) {
                 await playersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Team: "Rookie",  Age: "0"  })
             }
@@ -222,6 +227,7 @@ function generatePlayer(playerType = chooseOne(["guard", "wing", "big"]), addToS
         return ({
             height: formattedHeight,
             weight: genWeight,
+            wingspan: formattedWingspan,
             name,
         });
     })();
