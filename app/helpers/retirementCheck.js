@@ -49,7 +49,7 @@ function retirementCalculator() {
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
       });
       await doc.loadInfo();
-      const validTeams = (process.env.VALID_TEAMS || []).split(',');
+      const validTeams = [...(process.env.VALID_TEAMS || []).split(','), 'FA'];
       const sheets = doc.sheetsById;
       const rawStats = sheets[sheetIds.rawStats];
       const players = sheets[sheetIds.players];
