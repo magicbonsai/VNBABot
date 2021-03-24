@@ -225,7 +225,7 @@ const rojEvents = {
         player.Team
       } organization for some time now and has now formally requested a trade to a new team. The ${
         player.Team
-      } are expected to move ${player.Name} within the next ${upToNum(6)} games.`;
+      } are expected to move ${player.Name} within the next ${upToNum(3)} games.`;
     }
   },
 
