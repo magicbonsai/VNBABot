@@ -134,7 +134,7 @@ const classes = {
     wing: {
         height: 201,
         weight: 215,
-        hDeviation: 7,
+        hDeviation: 5,
         wDeviation: 20,
     },
     big: {
