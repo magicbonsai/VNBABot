@@ -37,37 +37,49 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
 }
 
-const keys = ["DRIVING_LAYUP", "POST_FADEAWAY", "POST_HOOK", "POST_MOVES", "DRAW_FOUL", "SHOT_CLOSE", "MID-RANGE_SHOT", "3PT_SHOT", "FREE_THROW", "BALL_CONTROL", "PASSING_IQ", "PASSING_ACCURACY", "OFFENSIVE_REBOUND", "STANDING_DUNK", "DRIVING_DUNK", "SHOT_IQ", "PASSING_VISION", "HANDS", "DEFENSIVE_REBOUND", "INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "BLOCK", "STEAL", "SHOT_CONTEST", "REACTION_TIME", "ON-BALL_DEFENSE_IQ", "LATERAL_QUICKNESS", "SPEED", "SPEED_WITH_BALL", "ACCELERATION", "VERTICAL", "STRENGTH", "STAMINA", "HUSTLE", "HEAD_DURABILITY", "NECK_DURABILITY", "BACK_DURABILITY", "LEFT_SHOULDER_DURABILITY", "RIGHT_SHOULDER_DURABILITY", "LEFT_ELBOW_DURABILITY", "RIGHT_ELBOW_DURABILITY", "LEFT_HIP_DURABILITY", "RIGHT_HIP_DURABILITY", "LEFT_KNEE_DURABILITY", "RIGHT_KNEE_DURABILITY", "LEFT_ANKLE_DURABILITY", "RIGHT_ANKLE_DURABILITY", "LEFT_FOOT_DURABILITY", "RIGHT_FOOT_DURABILITY", "MISC_DURABILITY", "PASS_PERCEPTION", "DEFENSIVE_CONSISTENCY", "HELP_DEFENSIVE_IQ", "OFFENSIVE_CONSISTENCY", "PICK_AND_ROLL_DEFENSIVE_IQ", "INTANGIBLES", "POTENTIAL", "EMOTION_ABILITY"]
+// 16 injury keys
+
+const injuryKeys = ["HEAD_DURABILITY", "NECK_DURABILITY", "BACK_DURABILITY", "LEFT_SHOULDER_DURABILITY", "RIGHT_SHOULDER_DURABILITY", "LEFT_ELBOW_DURABILITY", "RIGHT_ELBOW_DURABILITY", "LEFT_HIP_DURABILITY", "RIGHT_HIP_DURABILITY", "LEFT_KNEE_DURABILITY", "RIGHT_KNEE_DURABILITY", "LEFT_ANKLE_DURABILITY", "RIGHT_ANKLE_DURABILITY", "LEFT_FOOT_DURABILITY", "RIGHT_FOOT_DURABILITY", "MISC_DURABILITY",]
+const keys = ["DRIVING_LAYUP", "POST_FADEAWAY", "POST_HOOK", "POST_MOVES", "DRAW_FOUL", "SHOT_CLOSE", "MID-RANGE_SHOT", "3PT_SHOT", "FREE_THROW", "BALL_CONTROL", "PASSING_IQ", "PASSING_ACCURACY", "OFFENSIVE_REBOUND", "STANDING_DUNK", "DRIVING_DUNK", "SHOT_IQ", "PASSING_VISION", "HANDS", "DEFENSIVE_REBOUND", "INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "BLOCK", "STEAL", "SHOT_CONTEST", "REACTION_TIME", "ON-BALL_DEFENSE_IQ", "LATERAL_QUICKNESS", "SPEED", "SPEED_WITH_BALL", "ACCELERATION", "VERTICAL", "STRENGTH", "STAMINA", "HUSTLE", "PASS_PERCEPTION", "DEFENSIVE_CONSISTENCY", "HELP_DEFENSIVE_IQ", "OFFENSIVE_CONSISTENCY", "PICK_AND_ROLL_DEFENSIVE_IQ", "INTANGIBLES", "POTENTIAL", "EMOTION_ABILITY"]
 const badges = ["ACROBAT", "TEAR_DROPPER", "RELENTLESS_FINISHER", "POST_SPIN_TECHNICIAN", "DROP-STEPPER", "PUTBACK_BOSS", "BACKDOWN_PUNISHER", "CONSISTENT_FINISHER", "CONTACT_FINISHER", "CROSS-KEY_SCORER", "DEEP_HOOKS", "PICK_ROLLER", "FANCY_FOOTWORK", "FASTBREAK_FINISHER", "GIANT_SLAYER", "PRO_TOUCH", "SHOWTIME", "SLITHERY_FINISHER", "CATCH_SHOOT", "CORNER_SPECIALIST", "DIFFICULT_SHOTS", "PICK_POPPER", "CLUTCH_SHOOTER", "DEADEYE", "DEEP_FADES", "FLEXIBLE_RELEASE", "GREEN_MACHINE", "HOT_ZONE_HUNTER", "HOT_START", "ICE_IN_VEINS", "PUMP_FAKE_MAESTRO", "QUICK_DRAW", "RANGE_EXTENDER", "SLIPPERY_OFF-BALL", "STEADY_SHOOTER", "TIRELESS_SCORER", "VOLUME_SHOOTER", "ANKLE_BREAKER", "FLASHY_PASSER", "BREAK_STARTER", "LOB_CITY_PASSER", "DIMER", "BAIL_OUT", "DOWNHILL", "DREAM_SHAKE", "HANDLES_FOR_DAYS", "NEEDLE_THREADER", "PASS_FAKE_MAESTRO", "QUICK_FIRST_STEP", "SPACE_CREATOR", "STOP_GO", "TIGHT_HANDLES", "UNPLUCKABLE", "FLOOR_GENERAL", "PICK_POCKET", "RIM_PROTECTOR", "PICK_DODGER", "CHASE_DOWN_ARTIST", "CLAMPS", "DEFENSIVE_STOPPER", "HEART_CRUSHER", "INTERCEPTOR", "INTIMIDATOR", "LIGHTNING_REFLEXES", "MOVING_TRUCK", "OFF-BALL_PEST", "POGO_STICK", "POST_MOVE_LOCKDOWN", "TIRELESS_DEFENDER", "TRAPPER", "LOB_CITY_FINISHER", "BRICK_WALL", "BOX", "REBOUND_CHASER", "WORM"];
 const personalityBadges = ["ALPHA_DOG", "ENFORCER", "RESERVED", "FRIENDLY", "TEAM_PLAYER", "EXTREMELY_CONFIDENT", "HIGH_WORK_ETHIC", "LEGENDARY_WORK_ETHIC", "KEEP_IT_REAL", "PAT_MY_BACK", "EXPRESSIVE", "UNPREDICTABLE", "LAID_BACK", "MEDIA_RINGMASTER", "WARM_WEATHER_FAN", "FINANCE_SAVVY", "CAREER_GYM_ELIMINATOR", "ON_COURT_COACH", ];
 
 function generateAttributes() {
+    // 58 42
     // const out = R("../r_scripts/stat_sim.R").callSync();
     // console.log('out', out);
     // 11 numbers from 80 - 100, 9 num from 70 to 100, 7 num from 60 to 100, 5 num from 50 to 100, 4 num from 40 to 90, 3 from 30 to 80
     let foo = [];
-    for ( let step = 0; step < 13; step++ ) {
+    let baz = [];
+    // attributes
+    for ( let step = 0; step < 12; step++ ) {
         foo.push(getRandomInt(80, 99))
     }
-    for ( let step = 0; step < 13; step++ ) {
+    for ( let step = 0; step < 10; step++ ) {
         foo.push(getRandomInt(70, 99))
     }
-    for ( let step = 0; step < 11; step++ ) {
+    for ( let step = 0; step < 8; step++ ) {
         foo.push(getRandomInt(60, 99))
     }
-    for ( let step = 0; step < 8; step++ ) {
+    for ( let step = 0; step < 5; step++ ) {
         foo.push(getRandomInt(50, 99))
     }
-    for ( let step = 0; step < 7; step++ ) {
+    for ( let step = 0; step < 4; step++ ) {
         foo.push(getRandomInt(40, 89))
     }
-    for ( let step = 0; step < 6; step++ ) {
+    for ( let step = 0; step < 3; step++ ) {
         foo.push(getRandomInt(30, 79))
     }
+    // durability
+    for ( let step = 0; step < 12; step++ ) {
+      baz.push(getRandomInt(30, 99))
+    }  
     shuffle(foo);
+    shuffle(baz);
     const bar = foo.map(num => (num - 25) * 3);
     let result = {};
     keys.forEach((key, index) => result[key] = `${bar[index]}`);
+    // injuryKeys.forEach((key, index) => result[key] = `${baz[index]}`);
     const data = {
         module: "PLAYER",
         tab: "ATTRIBUTES",
