@@ -3,7 +3,7 @@ const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
-const generatePlayer = require("./app/helpers/playerGenerator");
+const {generatePlayer, runBatch} = require("./app/helpers/playerGenerator");
 const retirementCheck = require("./app/helpers/retirementCheck");
 
 require("dotenv").config();
@@ -83,6 +83,15 @@ const dedueCommand = (prompt, msg) => {
         msg.author.send("Generating a new player data.");
       } else {
         console.log("Generating a player data");
+      }
+      break;
+
+    case "runbatch":
+      runBatch(words[1]);
+      if(process.env.environment === "PRODUCTION") {
+        msg.author.send(`Running batch No. ${words[1]}`);
+      } else {
+        console.log(`Running batch No. ${words[1]}`);
       }
       break;
     
