@@ -240,23 +240,29 @@ const updateValues = (values, delta) => {
   const parsedValues = JSON.parse(values);
   let newAttributes = parsedValues.find(page => page.tab === 'ATTRIBUTES').data;
   let newBadges = parsedValues.find(page => page.tab === 'BADGES').data;
-  const randFiveAttr = _.sampleSize(keys, 5);
-  const randFiveBadges = _.sampleSize(badges, 5);
-  console.log('foo', randFiveAttr, randFiveBadges);
-  randFiveAttr.forEach(key => {
-    newAttributes[key] = `${_.clamp(parseInt(newAttributes[key]) + deltas[delta]*getRandomArbitrary(15, 45), 0, 222)}`;
+  const attrDelta = _.sampleSize(keys, 5).map(key => ({ key, value: deltas[delta]*getRandomArbitrary(15, 45)}));
+  const badgeDelta = _.sampleSize(badges, 5).map(key => ({ key, value: deltas[delta]}));
+  attrDelta.forEach(({key, value}) => {
+    newAttributes[key] = `${_.clamp(parseInt(newAttributes[key]) + value, 0, 222)}`;
   });
-  randFiveBadges.forEach(key => {
-    newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + deltas[delta], 0, 4)}`;
+  badgeDelta.forEach(({ key, value }) => {
+    newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
   });
   let newValues = parsedValues;
   newValues[1].data = newAttributes;
   newValues[2].data = newBadges;
-  console.log('newData', newValues);
-
+  return ({
+    newValues,
+    attrDelta,
+    badgeDelta,
+  });
 };
 
-function runBatch(batchNum = 0) {
+function toDeltaString(valueDelta) {
+  return valueDelta.map(({key, value}) => `${key}: ${value}`).join(',  ');
+};
+
+function runBatch(batchNum) {
   const doc = new GoogleSpreadsheet(
     "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
   );
@@ -277,11 +283,21 @@ function runBatch(batchNum = 0) {
       });
     });
     playersToBatch.then(rows => {
-      return rows.map(row => {
+      const newRows = rows.map(row => {
         const data = row.Values;
         const delta = row.Delta;
-        updateValues(data, delta);
+        const { newValues, attrDelta, badgeDelta } = updateValues(data, delta) || {};
+        return ({
+            ...row,
+            Values: JSON.stringify(newValues), 
+            Batch: parseInt(row.Batch) + 1,
+            PrevDelta: row.Delta,
+            DeltaValues: `${toDeltaString(attrDelta)}; ${toDeltaString(badgeDelta)}`
+          }); 
       });
+      return (async () => {
+        await genPlayers.addRows(newRows);
+      })();
     });
   })();
 }
@@ -321,8 +337,10 @@ function generatePlayer(playerType = chooseOne(["guard", "wing", "big"]), addToS
               Wingspan: formattedWingspan, 
               Values: JSON.stringify(player), 
               Role: playerType,
-              Batch: "0",
-              Delta: "neutral"
+              Batch: 0,
+              Delta: "neutral",
+              PrevDelta: "N/A",
+              DeltaValues: "N/A"
             });
             if(!!addToSheet) {
                 await playersSheet.addRow({Name: name, Position: randomPosition, Height: formattedHeight, Weight: genWeight, Team: "Rookie",  Age: "0"  })
