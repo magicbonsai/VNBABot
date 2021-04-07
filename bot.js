@@ -94,7 +94,7 @@ const dedueCommand = (prompt, msg) => {
         console.log(`Running batch No. ${words[1]}`);
       }
       break;
-    
+    // TODO: Figure out a DRY solution for this prod/dev stuff
     case "retirement":
       retirementCheck();
       break;
