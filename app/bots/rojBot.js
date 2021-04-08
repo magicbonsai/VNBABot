@@ -6,7 +6,7 @@ require("dotenv").config();
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const doc = new GoogleSpreadsheet(
-  "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
+  process.env.GOOGLE_SHEETS_KEY
 );
 const rwc = require("random-weighted-choice");
 const faker = require("faker");

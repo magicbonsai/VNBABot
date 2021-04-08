@@ -15,7 +15,7 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
 const doc = new GoogleSpreadsheet(
-  "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
+  process.env.GOOGLE_SHEETS_KEY
 );
 const count = 50;
 const timestamps = [];
