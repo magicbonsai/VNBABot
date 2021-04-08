@@ -288,9 +288,8 @@ function toDeltaString(valueDelta) {
 };
 
 function runBatch(batchNum) {
-  // WIP: need to remove this from code and into env variables
   const doc = new GoogleSpreadsheet(
-    "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
+    process.env.GOOGLE_SHEETS_KEY
   );
   const {
     generatedPlayers: genPlayersId,
@@ -333,9 +332,8 @@ function runBatch(batchNum) {
 }
 
 function generatePlayer(playerType = chooseOne(["guard", "wing", "big"]), addToSheet) {
-    // WIP: need to remove this from code and into env variables
     const doc = new GoogleSpreadsheet(
-        "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
+      process.env.GOOGLE_SHEETS_KEY
       );
     const {
         players: playersId,

@@ -3,7 +3,7 @@ const { GoogleSpreadsheet } = require("google-spreadsheet");
 const { sheetIds } = require("./sheetHelper");
 
 const doc = new GoogleSpreadsheet(
-  "1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA"
+  process.env.GOOGLE_SHEETS_KEY
 );
 
 function rosterCheckCommand(msg = {}) {
