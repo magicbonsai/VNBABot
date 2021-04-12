@@ -14,9 +14,6 @@ const { getAverageColor } = require("fast-average-color-node");
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
-const doc = new GoogleSpreadsheet(
-  process.env.GOOGLE_SHEETS_KEY
-);
 const count = 50;
 const timestamps = [];
 const startPositionPercent = 5;
@@ -131,6 +128,9 @@ function validateName(playerName) {
 }
 
 function updateRawStats(data, gameId) {
+  const doc = new GoogleSpreadsheet(
+    process.env.GOOGLE_SHEETS_KEY
+  );
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
