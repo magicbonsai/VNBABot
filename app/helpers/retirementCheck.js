@@ -4,10 +4,6 @@ const rwc = require('random-weighted-choice');
 const { sheetIds } = require("./sheetHelper");
 const { postRojTweet } = require("./tweetHelper")
 
-const doc = new GoogleSpreadsheet(
-  process.env.GOOGLE_SHEETS_KEY
-);
-
 const weightsFive = [
     {
         id: "yes",
@@ -43,6 +39,9 @@ const weightsSeven = [
 
 
 function retirementCalculator() {
+    const doc = new GoogleSpreadsheet(
+      process.env.GOOGLE_SHEETS_KEY
+    );
     (async function main() {
       await doc.useServiceAccountAuth({
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
