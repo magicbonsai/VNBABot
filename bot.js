@@ -3,7 +3,7 @@ const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
-const {generatePlayer, runBatch} = require("./app/helpers/playerGenerator");
+const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const retirementCheck = require("./app/helpers/retirementCheck");
 
 require("dotenv").config();
@@ -16,7 +16,6 @@ const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 
 // Main switch statement for commands
 const dedueCommand = (prompt, msg) => {
-
   const words = prompt.split(" ");
 
   // Runs slots using a server's custom emojis
@@ -51,10 +50,9 @@ const dedueCommand = (prompt, msg) => {
 
     case "vnbahelp":
       msg.react(`✉`);
-      if(process.env.environment === "DEVELOPMENT") {
-        msg.author.send(devDocs)
-      }
-      else {
+      if (process.env.environment === "DEVELOPMENT") {
+        msg.author.send(devDocs);
+      } else {
         msg.author.send(docs);
       }
       break;
@@ -79,7 +77,7 @@ const dedueCommand = (prompt, msg) => {
 
     case "generateplayer":
       generatePlayer(words[1], words[2]);
-      if(process.env.environment === "PRODUCTION") {
+      if (process.env.environment === "PRODUCTION") {
         msg.author.send("Generating a new player data.");
       } else {
         console.log("Generating a player data");
@@ -88,7 +86,7 @@ const dedueCommand = (prompt, msg) => {
 
     case "runbatch":
       runBatch(words[1]);
-      if(process.env.environment === "PRODUCTION") {
+      if (process.env.environment === "PRODUCTION") {
         msg.author.send(`Running batch No. ${words[1]}`);
       } else {
         console.log(`Running batch No. ${words[1]}`);
@@ -123,21 +121,28 @@ client.login(process.env.BOT_TOKEN);
 
 const job = new CronJob("0 15 * * *", function() {
   //will run at 11:00 AM everyday
-  if(!!process.env.DAILY_TWEETS) {
+  if (!!process.env.DAILY_TWEETS) {
     runRoj();
   }
 });
 
-const job_two = new CronJob("0 17 * * *", function() {
+const job_two = new CronJob("0 16 * * *", function() {
   //will run at 2:00 PM everyday
-  if(!!process.env.DAILY_TWEETS) {
+  if (!!process.env.DAILY_TWEETS) {
     runRoj();
   }
 });
 
-const job_three = new CronJob("0 19 * * *", function() {
+const job_three = new CronJob("0 17 * * *", function() {
   //will run at 2:00 PM everyday
-  if(!!process.env.DAILY_TWEETS) {
+  if (!!process.env.DAILY_TWEETS) {
+    runRoj();
+  }
+});
+
+const job_four = new CronJob("0 18 * * *", function() {
+  //will run at 2:00 PM everyday
+  if (!!process.env.DAILY_TWEETS) {
     runRoj();
   }
 });
@@ -145,3 +150,4 @@ const job_three = new CronJob("0 19 * * *", function() {
 job.start();
 job_two.start();
 job_three.start();
+job_four.start();

@@ -5,15 +5,12 @@ const generatePlayer = require("../helpers/playerGenerator");
 require("dotenv").config();
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const doc = new GoogleSpreadsheet(
-  process.env.GOOGLE_SHEETS_KEY
-);
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
 const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
 
 const playerTypes = ["guard", "wing", "big"];
-
 
 function runRoj(setTweet) {
   (async function main() {
@@ -27,10 +24,9 @@ function runRoj(setTweet) {
     const news = sheets[sheetIds.news];
     const players = sheets[sheetIds.players];
     const rojUpdates = sheets[sheetIds.updates];
-    
-    // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
-    const validTeams = (process.env.VALID_TEAMS || []).split(',');
 
+    // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
+    const validTeams = (process.env.VALID_TEAMS || []).split(",");
 
     const getVNBANewsWeights = news.getRows().then(rows => {
       return rows.map(row => {
@@ -43,18 +39,18 @@ function runRoj(setTweet) {
 
     getVNBANewsWeights.then(newsWeights => {
       players.getRows().then(playerRows => {
-        const filteredPlayers = playerRows.filter(
-          player => validTeams.includes(player.Team)
+        const filteredPlayers = playerRows.filter(player =>
+          validTeams.includes(player.Team)
         );
 
-        const chosenNum = randomFloor(filteredPlayers.length - 1);
-        const chosenNumTwo = randomFloor(filteredPlayers.length - 1);
+        const chosenNum = randomFloor(filteredPlayers.length);
+        const chosenNumTwo = randomFloor(filteredPlayers.length);
         const chosen = filteredPlayers[chosenNum];
         const chosenTwo = filteredPlayers[chosenNumTwo];
         const result = setTweet || rwc(newsWeights);
         const status = newsRoulette(result, chosen, chosenTwo, rojUpdates);
         status.then(toPost => {
-          if(process.env.ENVIRONMENT === "PRODUCTION") {
+          if (process.env.ENVIRONMENT === "PRODUCTION") {
             postRojTweet(toPost);
           }
           console.log(toPost);
@@ -73,7 +69,9 @@ const rojEvents = {
       // logic goes here
       return `It appears that ${
         player.Name
-      } has been ill with the flu an will now miss the next ${upToNum(2)} games.`;
+      } has been ill with the flu an will now miss the next ${upToNum(
+        2
+      )} games.`;
     }
   },
 
@@ -123,13 +121,13 @@ const rojEvents = {
   concussion: {
     valid: true,
     fn: function(player) {
-    return `${player.Name} of the ${
-      player.Team
-    } has been placed in the VNBA concussion protocal and is expected to miss the next ${upToNum(
-      3
-    )} games as he recovers.`;
-  }
-},
+      return `${player.Name} of the ${
+        player.Team
+      } has been placed in the VNBA concussion protocal and is expected to miss the next ${upToNum(
+        3
+      )} games as he recovers.`;
+    }
+  },
 
   "Sore Hamstring": {
     valid: true,
@@ -158,15 +156,15 @@ const rojEvents = {
   "New FA": {
     valid: true,
     fn: function() {
-    
       return `${faker.name.firstName(
         0
       )} ${faker.name.lastName()}, who has been playing basketball in the country of\
-      ${faker.address.country()}, has officially declared for the VNBA season ${process.env.SEASON + 1} draft.`;
+      ${faker.address.country()}, has officially declared for the VNBA season ${process
+        .env.SEASON + 1} draft.`;
     }
   },
 
-  // Draft Prospect 
+  // Draft Prospect
 
   draft: {
     valid: false,
@@ -210,7 +208,9 @@ const rojEvents = {
   hotzone: {
     valid: true,
     fn: function(player) {
-      return `According to sources, ${player.Name} of the ${player.Team} has been shooting hot under this zone: ${randomHotZone()}`
+      return `According to sources, ${player.Name} of the ${
+        player.Team
+      } has been shooting hot under this zone: ${randomHotZone()}`;
     }
   },
 
@@ -225,7 +225,9 @@ const rojEvents = {
         player.Team
       } organization for some time now and has now formally requested a trade to a new team. The ${
         player.Team
-      } are expected to move ${player.Name} within the next ${upToNum(3)} games.`;
+      } are expected to move ${player.Name} within the next ${upToNum(
+        3
+      )} games.`;
     }
   },
 
@@ -263,7 +265,7 @@ const rojEvents = {
 
   // Inconsequential
 
-  advice:{ 
+  advice: {
     valid: false,
     fn: async function(player) {
       return `Yesterday I sat down with ${player.Name} of the ${
@@ -284,7 +286,7 @@ const rojEvents = {
     }
   },
 
-  interview: { 
+  interview: {
     valid: false,
     fn: async function(player) {
       return `The ${player.Team}, ${
@@ -360,9 +362,7 @@ const rojEvents = {
         player.Team
       } had a few words for ${playerTwo.Name} of the ${
         playerTwo.Team
-      }: '${await fetch(
-        "https://insult.mattbas.org/api/insult.json"
-      )
+      }: '${await fetch("https://insult.mattbas.org/api/insult.json")
         .then(response => response.json())
         .then(obj => obj.insult)}'`;
     }
@@ -371,7 +371,7 @@ const rojEvents = {
 
 async function newsRoulette(event, player, playerTwo, rojUpdatesSheet) {
   let quote = "no news today";
-  const {valid, fn} = rojEvents[event];
+  const { valid, fn } = rojEvents[event];
   const date = new Date().toLocaleString().split(",")[0];
   quote = fn(player, playerTwo);
 
@@ -411,7 +411,7 @@ const randomHotZone = () => {
     "Three Left-Center",
     "Three Middle",
     "Three Right-Center",
-    "Three Right",
+    "Three Right"
   ];
 
   return chooseOne(zones);
