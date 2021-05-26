@@ -140,7 +140,7 @@ const job_three = new CronJob("0 17 * * *", function() {
   }
 });
 
-const job_three = new CronJob("0 18 * * *", function() {
+const job_four = new CronJob("0 18 * * *", function() {
   //will run at 2:00 PM everyday
   if (!!process.env.DAILY_TWEETS) {
     runRoj();
