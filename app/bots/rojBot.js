@@ -1,7 +1,7 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
 const fetch = require("node-fetch");
-const _ = require('lodash');
+const _ = require("lodash");
 const generatePlayer = require("../helpers/playerGenerator");
 require("dotenv").config();
 
@@ -14,7 +14,7 @@ faker.setLocale("en");
 const playerTypes = ["guard", "wing", "big"];
 
 function runRoj(team, setTweet) {
-  const teamToUse = team ? team : _.sample(VALID_TEAMS);
+  const teamToUse = team ? team : _.sample(process.env.VALID_TEAMS);
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -42,19 +42,23 @@ function runRoj(team, setTweet) {
     });
 
     const getFANewsWeights = news.getRows().then(rows => {
-      return rows.filter(row => {
-        return row.isBoost;
-      }).map(row => {
-        return {
-          id: row.event,
-          weight: parseInt(row.prob)
-        };
-      })
+      return rows
+        .filter(row => {
+          return row.isBoost;
+        })
+        .map(row => {
+          return {
+            id: row.event,
+            weight: parseInt(row.prob)
+          };
+        });
     });
 
-    players.getRows.then(playerRows => {
-      const teamPlayers = playerRows.filter(player => player.Team === teamToUse);
-      const faPlayers = playerRows.filter(player => player.Team === 'FA');
+    players.getRows().then(playerRows => {
+      const teamPlayers = playerRows.filter(
+        player => player.Team === teamToUse
+      );
+      const faPlayers = playerRows.filter(player => player.Team === "FA");
       const weights = [
         {
           id: "team",
@@ -65,24 +69,28 @@ function runRoj(team, setTweet) {
           weight: 13 - teamPlayers.length
         }
       ];
-      const { 
-        playersToUse, 
-        getNewsWeights 
-      } = rwc(weights) === 'team' ? 
-        { 
-          playersToUse: teamPlayers, 
-          getNewsWeights: getVNBANewsWeights
-        } :
-        {
-          playersToUse: faPlayers, 
-          getNewsWeights: getFANewsWeights
-        };
+      const { playersToUse, getNewsWeights } =
+        rwc(weights) === "team"
+          ? {
+              playersToUse: teamPlayers,
+              getNewsWeights: getVNBANewsWeights
+            }
+          : {
+              playersToUse: faPlayers,
+              getNewsWeights: getFANewsWeights
+            };
 
       getNewsWeights.then(newsWeights => {
         const chosenPlayer = _.sample(playersToUse);
         const chosenPlayerTwo = _.sample(playersToUse);
         const result = setTweet || rwc(newsWeights);
-        const status = newsRoulette(result, chosenPlayer, chosenPlayerTwo, rojUpdates, trainingRegime);
+        const status = newsRoulette(
+          result,
+          chosenPlayer,
+          chosenPlayerTwo,
+          rojUpdates,
+          trainingRegime
+        );
         status.then(toPost => {
           if (process.env.ENVIRONMENT === "PRODUCTION") {
             postRojTweet(toPost);
