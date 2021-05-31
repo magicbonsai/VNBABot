@@ -48,7 +48,7 @@ const dedueCommand = (prompt, msg) => {
       // scrape(words[1]);
       break;
 
-    case "vnbahelp":
+    case "help":
       msg.react(`✉`);
       if (process.env.environment === "DEVELOPMENT") {
         msg.author.send(devDocs);
@@ -119,35 +119,66 @@ client.on("message", msg => {
 
 client.login(process.env.BOT_TOKEN);
 
+let teams = process.env.VALID_TEAMS;
+
+const preJob = new CronJob("0 14 * * *", function() {
+  _.shuffle(teams);
+});
+
 const job = new CronJob("0 15 * * *", function() {
-  //will run at 11:00 AM everyday
   if (!!process.env.DAILY_TWEETS) {
-    runRoj();
+    runRoj(teams[0]);
   }
 });
 
-const job_two = new CronJob("0 16 * * *", function() {
-  //will run at 2:00 PM everyday
+const job_two = new CronJob("30 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    runRoj();
+    runRoj(teams[1]);
   }
 });
 
-const job_three = new CronJob("0 17 * * *", function() {
-  //will run at 2:00 PM everyday
+const job_three = new CronJob("0 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    runRoj();
+    runRoj(teams[2]);
   }
 });
 
-const job_four = new CronJob("0 18 * * *", function() {
-  //will run at 2:00 PM everyday
+const job_four = new CronJob("30 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    runRoj();
+    runRoj(teams[3]);
   }
 });
 
+const job_five = new CronJob("0 17 * * *", function() {
+  if (!!process.env.DAILY_TWEETS) {
+    runRoj(teams[4]);
+  }
+});
+
+const job_six = new CronJob("30 17 * * *", function() {
+  if (!!process.env.DAILY_TWEETS) {
+    runRoj(teams[5]);
+  }
+});
+
+const job_seven = new CronJob("0 18 * * *", function() {
+  if (!!process.env.DAILY_TWEETS) {
+    runRoj(teams[6]);
+  }
+});
+
+const job_eight = new CronJob("30 18 * * *", function() {
+  if (!!process.env.DAILY_TWEETS) {
+    runRoj('FA');
+  }
+});
+
+preJob.start();
 job.start();
 job_two.start();
 job_three.start();
 job_four.start();
+job_five.start();
+job_six.start();
+job_seven.start();
+job_eight.start();

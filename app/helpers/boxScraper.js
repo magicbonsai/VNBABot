@@ -120,7 +120,6 @@ function validateName(playerName) {
       default:
         newName.push(strArr[i]);
         break;
-
     }
     prevChar = strArr[i];
   }
@@ -128,9 +127,7 @@ function validateName(playerName) {
 }
 
 function updateRawStats(data, gameId) {
-  const doc = new GoogleSpreadsheet(
-    process.env.GOOGLE_SHEETS_KEY
-  );
+  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
