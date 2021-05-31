@@ -3,7 +3,7 @@
 VNBAbot is a discord bot.  It handles box score generation from clips of NBA2k20 box scores, automated tweet generation for a twitter bot, and other minor tasks.
 
 ## Usage
-  $vnbahelp: Return help docs for VNBABot \
+  $help: Return help docs for VNBABot \
   $tweet: run an automated Roj tweet \
   $roj [message] (dms only): Send a tweet via the VNBA Roj account \
   $vnba [message] (dms only): Send a tweet via the VNBA Smithy account \

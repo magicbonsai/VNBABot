@@ -10,7 +10,7 @@ const help =
 
 const devHelp = 
   "```This is the VNBA Bot (Development).  Here's what I can do:\n\n\
-  $tweet: run an random Roj tweet\n\
+  $tweet [team, tweetType]: run an random Roj tweet\n\
   $roj [message] (dms only): Send a tweet via the VNBA Roj account\n\
   $vnba [message] (dms only): Send a tweet via the VNBA Smithy account\n\
   $scrape [video url] (2K box scores only): Run the box score scraper on a NBA2K20 box score\n\

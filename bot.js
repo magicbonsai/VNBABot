@@ -48,7 +48,7 @@ const dedueCommand = (prompt, msg) => {
       // scrape(words[1]);
       break;
 
-    case "vnbahelp":
+    case "help":
       msg.react(`✉`);
       if (process.env.environment === "DEVELOPMENT") {
         msg.author.send(devDocs);
@@ -118,6 +118,8 @@ client.on("message", msg => {
 //Main bot loop
 
 client.login(process.env.BOT_TOKEN);
+
+let teams = process.env.VALID_TEAMS;
 
 const job = new CronJob("0 15 * * *", function() {
   //will run at 11:00 AM everyday

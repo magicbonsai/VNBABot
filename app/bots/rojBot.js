@@ -1,6 +1,7 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
 const fetch = require("node-fetch");
+const _ = require('lodash');
 const generatePlayer = require("../helpers/playerGenerator");
 require("dotenv").config();
 
@@ -12,7 +13,8 @@ faker.setLocale("en");
 
 const playerTypes = ["guard", "wing", "big"];
 
-function runRoj(setTweet) {
+function runRoj(team, setTweet) {
+  const teamToUse = team ? team : _.sample(VALID_TEAMS);
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -23,7 +25,9 @@ function runRoj(setTweet) {
     const sheets = doc.sheetsById;
     const news = sheets[sheetIds.news];
     const players = sheets[sheetIds.players];
+
     const rojUpdates = sheets[sheetIds.updates];
+    const trainingRegime = sheets[sheetIds.trainingRegime];
 
     // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
     const validTeams = (process.env.VALID_TEAMS || []).split(",");
@@ -37,18 +41,48 @@ function runRoj(setTweet) {
       });
     });
 
-    getVNBANewsWeights.then(newsWeights => {
-      players.getRows().then(playerRows => {
-        const filteredPlayers = playerRows.filter(player =>
-          validTeams.includes(player.Team)
-        );
+    const getFANewsWeights = news.getRows().then(rows => {
+      return rows.filter(row => {
+        return row.isBoost;
+      }).map(row => {
+        return {
+          id: row.event,
+          weight: parseInt(row.prob)
+        };
+      })
+    });
 
-        const chosenNum = randomFloor(filteredPlayers.length);
-        const chosenNumTwo = randomFloor(filteredPlayers.length);
-        const chosen = filteredPlayers[chosenNum];
-        const chosenTwo = filteredPlayers[chosenNumTwo];
+    players.getRows.then(playerRows => {
+      const teamPlayers = playerRows.filter(player => player.Team === teamToUse);
+      const faPlayers = playerRows.filter(player => player.Team === 'FA');
+      const weights = [
+        {
+          id: "team",
+          weight: teamPlayers.length
+        },
+        {
+          id: "fa",
+          weight: 13 - teamPlayers.length
+        }
+      ];
+      const { 
+        playersToUse, 
+        getNewsWeights 
+      } = rwc(weights) === 'team' ? 
+        { 
+          playersToUse: teamPlayers, 
+          getNewsWeights: getVNBANewsWeights
+        } :
+        {
+          playersToUse: faPlayers, 
+          getNewsWeights: getFANewsWeights
+        };
+
+      getNewsWeights.then(newsWeights => {
+        const chosenPlayer = _.sample(playersToUse);
+        const chosenPlayerTwo = _.sample(playersToUse);
         const result = setTweet || rwc(newsWeights);
-        const status = newsRoulette(result, chosen, chosenTwo, rojUpdates);
+        const status = newsRoulette(result, chosenPlayer, chosenPlayerTwo, rojUpdates, trainingRegime);
         status.then(toPost => {
           if (process.env.ENVIRONMENT === "PRODUCTION") {
             postRojTweet(toPost);
@@ -57,6 +91,27 @@ function runRoj(setTweet) {
         });
       });
     });
+
+    // getVNBANewsWeights.then(newsWeights => {
+    //   players.getRows().then(playerRows => {
+    //     const filteredPlayers = playerRows.filter(player =>
+    //       validTeams.includes(player.Team)
+    //     );
+
+    //     const chosenNum = randomFloor(filteredPlayers.length);
+    //     const chosenNumTwo = randomFloor(filteredPlayers.length);
+    //     const chosen = filteredPlayers[chosenNum];
+    //     const chosenTwo = filteredPlayers[chosenNumTwo];
+    //     const result = setTweet || rwc(newsWeights);
+    //     const status = newsRoulette(result, chosen, chosenTwo, rojUpdates);
+    //     status.then(toPost => {
+    //       if (process.env.ENVIRONMENT === "PRODUCTION") {
+    //         postRojTweet(toPost);
+    //       }
+    //       console.log(toPost);
+    //     });
+    //   });
+    // });
   })();
 }
 
