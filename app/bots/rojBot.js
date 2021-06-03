@@ -14,7 +14,8 @@ faker.setLocale("en");
 const playerTypes = ["guard", "wing", "big"];
 
 function runRoj(team, setTweet) {
-  const teamToUse = team ? team : _.sample(process.env.VALID_TEAMS);
+  const validTeams = (process.env.VALID_TEAMS || []).split(",");
+  const teamToUse = team ? team : _.sample(validTeams);
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -30,7 +31,6 @@ function runRoj(team, setTweet) {
     const trainingRegime = sheets[sheetIds.trainingRegime];
 
     // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
-    const validTeams = (process.env.VALID_TEAMS || []).split(",");
 
     const getVNBANewsWeights = news.getRows().then(rows => {
       return rows.map(row => {
@@ -99,27 +99,6 @@ function runRoj(team, setTweet) {
         });
       });
     });
-
-    // getVNBANewsWeights.then(newsWeights => {
-    //   players.getRows().then(playerRows => {
-    //     const filteredPlayers = playerRows.filter(player =>
-    //       validTeams.includes(player.Team)
-    //     );
-
-    //     const chosenNum = randomFloor(filteredPlayers.length);
-    //     const chosenNumTwo = randomFloor(filteredPlayers.length);
-    //     const chosen = filteredPlayers[chosenNum];
-    //     const chosenTwo = filteredPlayers[chosenNumTwo];
-    //     const result = setTweet || rwc(newsWeights);
-    //     const status = newsRoulette(result, chosen, chosenTwo, rojUpdates);
-    //     status.then(toPost => {
-    //       if (process.env.ENVIRONMENT === "PRODUCTION") {
-    //         postRojTweet(toPost);
-    //       }
-    //       console.log(toPost);
-    //     });
-    //   });
-    // });
   })();
 }
 

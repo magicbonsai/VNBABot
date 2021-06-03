@@ -1,6 +1,7 @@
 const Discord = require("discord.js");
 const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
+const _ = require("lodash");
 const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
@@ -21,7 +22,7 @@ const dedueCommand = (prompt, msg) => {
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
     case "tweet":
-      runRoj(words[1]);
+      runRoj(words[1], words[2]);
       break;
 
     case "smithy":
@@ -119,56 +120,65 @@ client.on("message", msg => {
 
 client.login(process.env.BOT_TOKEN);
 
-let teams = process.env.VALID_TEAMS;
+let teams = process.env.VALID_TEAMS.split(',');
 
 const preJob = new CronJob("0 14 * * *", function() {
+    console.log('teams value', teams);
   _.shuffle(teams);
 });
 
 const job = new CronJob("0 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
+    console.log('teams value', teams);
     runRoj(teams[0]);
   }
 });
 
 const job_two = new CronJob("30 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
+    console.log('teams value', teams);
     runRoj(teams[1]);
   }
 });
 
 const job_three = new CronJob("0 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
+    console.log('teams value', teams);
     runRoj(teams[2]);
   }
 });
 
 const job_four = new CronJob("30 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
+    console.log('teams value', teams);
     runRoj(teams[3]);
   }
 });
 
 const job_five = new CronJob("0 17 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
+    console.log('teams value', teams);
     runRoj(teams[4]);
   }
 });
 
 const job_six = new CronJob("30 17 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
+    console.log('teams value', teams);
     runRoj(teams[5]);
   }
 });
 
 const job_seven = new CronJob("0 18 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
+    console.log('teams value', teams);
     runRoj(teams[6]);
   }
 });
 
 const job_eight = new CronJob("30 18 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
+    console.log('teams value', teams);
     runRoj('FA');
   }
 });

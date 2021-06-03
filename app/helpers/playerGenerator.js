@@ -192,7 +192,9 @@ function generateClass(playerType) {
     const genHeight = rn({ mean: height, dev: hDeviation });
     const genWeight = Math.floor(rn({ mean: weight, dev: wDeviation }));
     // wingspan numbers 0.94 to 1.14 ratio to height, mean is 1.04, stdev 0.0333333333
-    const genWingspan = _.clamp(rn({ mean: 1.04, dev: 0.05}), 0.94, 1.14) * genHeight;
+    // const genWingspan = _.clamp(rn({ mean: 1.04, dev: 0.05}), 0.94, 1.14) * genHeight;
+    // wingspan numbers from 0 to 100, mean 50, stdev 15
+    const genWingspan = _.clamp(rn({ mean: 55, dev: 15}), 0, 100);
 
     const data = {
         module: "PLAYER",
@@ -200,7 +202,6 @@ function generateClass(playerType) {
         data: {
             HEIGHT_CM: `${Math.floor(genHeight)}`,
             WEIGHT_LBS: `${genWeight}`,
-            WINGSPAN_CM: `${Math.floor(genWingspan)}`,
         }
     }
     return ({
@@ -245,14 +246,16 @@ const updateValues = (values, delta) => {
   const badgesTab = valuesFromJSON.find(page => page.tab === 'BADGES')
   let newAttributes = attributesTab.data;
   let newBadges = badgesTab.data;
+  const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
   const attrDelta = _.sampleSize(keys, 5).map(key => ({ key, value: deltas[delta]*getRandomArbitrary(15, 45)}));
-  const badgeDelta = _.sampleSize(badges, 5).map(key => ({ key, value: deltas[delta]}));
+  const badgeKeys = delta = deltas.up ? badges : filteredBadgeKeys;
+  const badgeDelta = _.sampleSize(badgeKeys, 5).map(key => ({ key, value: deltas[delta]}));
   attrDelta.forEach(({key, value}) => {
     newAttributes[key] = `${_.clamp(parseInt(newAttributes[key]) + value, 0, 222)}`;
   });
   badgeDelta.forEach(({ key, value }) => {
     newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
-  });
+  }); 
   const newValues = [
     vitalsTab,
     {
@@ -353,7 +356,7 @@ function generatePlayer(playerType = chooseOne(["guard", "wing", "big"]), addToS
         const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
         const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(playerType);
         const formattedHeight = toFtInFromCm(genHeight);
-        const formattedWingspan = toFtInFromCm(genWingspan);
+        const formattedWingSpan = toFtInFromCm(((genWingspan/100) * 0.2 + 0.94) * genHeight);
         const player = [vitals, attributes, badges];
         const randomPosition = chooseOne(playerTypeNames[playerType]);
         (async () => {
@@ -364,7 +367,8 @@ function generatePlayer(playerType = chooseOne(["guard", "wing", "big"]), addToS
               Position: randomPosition, 
               Height: formattedHeight, 
               Weight: genWeight, 
-              Wingspan: formattedWingspan, 
+              Wingspan: formattedWingSpan, 
+              WingspanNo: genWingspan,
               Values: JSON.stringify(player), 
               Role: playerType,
               Level: 1,
@@ -379,7 +383,7 @@ function generatePlayer(playerType = chooseOne(["guard", "wing", "big"]), addToS
         return ({
             height: formattedHeight,
             weight: genWeight,
-            wingspan: formattedWingspan,
+            wingspan: genWingspan,
             name,
         });
     })();
