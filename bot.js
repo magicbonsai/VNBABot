@@ -134,49 +134,49 @@ const job = new CronJob("0 15 * * *", function() {
   }
 });
 
-const job_two = new CronJob("30 15 * * *", function() {
+const job_two = new CronJob("10 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj(teams[1]);
   }
 });
 
-const job_three = new CronJob("0 16 * * *", function() {
+const job_three = new CronJob("20 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj(teams[2]);
   }
 });
 
-const job_four = new CronJob("30 16 * * *", function() {
+const job_four = new CronJob("30 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj(teams[3]);
   }
 });
 
-const job_five = new CronJob("0 17 * * *", function() {
+const job_five = new CronJob("40 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj(teams[4]);
   }
 });
 
-const job_six = new CronJob("30 17 * * *", function() {
+const job_six = new CronJob("50 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj(teams[5]);
   }
 });
 
-const job_seven = new CronJob("0 18 * * *", function() {
+const job_seven = new CronJob("0 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj(teams[6]);
   }
 });
 
-const job_eight = new CronJob("30 18 * * *", function() {
+const job_eight = new CronJob("10 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj('FA');
