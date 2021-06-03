@@ -123,8 +123,8 @@ client.login(process.env.BOT_TOKEN);
 let teams = process.env.VALID_TEAMS.split(',');
 
 const preJob = new CronJob("0 14 * * *", function() {
-    console.log('teams value', teams);
-  _.shuffle(teams);
+  console.log('teams value', teams);
+  teams = _.shuffle(process.env.VALID_TEAMS.split(','));
 });
 
 const job = new CronJob("0 15 * * *", function() {
