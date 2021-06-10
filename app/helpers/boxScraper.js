@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
-const youtubedl = require("youtube-dl");
+// const youtubedl = require("youtube-dl");
+const youtubedl = require("youtube-dl-exec");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 const ffmpeg = require("fluent-ffmpeg");
@@ -16,8 +17,8 @@ ffmpeg.setFfprobePath(ffprobePath);
 
 const count = 50;
 const timestamps = [];
-const startPositionPercent = 5;
-const endPositionPercent = 95;
+const startPositionPercent = 1;
+const endPositionPercent = 99;
 const addPercent = (endPositionPercent - startPositionPercent) / (count - 1);
 let i = 0;
 const scheduler = createScheduler();
@@ -272,9 +273,8 @@ async function processImages(videoLink) {
 
           img.write(`screenshots/processed/${index + 1}-${file}`, () => {
             counter++;
-
             if (counter >= count * 3) {
-              console.log("finished");
+              console.log("Processing Images...");
               // TODO: this should eventually be removed
               tessImages(videoLink);
               return true;
@@ -433,28 +433,18 @@ async function tessImages(videoLink) {
 // main function
 async function scrape(videoLink) {
   // hook in discord bot for messages
-  const video = youtubedl(videoLink);
 
-  video.on("info", function(info) {
-    console.log("Download started");
-    console.log("filename: " + info._filename);
-    console.log("size: " + info.size);
-  });
-
-  video.on("complete", function complete(info) {
-    console.log("filename: " + info._filename + " already downloaded.");
-  });
-
-  video.on("end", function() {
-    console.log("finished downloading!");
-    // TODO, split function calls of processImages and tessImages away as callbacks within eachother (AZ)
+  youtubedl(videoLink, {
+    output: "myvideo.mp4",
+    noWarnings: true,
+    noCallHome: true,
+    noCheckCertificate: true,
+    preferFreeFormats: true,
+    youtubeSkipDashManifest: true
+  }).then(output => {
+    console.log(output);
     takeScreenshots("myvideo.mp4", videoLink);
-    // processImages();
-    // potentialMemoryManagementFn();
-    // tessImages();
   });
-
-  video.pipe(fs.createWriteStream("myvideo.mp4"));
 }
 
 module.exports = scrape;

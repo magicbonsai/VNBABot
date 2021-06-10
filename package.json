@@ -35,7 +35,8 @@
     "tesseract.js": "^2.1.4",
     "twit": "^2.2.11",
     "twitter-lite": "^0.14.0",
-    "youtube-dl": "^3.0.2"
+    "youtube-dl": "^3.0.2",
+    "youtube-dl-exec": "^1.2.4"
   },
   "engines": {
     "node": "12.11.1",
