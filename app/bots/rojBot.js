@@ -235,9 +235,10 @@ const rojEvents = {
   boost: {
     valid: true,
     fn: function(player) {
+      const { id, value } = randomTrait();
       return `Interesting development, ${player.Name} of the ${
         player.Team
-      } has been putting in extra work at the gym to improve his ${randomTrait()}. (+5)`;
+      } has been putting in extra work at the gym to improve his ${id}. (+${value})`;
     }
   },
 
@@ -481,19 +482,58 @@ const randomHotZone = () => {
 
 const randomTrait = () => {
   const traits = [
-    "Finishing",
-    "Shooting",
-    "Playmaking",
-    "Handles",
-    "Post Game",
-    "Stocks",
-    "Defense",
-    "Rebounding",
-    "Athleticism",
-    "Conditioning",
-    "Strength",
-    "Consistency",
-    "Weight"
+    {
+      id: "Finishing",
+      value: 5
+    },
+    {
+      id: "Shooting",
+      value: 5
+    },
+    {
+      id: "Playmaking",
+      value: 5
+    },
+    {
+      id: "Handles",
+      value: 5
+    },
+    {
+      id: "Post Game",
+      value: 5
+    },
+    {
+      id: "Stocks",
+      value: 5
+    },
+    {
+      id: "Defense",
+      value: 5
+    },
+    {
+      id: "Rebounding",
+      value: 5
+    },
+    {
+      id: "Athleticism",
+      value: 5
+    },
+    {
+      id: "Conditioning",
+      value: 5
+    },
+    {
+      id: "Strength",
+      value: 5
+    },
+    {
+      id: "Strength",
+      value: 5
+    },
+    {
+      id: "Weight",
+      value: 10
+    },
   ];
 
   return chooseOne(traits);
