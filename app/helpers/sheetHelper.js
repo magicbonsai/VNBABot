@@ -5,7 +5,8 @@ const sheetIds = {
   rawStats: "1840998490",
   rosterCheckIn: "319174534",
   generatedPlayers: "526907503",
-  trainingRegime: "33721000"
+  trainingRegime: "33721000",
+  retiredPlayers: "242746550"
 };
 
 module.exports = { sheetIds };

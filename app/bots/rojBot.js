@@ -26,6 +26,7 @@ function runRoj(team, setTweet) {
     const sheets = doc.sheetsById;
     const news = sheets[sheetIds.news];
     const players = sheets[sheetIds.players];
+    const retiredPlayers = sheets[sheetIds.retiredPlayers];
 
     const rojUpdates = sheets[sheetIds.updates];
     const trainingRegime = sheets[sheetIds.trainingRegime];
@@ -83,11 +84,13 @@ function runRoj(team, setTweet) {
       getNewsWeights.then(newsWeights => {
         const chosenPlayer = _.sample(playersToUse);
         const chosenPlayerTwo = _.sample(playersToUse);
+        const chosenRetiree = _.sample(retiredPlayers);
         const result = setTweet || rwc(newsWeights);
         const status = newsRoulette(
           result,
           chosenPlayer,
           chosenPlayerTwo,
+          chosenRetiree,
           rojUpdates,
           trainingRegime
         );
@@ -256,6 +259,23 @@ const rojEvents = {
     }
   },
 
+  signaturePackage: {
+    valid: true,
+    fn: function(player, playerTwo, retiree) {
+      return `It sounds like ${player.Name} of the ${player.Team} 
+        has been reaching out to retired player ${retiree.Name} to potentially rework his 
+        ${_.sample(['shooting form', 'layup package', 'dribbling package'])}`
+    }
+  },
+
+  retiredBadge: {
+    valid: true,
+    fn: function(player, playerTwo, retiree) {
+      return `Retired player ${retiree.Name} has reportedly been mentoring ${player.Name}
+        of the ${player.Team} in one of their Hall of Fame worthy skills. (+1 badge level from the retired players HOF badges)`
+    }
+  },
+
   // Miscellaneous
 
   "Trade Request": {
@@ -411,11 +431,11 @@ const rojEvents = {
   }
 };
 
-async function newsRoulette(event, player, playerTwo, rojUpdatesSheet) {
+async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet) {
   let quote = "no news today";
   const { valid, fn } = rojEvents[event];
   const date = new Date().toLocaleString().split(",")[0];
-  quote = fn(player, playerTwo);
+  quote = fn(player, playerTwo, retiree);
 
   if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
     await rojUpdatesSheet.addRow({
