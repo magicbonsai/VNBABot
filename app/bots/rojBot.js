@@ -82,24 +82,26 @@ function runRoj(team, setTweet) {
             };
 
       getNewsWeights.then(newsWeights => {
-        const chosenPlayer = _.sample(playersToUse);
-        const chosenPlayerTwo = _.sample(playersToUse);
-        const chosenRetiree = _.sample(retiredPlayers);
-        const result = setTweet || rwc(newsWeights);
-        const status = newsRoulette(
-          result,
-          chosenPlayer,
-          chosenPlayerTwo,
-          chosenRetiree,
-          rojUpdates,
-          trainingRegime
-        );
-        status.then(toPost => {
-          if (process.env.ENVIRONMENT === "PRODUCTION") {
-            postRojTweet(toPost);
-          }
-          console.log(toPost);
-        });
+        retiredPlayers.getRows().then(retiredRows => {
+          const chosenPlayer = _.sample(playersToUse);
+          const chosenPlayerTwo = _.sample(playersToUse);
+          const chosenRetiree = _.sample(retiredRows);
+          const result = setTweet || rwc(newsWeights);
+          const status = newsRoulette(
+            result,
+            chosenPlayer,
+            chosenPlayerTwo,
+            chosenRetiree,
+            rojUpdates,
+            trainingRegime
+          );
+          status.then(toPost => {
+            if (process.env.ENVIRONMENT === "PRODUCTION") {
+              postRojTweet(toPost);
+            }
+            console.log(toPost);
+          });
+        })
       });
     });
   })();
@@ -260,20 +262,25 @@ const rojEvents = {
     }
   },
 
-  signaturePackage: {
+  signaturepackage: {
     valid: true,
     fn: function(player, playerTwo, retiree) {
-      return `It sounds like ${player.Name} of the ${player.Team} 
-        has been reaching out to retired player ${retiree.Name} to potentially rework his 
-        ${_.sample(['shooting form', 'layup package', 'dribbling package'])}`
+      return `It sounds like ${player.Name} of the ${
+        player.Team
+      } has been reaching out to retired player ${
+        retiree.Name
+      } to potentially rework his ${_.sample(['shooting form', 'layup package', 'dribbling package'])}`
     }
   },
 
-  retiredBadge: {
+  retiredbadge: {
     valid: true,
     fn: function(player, playerTwo, retiree) {
-      return `Retired player ${retiree.Name} has reportedly been mentoring ${player.Name}
-        of the ${player.Team} in one of their Hall of Fame worthy skills. (+1 badge level from the retired players HOF badges)`
+      return `Retired player ${retiree.Name} has reportedly been mentoring ${
+        player.Name
+      } of the ${
+        player.Team
+      } in one of their Hall of Fame worthy skills. (+1 badge level from the retired players HOF badges)`
     }
   },
 
