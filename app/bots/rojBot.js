@@ -26,6 +26,7 @@ function runRoj(team, setTweet) {
     const sheets = doc.sheetsById;
     const news = sheets[sheetIds.news];
     const players = sheets[sheetIds.players];
+    const retiredPlayers = sheets[sheetIds.retiredPlayers];
 
     const rojUpdates = sheets[sheetIds.updates];
     const trainingRegime = sheets[sheetIds.trainingRegime];
@@ -81,22 +82,26 @@ function runRoj(team, setTweet) {
             };
 
       getNewsWeights.then(newsWeights => {
-        const chosenPlayer = _.sample(playersToUse);
-        const chosenPlayerTwo = _.sample(playersToUse);
-        const result = setTweet || rwc(newsWeights);
-        const status = newsRoulette(
-          result,
-          chosenPlayer,
-          chosenPlayerTwo,
-          rojUpdates,
-          trainingRegime
-        );
-        status.then(toPost => {
-          if (process.env.ENVIRONMENT === "PRODUCTION") {
-            postRojTweet(toPost);
-          }
-          console.log(toPost);
-        });
+        retiredPlayers.getRows().then(retiredRows => {
+          const chosenPlayer = _.sample(playersToUse);
+          const chosenPlayerTwo = _.sample(playersToUse);
+          const chosenRetiree = _.sample(retiredRows);
+          const result = setTweet || rwc(newsWeights);
+          const status = newsRoulette(
+            result,
+            chosenPlayer,
+            chosenPlayerTwo,
+            chosenRetiree,
+            rojUpdates,
+            trainingRegime
+          );
+          status.then(toPost => {
+            if (process.env.ENVIRONMENT === "PRODUCTION") {
+              postRojTweet(toPost);
+            }
+            console.log(toPost);
+          });
+        })
       });
     });
   })();
@@ -232,9 +237,10 @@ const rojEvents = {
   boost: {
     valid: true,
     fn: function(player) {
+      const { id, value } = randomTrait();
       return `Interesting development, ${player.Name} of the ${
         player.Team
-      } has been putting in extra work at the gym to improve his ${randomTrait()}. (+5)`;
+      } has been putting in extra work at the gym to improve his ${id}. (+${value})`;
     }
   },
 
@@ -253,6 +259,28 @@ const rojEvents = {
       return `According to sources, ${player.Name} of the ${
         player.Team
       } has been shooting hot under this zone: ${randomHotZone()}`;
+    }
+  },
+
+  signaturepackage: {
+    valid: true,
+    fn: function(player, playerTwo, retiree) {
+      return `It sounds like ${player.Name} of the ${
+        player.Team
+      } has been reaching out to retired player ${
+        retiree.Name
+      } to potentially rework his ${_.sample(['shooting form', 'layup package', 'dribbling package'])}`
+    }
+  },
+
+  retiredbadge: {
+    valid: true,
+    fn: function(player, playerTwo, retiree) {
+      return `Retired player ${retiree.Name} has reportedly been mentoring ${
+        player.Name
+      } of the ${
+        player.Team
+      } in one of their Hall of Fame worthy skills. (+1 badge level from the retired players HOF badges)`
     }
   },
 
@@ -411,11 +439,11 @@ const rojEvents = {
   }
 };
 
-async function newsRoulette(event, player, playerTwo, rojUpdatesSheet) {
+async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet) {
   let quote = "no news today";
   const { valid, fn } = rojEvents[event];
   const date = new Date().toLocaleString().split(",")[0];
-  quote = fn(player, playerTwo);
+  quote = fn(player, playerTwo, retiree);
 
   if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
     await rojUpdatesSheet.addRow({
@@ -461,19 +489,58 @@ const randomHotZone = () => {
 
 const randomTrait = () => {
   const traits = [
-    "Finishing",
-    "Shooting",
-    "Playmaking",
-    "Handles",
-    "Post Game",
-    "Stocks",
-    "Defense",
-    "Rebounding",
-    "Athleticism",
-    "Conditioning",
-    "Strength",
-    "Consistency",
-    "Weight"
+    {
+      id: "Finishing",
+      value: 5
+    },
+    {
+      id: "Shooting",
+      value: 5
+    },
+    {
+      id: "Playmaking",
+      value: 5
+    },
+    {
+      id: "Handles",
+      value: 5
+    },
+    {
+      id: "Post Game",
+      value: 5
+    },
+    {
+      id: "Stocks",
+      value: 5
+    },
+    {
+      id: "Defense",
+      value: 5
+    },
+    {
+      id: "Rebounding",
+      value: 5
+    },
+    {
+      id: "Athleticism",
+      value: 5
+    },
+    {
+      id: "Conditioning",
+      value: 5
+    },
+    {
+      id: "Strength",
+      value: 5
+    },
+    {
+      id: "Strength",
+      value: 5
+    },
+    {
+      id: "Weight",
+      value: 10
+    },
   ];
 
   return chooseOne(traits);
