@@ -36,7 +36,8 @@
     "twit": "^2.2.11",
     "twitter-lite": "^0.14.0",
     "youtube-dl": "^3.0.2",
-    "youtube-dl-exec": "^1.2.4"
+    "youtube-dl-exec": "^1.2.4",
+    "string-similarity": "^4.0.4"
   },
   "engines": {
     "node": "12.11.1",

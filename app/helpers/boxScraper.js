@@ -11,6 +11,7 @@ const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const { getAverageColor } = require("fast-average-color-node");
+const stringSimilarity = require("string-similarity");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
