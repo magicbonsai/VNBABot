@@ -269,7 +269,7 @@ const rojEvents = {
         player.Team
       } has been reaching out to retired player ${
         retiree.Name
-      } to potentially rework his ${_.sample(['shooting form', 'layup package', 'dribbling package'])}`
+      } to potentially rework his ${_.sample(['shooting form', 'layup package', 'dribbling package'])}.`
     }
   },
 

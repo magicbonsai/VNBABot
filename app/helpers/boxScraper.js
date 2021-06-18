@@ -174,12 +174,14 @@ function updateRawStats(data, gameId) {
             "Game Id": gameId
           });
         });
-
+      
+      const orderedRowsToAdd =  _.sortBy(rowsToAdd, x => x.Team);
+      
       (async () => {
         if (process.env.environment === "DEVELOPMENT") {
-          await console.log("rojRowsToAdd", rowsToAdd);
+          await console.log("rojRowsToAdd", orderedRowsToAdd);
         }
-        await rawStats.addRows(rowsToAdd, { insert: true });
+        await rawStats.addRows(orderedRowsToAdd, { insert: true });
       })();
     });
 
