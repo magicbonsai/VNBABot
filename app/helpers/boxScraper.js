@@ -143,15 +143,18 @@ function updateRawStats(data, gameId) {
 
     players.getRows().then(playerRows => {
       const playerTable = {};
+      const playerKeys = playerRows.map(player => nameToPlayerKey(player.Name));
       playerRows.forEach(player => {
         playerTable[nameToPlayerKey(player.Name)] = player;
       });
       const scrapedData = {};
       data.forEach(player => {
         const sdKey = intialToPlayerKey(player.Player);
-        if (!!playerTable[sdKey]) {
-          if (!scrapedData[sdKey]) {
-            scrapedData[sdKey] = {};
+        const bestMatch = stringSimilarity.findBestMatch(sdKey, playerKeys);
+        
+        if (!!playerTable[bestMatch]) {
+          if (!scrapedData[bestMatch]) {
+            scrapedData[bestMatch] = {};
           }
 
           _.mergeWith(scrapedData[sdKey], player, (objValue, srcValue) => {
