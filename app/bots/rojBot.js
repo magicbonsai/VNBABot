@@ -333,6 +333,13 @@ const rojEvents = {
     }
   },
 
+  wingspan: {
+    valid: true,
+    fn: function(player) {
+      return `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
+    }
+  },
+
   // Inconsequential
 
   advice: {
