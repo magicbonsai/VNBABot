@@ -15,6 +15,13 @@ const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 const runRoj = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 
+const runRojWithIndexCheck = (teams, index) => {
+  if(!teams[index]) {
+    return;
+  }
+  return runRoj(teams[index])
+};
+
 // Main switch statement for commands
 const dedueCommand = (prompt, msg) => {
   const words = prompt.split(" ");
@@ -131,6 +138,7 @@ const job = new CronJob("0 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj(teams[0]);
+    runRojWithIndexCheck(teams, 0);
   }
 });
 
@@ -138,41 +146,42 @@ const job_two = new CronJob("10 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
     runRoj(teams[1]);
+    runRojWithIndexCheck(teams, 1);
   }
 });
 
 const job_three = new CronJob("20 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
-    runRoj(teams[2]);
+    runRojWithIndexCheck(teams, 2);
   }
 });
 
 const job_four = new CronJob("30 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
-    runRoj(teams[3]);
+    runRojWithIndexCheck(teams, 3);
   }
 });
 
 const job_five = new CronJob("40 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
-    runRoj(teams[4]);
+    runRojWithIndexCheck(teams, 4);
   }
 });
 
 const job_six = new CronJob("50 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
-    runRoj(teams[5]);
+    runRojWithIndexCheck(teams, 5);
   }
 });
 
 const job_seven = new CronJob("0 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
-    runRoj(teams[6]);
+    runRojWithIndexCheck(teams, 6);
   }
 });
 
