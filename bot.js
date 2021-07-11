@@ -137,7 +137,6 @@ const preJob = new CronJob("0 14 * * *", function() {
 const job = new CronJob("0 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
-    runRoj(teams[0]);
     runRojWithIndexCheck(teams, 0);
   }
 });
@@ -145,7 +144,6 @@ const job = new CronJob("0 15 * * *", function() {
 const job_two = new CronJob("10 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
     console.log('teams value', teams);
-    runRoj(teams[1]);
     runRojWithIndexCheck(teams, 1);
   }
 });
