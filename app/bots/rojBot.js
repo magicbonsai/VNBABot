@@ -458,7 +458,7 @@ async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet, 
     await rojUpdatesSheet.addRow({
       Date: date,
       Player: player.Name,
-      CurrentTeam: `=VLOOKUP($B2, 'Player List'!$A$1:$P$${listLength}, 6, FALSE)`,
+      "Current Team": `=VLOOKUP($B2, 'Player List'!$A$1:$P$${listLength}, 6, FALSE)`,
       Team: player.Team,
       Event: event,
       Tweet: quote
