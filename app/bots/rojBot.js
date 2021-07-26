@@ -456,12 +456,13 @@ async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet, 
 
   rojUpdatesSheet.getRows().then(rows => {
     const updateListLength = rows.length;
+    console.log('rows', rows.length);
     (async function main () {
       if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
         await rojUpdatesSheet.addRow({
           Date: date,
           Player: player.Name,
-          "Current Team": `=VLOOKUP($B${updateListLength + 1}, 'Player List'!$A$1:$P$${listLength}, 6, FALSE)`,
+          "Current Team": `=VLOOKUP($B${updateListLength + 2}, 'Player List'!$A$1:$P$${listLength}, 6, FALSE)`,
           Team: player.Team,
           Event: event,
           Tweet: quote
