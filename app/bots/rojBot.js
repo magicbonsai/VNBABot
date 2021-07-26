@@ -453,27 +453,18 @@ async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet, 
   const { valid, fn } = rojEvents[event];
   const date = new Date().toLocaleString().split(",")[0];
   quote = fn(player, playerTwo, retiree);
-
-  rojUpdatesSheet.getRows().then(rows => {
-    const updateListLength = rows.length;
-    console.log('rows', rows.length);
-    (async function main () {
-      if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
-        await rojUpdatesSheet.addRow({
-          Date: date,
-          Player: player.Name,
-          "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P$${listLength}, 6, FALSE)`,
-          Team: player.Team,
-          Event: event,
-          Tweet: quote
-        });
-      }
-    })();
-  })
-
-
+    if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
+      await rojUpdatesSheet.addRow({
+        Date: date,
+        Player: player.Name,
+        "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P$${listLength + 1}, 6, FALSE)`,
+        Team: player.Team,
+        Event: event,
+        Tweet: quote
+      });
+    }
   return quote;
-}
+};
 
 const upToNum = num => {
   return Math.ceil(Math.random() * num);
