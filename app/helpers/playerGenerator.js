@@ -314,11 +314,12 @@ function runBatch(batchNum) {
       const newRows = rows.map(row => {
         const data = row.Values;
         const delta = toDelta(row.Overall, row.TargetOverall);
+        const rowOverall = delta == "neutral" ? row.Overall : "";
         console.log('foo', delta);
         const { newValues, attrDelta, badgeDelta, attributeTotal, badgeTotal } = updateValues(data, delta) || {};
         return ({
             ...row,
-            Overall: "",
+            Overall: rowOverall,
             AttributeTotal: attributeTotal,
             BadgeTotal: badgeTotal,
             Values: JSON.stringify(newValues), 
