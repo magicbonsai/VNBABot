@@ -56,7 +56,6 @@ function runRoj(team, setTweet) {
     });
 
     players.getRows().then(playerRows => {
-      const listLength = playerRows.length;
       const teamPlayers = playerRows.filter(
         player => player.Team === teamToUse
       );
@@ -94,7 +93,6 @@ function runRoj(team, setTweet) {
             chosenPlayerTwo,
             chosenRetiree,
             rojUpdates,
-            listLength,
             trainingRegime
           );
           status.then(toPost => {
@@ -448,7 +446,7 @@ const rojEvents = {
   }
 };
 
-async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet, listLength) {
+async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet) {
   let quote = "no news today";
   const { valid, fn } = rojEvents[event];
   const date = new Date().toLocaleString().split(",")[0];
@@ -457,7 +455,7 @@ async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet, 
       await rojUpdatesSheet.addRow({
         Date: date,
         Player: player.Name,
-        "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P$${listLength + 1}, 6, FALSE)`,
+        "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
         Team: player.Team,
         Event: event,
         Tweet: quote
