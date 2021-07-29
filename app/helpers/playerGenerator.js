@@ -248,8 +248,8 @@ const updateValues = (values, delta) => {
   let newBadges = badgesTab.data;
   const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
   const attrDelta = _.sampleSize(keys, 5).map(key => ({ key, value: deltas[delta]*getRandomArbitrary(15, 45)}));
-  const badgeKeys = delta === deltas.up ? badges : filteredBadgeKeys;
-  const badgeSampleSize = delta === deltas.up ? 5 : 3;
+  const badgeKeys = delta == "up" ? badges : filteredBadgeKeys;
+  const badgeSampleSize = delta == "up" ? 5 : 3;
   const badgeDelta = _.sampleSize(badgeKeys, badgeSampleSize).map(key => ({ key, value: deltas[delta]}));
   attrDelta.forEach(({key, value}) => {
     newAttributes[key] = `${_.clamp(parseInt(newAttributes[key]) + value, 0, 222)}`;
