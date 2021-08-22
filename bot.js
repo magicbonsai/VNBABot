@@ -14,6 +14,7 @@ const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
 const runRoj = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
+const R = require("./custom-r-script");
 
 const runRojWithIndexCheck = (teams, index) => {
   if(!teams[index]) {
@@ -32,6 +33,14 @@ const dedueCommand = (prompt, msg) => {
       runRoj(words[1], words[2]);
       break;
 
+    case "r-s":
+      R("ex-sync.R")
+        .data({ givenFunc: "getPlayerComparisons", givenTeam: "Spurs" })
+        .call({ warn: -1 }, (err, d) => {
+          console.log("foo", d);
+        });
+
+      break;
     case "smithy":
       if (msg.channel.type == "dm") {
         msg.reply("Posting on Smithy twitter!");
