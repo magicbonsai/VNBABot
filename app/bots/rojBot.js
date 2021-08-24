@@ -301,6 +301,21 @@ const rojEvents = {
     }
   },
 
+  "Player Dispute": {
+    valid: true,
+    fn: function(player, playerTwo) {
+      return `BREAKING: ${
+        player.Name
+      } and ${
+        playerTwo.Name
+      } of the ${
+        player.Team
+      } have reportedly cited irreconcilable differences with each other and will refuse to play within the next ${
+        upToNum(3)
+      } games unless one or the other is traded before that deadline.`;
+    },
+  },
+
   number: {
     valid: true,
     fn: function(player) {
