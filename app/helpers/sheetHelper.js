@@ -6,7 +6,10 @@ const sheetIds = {
   rosterCheckIn: "319174534",
   generatedPlayers: "526907503",
   trainingRegime: "33721000",
-  retiredPlayers: "242746550"
+  retiredPlayers: "242746550",
+  teamAssets: "395261312",
+  leagueLeaders: "39022674",
+  botCategoryValues: "1550230054",
 };
 
 module.exports = { sheetIds };

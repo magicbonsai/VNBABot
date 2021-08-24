@@ -6,6 +6,7 @@ const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const retirementCheck = require("./app/helpers/retirementCheck");
+const runValuationBot = require("./app/bots/valuationBot");
 
 require("dotenv").config();
 const client = new Discord.Client();
@@ -103,6 +104,10 @@ const dedueCommand = (prompt, msg) => {
     // TODO: Figure out a DRY solution for this prod/dev stuff
     case "retirement":
       retirementCheck();
+      break;
+
+    case "testbot": 
+      runValuationBot();
       break;
 
     default:
