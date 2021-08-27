@@ -116,14 +116,14 @@ const runDLeague = () => {
     const sheets = doc.sheetsById;
     const dLeagueEvents = sheets[sheetIds.dLeague];
     const players = sheets[sheetIds.players];
-    const retiredPlayers = sheets[sheetIds.retiredPlayers];
+    const retiredPlayerSheet = sheets[sheetIds.retiredPlayers];
 
 
     const rojUpdates = sheets[sheetIds.updates]; 
 
     const playerRows = await players.getRows();
-    const retiredPlayers = await retiredPlayers.getRows();
-    const dLeagueWeights = await dLeagueEvents.getRows().map(rows => {
+    const retiredPlayerRows = await retiredPlayerSheet.getRows();
+    const dLeagueWeights = await dLeagueEvents.getRows().then(rows => {
       return rows.map(row => {
         return {
           id: row.event,
@@ -136,7 +136,7 @@ const runDLeague = () => {
     
     const playersToUse = playerRows.filter(player => !!player["D League"]);
     const chosenPlayer = _.sample(playersToUse);
-    const retiree = _.sample(retiredPlayers);
+    const retiree = _.sample(retiredPlayerRows);
 
     const status = dLeagueRoulette(event, chosenPlayer, retiree, rojUpdates);
     status.then(toPost => {
@@ -153,17 +153,16 @@ async function dLeagueRoulette(event, player, retiree, rojUpdatesSheet) {
   const { fn } = dLeagueEvents[event];
   const date = new Date().toLocaleString().split(",")[0];
   const quote = fn({player, retiree});
-  quote = fn(player, playerTwo, retiree);
-    if (process.env.ENVIRONMENT !== "DEVELOPMENT") {
-      await rojUpdatesSheet.addRow({
-        Date: date,
-        Player: player.Name,
-        "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
-        Team: player.Team,
-        Event: event,
-        Tweet: quote
-      });
-    }
+  if (process.env.ENVIRONMENT !== "DEVELOPMENT") {
+    await rojUpdatesSheet.addRow({
+      Date: date,
+      Player: player.Name,
+      "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
+      Team: player.Team,
+      Event: event,
+      Tweet: quote
+    });
+  }
   return quote;
 };
 

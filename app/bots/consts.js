@@ -364,7 +364,7 @@ const dLeagueEvents = {
     valid: true,
     fn: function({player}) {
       const { id, value } = randomTrait();
-      return `Interesting development, ${player.Name} of the ${
+      return `Reporting from the D League: ${player.Name} of the ${
         player.Team
       } has been putting in extra work at the gym to improve his ${id}. (+${value})`;
     }
@@ -373,7 +373,7 @@ const dLeagueEvents = {
   badge: {
     valid: true,
     fn: function({player}) {
-      return `According to sources, ${player.Name} of the ${
+      return `Reporting from the D League: ${player.Name} of the ${
         player.Team
       } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
     }
@@ -382,7 +382,7 @@ const dLeagueEvents = {
   hotzone: {
     valid: true,
     fn: function({player}) {
-      return `According to sources, ${player.Name} of the ${
+      return `Reporting from the D League: ${player.Name} of the ${
         player.Team
       } has been shooting hot under this zone: ${randomHotZone()}`;
     }
@@ -391,7 +391,7 @@ const dLeagueEvents = {
   signaturepackage: {
     valid: true,
     fn: function({player, playerTwo, retiree}) {
-      return `It sounds like ${player.Name} of the ${
+      return `Reporting from the D League: it sounds like ${player.Name} of the ${
         player.Team
       } has been reaching out to retired player ${
         retiree.Name
@@ -402,7 +402,7 @@ const dLeagueEvents = {
   retiredbadge: {
     valid: true,
     fn: function({player, playerTwo, retiree}) {
-      return `Retired player ${retiree.Name} has reportedly been mentoring ${
+      return `Reporting from the D League: retired player ${retiree.Name} has reportedly been mentoring ${
         player.Name
       } of the ${
         player.Team
@@ -412,14 +412,14 @@ const dLeagueEvents = {
   growth: {
     valid: true,
     fn: function({player}) {
-      return `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch since entering the VNBA!`;
+      return `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch whilst in the D League!`;
     }
   },
 
   wingspan: {
     valid: true,
     fn: function({player}) {
-      return `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
+      return `Incredibly shocking news from the D League, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
     }
   },
 };
