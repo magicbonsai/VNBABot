@@ -107,6 +107,50 @@ function runRoj(team, setTweet) {
   })();
 }
 
+const runDLeague = () => {
+  (async function main() {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+
+    const sheets = doc.sheetsById;
+    const dLeagueEvents = sheets[sheetIds.dLeague];
+    const players = sheets[sheetIds.players];
+    const retiredPlayers = sheets[sheetIds.retiredPlayers];
+
+
+    const rojUpdates = sheets[sheetIds.updates]; 
+
+    const playerRows = await players.getRows();
+    const retiredPlayers = await retiredPlayers.getRows();
+    const dLeagueWeights = await dLeagueEvents.getRows().map(rows => {
+      return rows.map(row => {
+        return {
+          id: row.event,
+          weight: parseInt(row.prob)
+        };
+      });
+    });
+
+    const event = rwc(dLeagueWeights);
+    
+    const playersToUse = playerRows.filter(player => !!player["D League"]);
+    const chosenPlayer = _.sample(playersToUse);
+    const retiree = _.sample(retiredPlayers);
+
+    const status = dLeagueRoulette(event, chosenPlayer, retiree, rojUpdates);
+    status.then(toPost => {
+      if (process.env.ENVIRONMENT === "PRODUCTION") {
+        postRojTweet(toPost);
+      }
+      console.log(toPost);
+    });
+
+  })();
+};
+
 const rojEvents = {
   // Injuries
 
@@ -459,6 +503,89 @@ const rojEvents = {
         .then(obj => obj.insult)}'`;
     }
   }
+};
+
+const dLeagueEvents = {
+  boost: {
+    valid: true,
+    fn: function({player}) {
+      const { id, value } = randomTrait();
+      return `Interesting development, ${player.Name} of the ${
+        player.Team
+      } has been putting in extra work at the gym to improve his ${id}. (+${value})`;
+    }
+  },
+
+  badge: {
+    valid: true,
+    fn: function({player}) {
+      return `According to sources, ${player.Name} of the ${
+        player.Team
+      } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
+    }
+  },
+
+  hotzone: {
+    valid: true,
+    fn: function({player}) {
+      return `According to sources, ${player.Name} of the ${
+        player.Team
+      } has been shooting hot under this zone: ${randomHotZone()}`;
+    }
+  },
+
+  signaturepackage: {
+    valid: true,
+    fn: function({player, playerTwo, retiree}) {
+      return `It sounds like ${player.Name} of the ${
+        player.Team
+      } has been reaching out to retired player ${
+        retiree.Name
+      } to potentially rework his ${_.sample(['shooting form', 'layup package', 'dribbling package'])}.`
+    }
+  },
+
+  retiredbadge: {
+    valid: true,
+    fn: function({player, playerTwo, retiree}) {
+      return `Retired player ${retiree.Name} has reportedly been mentoring ${
+        player.Name
+      } of the ${
+        player.Team
+      } in one of their Hall of Fame worthy skills. (+1 badge level from the retired players HOF badges)`
+    }
+  },
+  growth: {
+    valid: true,
+    fn: function({player}) {
+      return `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch since entering the VNBA!`;
+    }
+  },
+
+  wingspan: {
+    valid: true,
+    fn: function({player}) {
+      return `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
+    }
+  },
+};
+
+async function dLeagueRoulette(event, player, retiree, rojUpdatesSheet) {
+  const { fn } = dLeagueEvents[event];
+  const date = new Date().toLocaleString().split(",")[0];
+  const quote = fn({player, retiree});
+  quote = fn(player, playerTwo, retiree);
+    if (process.env.ENVIRONMENT !== "DEVELOPMENT") {
+      await rojUpdatesSheet.addRow({
+        Date: date,
+        Player: player.Name,
+        "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
+        Team: player.Team,
+        Event: event,
+        Tweet: quote
+      });
+    }
+  return quote;
 };
 
 async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet) {
