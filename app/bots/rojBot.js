@@ -1,9 +1,7 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
 const { rojEvents, dLeagueEvents } = require("./consts");
-const fetch = require("node-fetch");
 const _ = require("lodash");
-const generatePlayer = require("../helpers/playerGenerator");
 require("dotenv").config();
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
@@ -12,7 +10,6 @@ const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
 
-const playerTypes = ["guard", "wing", "big"];
 
 function runRoj(team, setTweet) {
   const validTeams = (process.env.VALID_TEAMS || []).split(",");
@@ -186,195 +183,6 @@ async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet) 
       });
     }
   return quote;
-};
-
-const upToNum = num => {
-  return Math.ceil(Math.random() * num);
-};
-
-const randomFloor = num => {
-  return Math.floor(Math.random() * num);
-};
-
-const randomHotZone = () => {
-  const zones = [
-    "Under Basket",
-    "Close Left",
-    "Close Middle",
-    "Close Right",
-    "Mid Left",
-    "Mid Left-Center",
-    "Mid Center",
-    "Mid Right-Center",
-    "Mid Right",
-    "Three Left",
-    "Three Left-Center",
-    "Three Middle",
-    "Three Right-Center",
-    "Three Right"
-  ];
-
-  return chooseOne(zones);
-};
-
-const randomTrait = () => {
-  const traits = [
-    {
-      id: "Finishing",
-      value: 5
-    },
-    {
-      id: "Shooting",
-      value: 5
-    },
-    {
-      id: "Playmaking",
-      value: 5
-    },
-    {
-      id: "Handles",
-      value: 5
-    },
-    {
-      id: "Post Game",
-      value: 5
-    },
-    {
-      id: "Stocks",
-      value: 5
-    },
-    {
-      id: "Defense",
-      value: 5
-    },
-    {
-      id: "Rebounding",
-      value: 5
-    },
-    {
-      id: "Athleticism",
-      value: 5
-    },
-    {
-      id: "Conditioning",
-      value: 5
-    },
-    {
-      id: "Strength",
-      value: 5
-    },
-    {
-      id: "Strength",
-      value: 5
-    },
-    {
-      id: "Weight",
-      value: 10
-    },
-  ];
-
-  return chooseOne(traits);
-};
-
-const randomBadge = () => {
-  const badges = [
-    "Extremely Confident",
-    "Enforcer",
-    "Unpredictable",
-    "Alpha Dog",
-    "Team Player",
-    "Acrobat",
-    "Tear Dropper",
-    "Relentless Finisher",
-    "Post Spin Technician",
-    "Drop Stepper",
-    "Putback Boss",
-    "Backdown Punisher",
-    "Consistent Finisher",
-    "Contact Finisher",
-    "Cross-key Scorer",
-    "Deep Hooker",
-    "Pick and Roller",
-    "Fancy Footwork",
-    "Fastbreak Finisher",
-    "Giant Slayer",
-    "Pro Touch",
-    "ShowTime",
-    "Slithery Finisher",
-    "Catch and Shooter",
-    "Corner Specialist",
-    "Difficult Shots",
-    "Pick and Popper",
-    "Clutch Shooter",
-    "Deadeye",
-    "Deep Fades",
-    "Flexible Release",
-    "Green Machine",
-    "Hot Zone Hunter",
-    "Hot Starter",
-    "Ice In Veins",
-    "Pump Faker",
-    "Quick Draw",
-    "Range Extender",
-    "Slippery Off Ball",
-    "Steady Shooter",
-    "Tireless Shooter",
-    "Volume Shooter",
-    "Ankle Breaker",
-    "Flashy Passer",
-    "Break Starter",
-    "Lob City Passer",
-    "Dimer",
-    "Bail Out",
-    "Downhill",
-    "Dream Shake",
-    "Handles for Days",
-    "Needle Threader",
-    "Pass Faker",
-    "Quick First Stepper",
-    "Space Creator",
-    "Stop & Go",
-    "Tight Handles",
-    "Unpluckable",
-    "Floor General",
-    "Pick Pocket",
-    "Rim Protector",
-    "Pick Dodger",
-    "Chase Down Artist",
-    "Clamps",
-    "Defensive Leader",
-    "Heart Crusher",
-    "Interceptor",
-    "Intimidator",
-    "Moving Truck",
-    "Off Ball Pest",
-    "Pogo Stick",
-    "Post Move Lockdown",
-    "Tireless Defender",
-    "Trapper",
-    "Lob City Finisher",
-    "Brick Wall",
-    "Box",
-    "Rebound Chaser",
-    "Worm"
-  ];
-
-  return chooseOne(badges);
-};
-
-const randomCause = () => {
-  const causes = [
-    "Black Lives Matter",
-    "LGBT Rights",
-    "Education Reform",
-    "Voting",
-    "Cancer Research",
-    "Affordable Healthcare",
-    "Prison Reform",
-    "Homelessness"
-  ];
-
-  return chooseOne(causes);
 };
 
 const chooseOne = choices => {
