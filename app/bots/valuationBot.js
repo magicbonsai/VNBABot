@@ -4,6 +4,22 @@ const { sheetIds } = require("../helpers/sheetHelper");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
 const prevSeasonDoc = new GoogleSpreadsheet(process.env.PREV_SEASON_KEY);
+const {
+  pickToCash, 
+  getAssetValues, 
+  getPlayerListRows,
+  getMergedPlayerStats, 
+  normalizeStats, 
+  getParameters,
+  getPlayerStatScores,
+  getAssetValueParam,
+  getAssetStatValues,
+  getPlayerAttributes,
+  tradeFinder,
+  randomTrade,
+  evaluateTrade,
+  getPlayerComparisons  
+} = require('../helpers/valutionUtils');
 
 const runValuationBot = (functionToUse, params = {}) => {
   const validTeams = (process.env.VALID_TEAMS || []).split(",");
@@ -22,7 +38,7 @@ const runValuationBot = (functionToUse, params = {}) => {
     const prevSheets = prevSeasonDoc.sheetsById;
 
     const teamAssets = sheets[sheetIds.teamAssets];
-    const playerList = sheets[sheetIds.playerList];
+    const playerList = sheets[sheetIds.players];
     const botCategoryValues = sheets[sheetIds.botCategoryValues];
     const leagueLeaders = sheets[sheetIds.leagueLeaders];
     const prevLeagueLeaders = prevSheets[sheetIds.leagueLeaders];
@@ -32,6 +48,14 @@ const runValuationBot = (functionToUse, params = {}) => {
     const botCategoryValuesRows = await botCategoryValues.getRows();
     const leagueLeadersRows = await leagueLeaders.getRows();
     const prevLeagueLeadersRows = await prevLeagueLeaders.getRows();
+
+    const assetValues = await getAssetValues(teamAssetsRows);
+    const playerListData = await getPlayerListRows(playerListRows);
+    const mergedPlayerStats = await getMergedPlayerStats(leagueLeadersRows, prevLeagueLeadersRows, playerListData,);
+    
+    console.log('foo', assetValues, playerListData[0]);
+
+
   })();
 };
 

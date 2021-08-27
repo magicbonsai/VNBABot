@@ -1,4 +1,4 @@
-
+const { pick } = require('lodash');
 
 //util functions to get params
 
@@ -7,12 +7,67 @@ const pickToCash = (picks, assetValueParams) => {
   return;
 };
 
-const getAssetValues = (teamAssetSheet) => {
-  return;
+//assume height is x'y"
+const toHeightInInches = height => {
+  const strippedHeightString = height.slice(-1);
+  const [ ft, inches ] = strippedHeightStringsplit('\'').map(stringNum => parseInt(stringNum));
+  const fullHeightInInches = (ft * 12 ) + inches;
+  return fullHeightInInches;
+};
+
+const nameToInitial = (fullname) => {
+  const splitname = fullname.split(" ");
+  splitname[0] = splitname[0].charAt(0) + ".";
+  return splitname.join(" ");
+}
+
+const getAssetValues = (teamAssetsRows) => {
+  const meaningfulKeys = ['Team', 'Frozen', 'Cash', 'Cash Next Season', 'Draft Picks', 'Record'];
+  return teamAssetsRows.map(row =>  pick(row, meaningfulKeys));
+};
+
+const getPlayerListRows = playerListRows => {
+  return playerListRows.map(row => {
+    const {
+      Name
+    } = row;
+    const nameKey = nameToInitial(Name);
+    return { ...row, Player: nameKey };
+  });
+};
+
+const toAdjustedOverall = (overall, position) => {
+  if(position == "PG" || position == "C" ) {
+    return overall + 3;
+  };
+  if(position == "SG") return overall + 2;
+  return overall;
 };
 
 // get player stats from last two seasons
 const getMergedPlayerStats = (currentSeasonLeagueLeaders, prevSeasonLeagueLeaders, playerListSheetRows, minuteThreshold = 8) => {
+  const fullPlayerStats = playerListSheetRows.reduce((acc, curr) => {
+    const {
+      Player,
+      Name,
+      Team,
+      Height,
+      Weight,
+      ['Contract Length']: contractLength,
+      Position,
+      Overall,
+      Salary,
+      Age,
+      Type,
+    } = curr;
+    const heightInInches = toHeightInInches(Height);
+    const salaryInt = parseInt(Salary);
+    const adjustedOverall = toAdjustedOverall(Overall, Position);
+    const leagueLeaderRow = currentSeasonLeagueLeaders.find(row => row.Player === playerRow.Player);
+    const prevLeagueLeaderRow = prevSeasonLeagueLeaders.find(row => row.Player === playerRow.Player);
+    const adjustedPlayerRow = {}
+    
+  }, []);
   return;
 };
 
@@ -58,7 +113,7 @@ const randomTrade = (assetValues, sourceTeam, destTeams, categoryValues, winBy =
   return;
 };
 
-const evaluateTrade = (assetValues, assetsToTrade, assetsToGet, CategoryValues, winBy = 5, winMax = 10) => {
+const evaluateTrade = (assetValues, assetsToTrade, assetsToGet, categoryValues, winBy = 5, winMax = 10) => {
   return;
 };
 
@@ -75,6 +130,7 @@ module.exports = {
   getMergedPlayerStats, 
   normalizeStats, 
   getParameters,
+  getPlayerListRows,
   getPlayerStatScores,
   getAssetValueParam,
   getAssetStatValues,
