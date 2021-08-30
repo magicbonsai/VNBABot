@@ -5,11 +5,11 @@ const { GoogleSpreadsheet } = require("google-spreadsheet");
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
 const prevSeasonDoc = new GoogleSpreadsheet(process.env.PREV_SEASON_KEY);
 const {
-  pickToCash, 
-  getAssetValues, 
+  pickToCash,
+  getAssetValues,
   getPlayerListRows,
-  getMergedPlayerStats, 
-  normalizeStats, 
+  getMergedPlayerStats,
+  normalizeStats,
   getParameters,
   getPlayerStatScores,
   getAssetValueParam,
@@ -18,8 +18,8 @@ const {
   tradeFinder,
   randomTrade,
   evaluateTrade,
-  getPlayerComparisons  
-} = require('../helpers/valutionUtils');
+  getPlayerComparisons
+} = require("../helpers/valutionUtils");
 
 const runValuationBot = (functionToUse, params = {}) => {
   const validTeams = (process.env.VALID_TEAMS || []).split(",");
@@ -51,11 +51,14 @@ const runValuationBot = (functionToUse, params = {}) => {
 
     const assetValues = await getAssetValues(teamAssetsRows);
     const playerListData = await getPlayerListRows(playerListRows);
-    const mergedPlayerStats = await getMergedPlayerStats(leagueLeadersRows, prevLeagueLeadersRows, playerListData,);
-    
-    console.log('foo', assetValues, playerListData[0]);
+    const mergedPlayerStats = await getMergedPlayerStats(
+      leagueLeadersRows,
+      prevLeagueLeadersRows,
+      playerListData
+    );
 
-
+    console.log("foo", assetValues, playerListData[0]);
+    console.log(mergedPlayerStats);
   })();
 };
 
