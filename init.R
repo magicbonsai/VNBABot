@@ -3,7 +3,7 @@
 # Example R code to install packages if not already installed
 #
 
-my_packages = c("magrittr", "data.table", "googlesheets4", "stringr", "tidyr", "caret", "jsonlite", "neighbr")
+my_packages = c("magrittr", "data.table", "googlesheets4", "stringr", "tidyr", "jsonlite", "neighbr")
 
 install_if_missing = function(p) {
   if (p %in% rownames(installed.packages()) == FALSE) {

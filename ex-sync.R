@@ -4,7 +4,6 @@ needs(data.table)
 needs(googlesheets4)
 needs(stringr)
 needs(tidyr)
-needs(caret)
 needs(jsonlite)
 needs(neighbr)
 gs4_auth(
@@ -353,14 +352,6 @@ getPlayerComparisons = function(assetValues, playerAttributes, playersOfInterest
   
   return(result)
 }
-
-#categoryValues = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
-#teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
-
-#playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
-#playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 
-#                             "https://docs.google.com/spreadsheets/d/1Vp5vPPRHi5m5it3leQLGgYBy9Br7xBL_18QKN9E-9yw/edit#gid=39022674&fvid=1765187134",
-#                             playerList)
 
 categoryValues = getCategoryValues("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0")
 teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0")
