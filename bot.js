@@ -14,12 +14,14 @@ const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
 const runRoj = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
+const R = require("./custom-r-script");
+const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const runRojWithIndexCheck = (teams, index) => {
-  if(!teams[index]) {
+  if (!teams[index]) {
     return;
   }
-  return runRoj(teams[index])
+  return runRoj(teams[index]);
 };
 
 // Main switch statement for commands
@@ -32,6 +34,78 @@ const dedueCommand = (prompt, msg) => {
       runRoj(words[1], words[2]);
       break;
 
+    case "r-s":
+      R("ex-sync.R")
+        .data({})
+        .call({ warn: -1 }, (err, d) => {
+          console.log(err);
+          (async function main() {
+            const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+            await doc.useServiceAccountAuth({
+              client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+              private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+            });
+
+            await doc.loadInfo();
+
+            const sheets = doc.sheetsByTitle;
+            const players = sheets["Player List"];
+            const teamAssets = sheets["Team Assets"];
+
+            const teamAssetsRows = await teamAssets.getRows();
+            const playerListRows = await players.getRows();
+
+            const cashValues = {};
+            const knnCashValues = {};
+
+            for (let i = 0; i < d[0].length; i++) {
+              cashValues[d[0][i].Name] = d[0][i];
+            }
+
+            for (let i = 0; i < d[1].length; i++) {
+              knnCashValues[d[1][i].Player] = d[1][i];
+            }
+
+            await players.loadCells();
+            await teamAssets.loadCells();
+
+            playerListRows.forEach(row => {
+              players.getCell(row.rowNumber - 1, 23).value = cashValues[
+                row.Name
+              ]
+                ? cashValues[row.Name].Cash_Value
+                : knnCashValues[row.Name]
+                ? knnCashValues[row.Name].continuous_target
+                : 0;
+            });
+
+            teamAssetsRows.forEach(row => {
+              const picks = row["Draft Picks"]
+                .split(", ")
+                .map(str => str.replace(/\s+/g, ""));
+
+              const miscPicks = row["Misc Draft Picks"]
+                .split(", ")
+                .map(str => str.replace(/\s+/g, ""));
+
+              teamAssets.getCell(row.rowNumber - 1, 6).value = picks
+                .map(pick => {
+                  return cashValues[pick] ? cashValues[pick].Cash_Value : 0;
+                })
+                .join(", ");
+
+              teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
+                .map(pick => {
+                  return cashValues[pick] ? cashValues[pick].Cash_Value : 0;
+                })
+                .join(", ");
+            });
+
+            await players.saveUpdatedCells();
+            await teamAssets.saveUpdatedCells();
+          })();
+        });
+      break;
     case "smithy":
       if (msg.channel.type == "dm") {
         msg.reply("Posting on Smithy twitter!");
@@ -127,67 +201,138 @@ client.on("message", msg => {
 
 client.login(process.env.BOT_TOKEN);
 
-let teams = process.env.VALID_TEAMS.split(',');
+let teams = process.env.VALID_TEAMS.split(",");
 
 const preJob = new CronJob("0 14 * * *", function() {
-  console.log('teams value', teams);
-  teams = _.shuffle(process.env.VALID_TEAMS.split(','));
+  console.log("teams value", teams);
+  teams = _.shuffle(process.env.VALID_TEAMS.split(","));
 });
 
 const job = new CronJob("0 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    console.log('teams value', teams);
+    console.log("teams value", teams);
     runRojWithIndexCheck(teams, 0);
   }
 });
 
 const job_two = new CronJob("10 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    console.log('teams value', teams);
+    console.log("teams value", teams);
     runRojWithIndexCheck(teams, 1);
   }
 });
 
 const job_three = new CronJob("20 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    console.log('teams value', teams);
+    console.log("teams value", teams);
     runRojWithIndexCheck(teams, 2);
   }
 });
 
 const job_four = new CronJob("30 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    console.log('teams value', teams);
+    console.log("teams value", teams);
     runRojWithIndexCheck(teams, 3);
   }
 });
 
 const job_five = new CronJob("40 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    console.log('teams value', teams);
+    console.log("teams value", teams);
     runRojWithIndexCheck(teams, 4);
   }
 });
 
 const job_six = new CronJob("50 15 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    console.log('teams value', teams);
+    console.log("teams value", teams);
     runRojWithIndexCheck(teams, 5);
   }
 });
 
 const job_seven = new CronJob("0 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    console.log('teams value', teams);
+    console.log("teams value", teams);
     runRojWithIndexCheck(teams, 6);
   }
 });
 
 const job_eight = new CronJob("10 16 * * *", function() {
   if (!!process.env.DAILY_TWEETS) {
-    console.log('teams value', teams);
-    runRoj('FA');
+    console.log("teams value", teams);
+    runRoj("FA");
   }
+});
+
+const trikovJob = new CronJob("0 13 * * *", function() {
+  R("ex-sync.R")
+    .data({})
+    .call({ warn: -1 }, (err, d) => {
+      console.log(err);
+      (async function main() {
+        const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+        await doc.useServiceAccountAuth({
+          client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+        });
+
+        await doc.loadInfo();
+
+        const sheets = doc.sheetsByTitle;
+        const players = sheets["Player List"];
+        const teamAssets = sheets["Team Assets"];
+
+        const teamAssetsRows = await teamAssets.getRows();
+        const playerListRows = await players.getRows();
+
+        const cashValues = {};
+        const knnCashValues = {};
+
+        for (let i = 0; i < d[0].length; i++) {
+          cashValues[d[0][i].Name] = d[0][i];
+        }
+
+        for (let i = 0; i < d[1].length; i++) {
+          knnCashValues[d[1][i].Player] = d[1][i];
+        }
+
+        await players.loadCells();
+        await teamAssets.loadCells();
+
+        playerListRows.forEach(row => {
+          players.getCell(row.rowNumber - 1, 23).value = cashValues[row.Name]
+            ? cashValues[row.Name].Cash_Value
+            : knnCashValues[row.Name]
+            ? knnCashValues[row.Name].continuous_target
+            : 0;
+        });
+
+        teamAssetsRows.forEach(row => {
+          const picks = row["Draft Picks"]
+            .split(", ")
+            .map(str => str.replace(/\s+/g, ""));
+
+          const miscPicks = row["Misc Draft Picks"]
+            .split(", ")
+            .map(str => str.replace(/\s+/g, ""));
+
+          teamAssets.getCell(row.rowNumber - 1, 6).value = picks
+            .map(pick => {
+              return cashValues[pick] ? cashValues[pick].Cash_Value : 0;
+            })
+            .join(", ");
+
+          teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
+            .map(pick => {
+              return cashValues[pick] ? cashValues[pick].Cash_Value : 0;
+            })
+            .join(", ");
+        });
+
+        await players.saveUpdatedCells();
+        await teamAssets.saveUpdatedCells();
+      })();
+    });
 });
 
 preJob.start();
@@ -199,3 +344,4 @@ job_five.start();
 job_six.start();
 job_seven.start();
 job_eight.start();
+trikovJob.start();

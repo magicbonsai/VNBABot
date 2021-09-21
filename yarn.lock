@@ -2629,6 +2629,13 @@ quick-lru@^5.1.1:
   resolved "https://registry.yarnpkg.com/quick-lru/-/quick-lru-5.1.1.tgz#366493e6b3e42a3a6885e2e99d18f80fb7a8c932"
   integrity sha512-WuyALRjWPDGtt/wzJiadO5AXY+8hZ80hVpe6MyivgraREW751X3SbhRvG3eLKOYN+8VEvqLcf3wdnt44Z4S4SA==
 
+r-script@^0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/r-script/-/r-script-0.0.4.tgz#b7337d0a36b27691cba0cf1f60a912bbd646abe1"
+  integrity sha512-PNUS0iQGHLSzKCaTI8HZs5pw20GSJVaIhuBEPY3QYoUmf1RXUAnTcof0G6uMp8jGr9Ke2n/rhXVC6B1m/iiWCA==
+  dependencies:
+    underscore "^1.8.3"
+
 random-normal@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/random-normal/-/random-normal-1.0.0.tgz#daa0b5fa4caeb15968178338f2ac52e63a6e4689"
@@ -3164,6 +3171,11 @@ type-fest@^0.8.1:
   version "0.8.1"
   resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-0.8.1.tgz#09e249ebde851d3b1e48d27c105444667f17b83d"
   integrity sha512-4dbzIzqvjtgiM5rw1k5rEHtBANKmdudhGyBEajN01fEyhaAIhsoKNy6y7+IN93IfpFtwY9iqi7kD+xwKhQsNJA==
+
+underscore@^1.8.3:
+  version "1.13.1"
+  resolved "https://registry.yarnpkg.com/underscore/-/underscore-1.13.1.tgz#0c1c6bd2df54b6b69f2314066d65b6cde6fcf9d1"
+  integrity sha512-hzSoAVtJF+3ZtiFX0VgfFPHEDRm7Y/QPjGyNo4TVdnDTdft3tr8hEkD25a1jC+TjTuE7tkHGKkhwCgs9dgBB2g==
 
 universalify@~0.1.2:
   version "0.1.2"
