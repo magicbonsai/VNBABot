@@ -25,41 +25,21 @@ R.prototype.data = function() {
   return this;
 };
 
-function getReturnData(d) {
-  try {
-    return JSON.parse(d);
-  } catch (err) {
-    return d;
-  }
-}
-
 R.prototype.call = function(_opts, _callback) {
-  console.log("calling R script");
   var callback = _callback || _opts;
   var opts = _.isFunction(_opts) ? {} : _opts;
   this.options.env.input = JSON.stringify([this.d, this.path, opts]);
   var child = child_process.spawn("Rscript", this.args, this.options);
-  var errData = "";
-  var outData = "";
-
+  var stdout = "";
+  var stderr = "";
   child.stderr.on("data", function(d) {
-    errData += d;
+    stderr += d.toString();
   });
-
   child.stdout.on("data", function(d) {
-    outData += d;
+    stdout += d;
   });
-
-  child.on("close", code => {
-    callback(null, getReturnData(outData));
-    // if (errData) {
-    //   console.log("error");
-    //   console.log(errData);
-    //   callback(getReturnData(errData));
-    // } else {
-    //   console.log("success");
-    //   callback(null, getReturnData(outData));
-    // }
+  child.on("close", function(code) {
+    callback(stderr ? stderr : null, stdout ? JSON.parse(stdout) : {});
   });
 };
 

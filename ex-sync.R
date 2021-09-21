@@ -173,7 +173,7 @@ getAssetStatValues  = function(categoryValues, playerScores, teamAssets, assetVa
     temp = data.table(Team = teamAssets[i]$Team, Frozen = teamAssets[i]$Frozen, Pick_Full = str_trim(unlist(str_split(teamAssets[i]$Draft_Picks, ","))))
     temp[, Pick := str_extract(Pick_Full, "1|2")]
     temp[, Pick_Team := str_extract(Pick_Full, "[:alpha:]+")]
-    return(temp[Frozen == FALSE])
+    return(temp)
     }))
   
   if (assetWeights[Asset == "Season_End"]$Asset_Weight == 1) {
@@ -302,7 +302,7 @@ getPlayerAttributes = function(playerList) {
 }
 
 # Get player comps
-getPlayerComparisons = function(assetValues, playerAttributes, playersOfInterest, typeWeight = 4, overallWeight = 3) {
+getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, overallWeight = 3) {
   
   data = merge(playerAttributes, assetValues[, .(Name, Score = Weighted_Value)], by = "Name", all.x = TRUE)
   data[, Overall := Overall + (Position == "PG" | Position == "C") * 3 + (Position == "SG")]
@@ -332,8 +332,8 @@ getPlayerComparisons = function(assetValues, playerAttributes, playersOfInterest
   data[, INTERIOR_DEFENSE := INTERIOR_DEFENSE * 1.5]
   data[, ACCELERATION := ACCELERATION * 1.5]
   
-  train = copy(data)[!(Name %in% playersOfInterest)][!is.na(Score)]
-  test = copy(data)[(Name %in% playersOfInterest)]
+  train = copy(data)[!is.na(Score)]
+  test = copy(data)[is.na(Score)]
   test[, Score := NULL]
   testNames = test$Name
   test[, Name := NULL]
@@ -370,10 +370,8 @@ assetValues = getAssetStatValues(categoryValues, playerScores, teamAssets, asset
 
 playerAttributes = getPlayerAttributes(playerList)
 
-teams = c("Knicks", "Spurs", "Warriors", "Raptors", "Wizards", "Celtics", "Mavericks")
-randomTrade(assetValues, teams, teams, categoryValues, winBy = 0, winMax = 5)
+teams = c("Knicks", "Spurs", "Warriors", "Raptors", "Wizards", "Celtics", "Mavericks", "Jazz")
 
-# test = getPlayerComparisons(assetValues, playerAttributes, playerList[Team == 'Rookie']$Name)
+knnValues = getPlayerComparisons(assetValues, playerAttributes)
 
-test = get(givenFunc)(assetValues, playerAttributes, playerList[Team == givenTeam]$Name)
-
+list(assetValues, knnValues)
