@@ -71,7 +71,7 @@ function runRoj(team, setTweet) {
       const { playersToUse, getNewsWeights } =
         rwc(weights) === "team"
           ? {
-              playersToUse: teamPlayers,
+              playersToUse: teamPlayers.filter(player => !player["D League"]),
               getNewsWeights: getVNBANewsWeights
             }
           : {
