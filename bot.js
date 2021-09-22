@@ -12,7 +12,7 @@ const client = new Discord.Client();
 
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
-const runRoj = require("./app/bots/rojBot");
+const { runRoj, runDLeague } = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
@@ -32,6 +32,10 @@ const dedueCommand = (prompt, msg) => {
   switch (words[0].toLowerCase()) {
     case "tweet":
       runRoj(words[1], words[2]);
+      break;
+   
+    case "dleague":
+      runDLeague();
       break;
 
     case "r-s":
@@ -335,6 +339,13 @@ const trikovJob = new CronJob("0 13 * * *", function() {
     });
 });
 
+const job_nine = new CronJob("15 16 * * *", function() {
+  if(!!proecess.env.DAILY_TWEETS) {
+    console.log('dLeague');
+    runDLeague();
+  }
+})
+
 preJob.start();
 job.start();
 job_two.start();
@@ -345,3 +356,4 @@ job_six.start();
 job_seven.start();
 job_eight.start();
 trikovJob.start();
+job_nine.start();
