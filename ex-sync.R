@@ -356,7 +356,7 @@ getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, o
 categoryValues = getCategoryValues("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0")
 teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0")
 
-playerList = getPlayerList("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0")
+playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit#gid=0")
 playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0", 
                              "https://docs.google.com/spreadsheets/d/1Vp5vPPRHi5m5it3leQLGgYBy9Br7xBL_18QKN9E-9yw/edit#gid=39022674&fvid=1765187134",
                              playerList)
