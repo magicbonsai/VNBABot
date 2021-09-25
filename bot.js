@@ -339,7 +339,7 @@ const trikovJob = new CronJob("0 13 * * *", function() {
 });
 
 const job_nine = new CronJob("15 16 * * *", function() {
-  if(!!proecess.env.DAILY_TWEETS) {
+  if(!!process.env.DAILY_TWEETS) {
     console.log('dLeague');
     runDLeague();
   }
