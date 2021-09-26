@@ -345,6 +345,13 @@ const job_nine = new CronJob("15 16 * * *", function() {
   }
 })
 
+const job_ten = new CronJob("20 16 * * *", function() {
+  if(!!process.env.DAILY_TWEETS) {
+    console.log('dLeague');
+    runDLeague();
+  }
+})
+
 preJob.start();
 job.start();
 job_two.start();
@@ -356,3 +363,4 @@ job_seven.start();
 job_eight.start();
 trikovJob.start();
 job_nine.start();
+jon_ten.start();
