@@ -332,11 +332,11 @@ async function tessImages(videoLink) {
       await worker6.initialize("eng");
       await worker5.setParameters({
         tessedit_char_whitelist:
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz. "
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
       });
       await worker6.setParameters({
         tessedit_char_whitelist:
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz. "
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
       });
 
       scheduler.addWorker(worker1);

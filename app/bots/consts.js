@@ -14,8 +14,8 @@ const rojEvents = {
       // logic goes here
       return `It appears that ${
         player.Name
-      } has been ill with the flu an will now miss the next ${upToNum(
-        2
+      } has been ill with the flu an will now miss the next ${_.random(
+        1, 2
       )} games.`;
     }
   },
@@ -33,9 +33,7 @@ const rojEvents = {
     fn: function(player) {
       return `BREAKING: ${player.Name} of the ${
         player.Team
-      } has reportedly been dealing with back spasms and is expected to miss the next ${upToNum(
-        3
-      )} games as he recovers.`;
+      } has reportedly been dealing with back spasms and is expected to miss the next ${_.random(1,3)} games as he recovers.`;
     }
   },
 
@@ -46,9 +44,7 @@ const rojEvents = {
         player.Team
       } has reportedly missed the last ${
         player.Team
-      } practice session and has been internally suspended for ${upToNum(
-        2
-      )} games by the ${player.Team} organization.`;
+      } practice session and has been internally suspended for ${_.random(1,2)} games by the ${player.Team} organization.`;
     }
   },
 
@@ -57,9 +53,7 @@ const rojEvents = {
     fn: function(player) {
       return `BREAKING: ${player.Name} of the ${
         player.Team
-      } has reportedly tested positive for PEDs and has been suspended by the NBA for ${upToNum(
-        4
-      )} games by the VNBA.`;
+      } has reportedly tested positive for PEDs and has been suspended by the NBA for ${_.random(1,4)} games by the VNBA.`;
     }
   },
 
@@ -68,7 +62,7 @@ const rojEvents = {
     fn: function(player) {
       return `${player.Name} of the ${
         player.Team
-      } has been placed in the VNBA concussion protocal and is expected to miss the next ${upToNum(
+      } has been placed in the VNBA concussion protocal and is expected to miss the next ${_.random(1,
         3
       )} games as he recovers.`;
     }
@@ -79,7 +73,7 @@ const rojEvents = {
     fn: function(player) {
       return `${player.Name} of the ${
         player.Team
-      } has been been suffering from a sore hamstring and is ruled out of games for the next ${upToNum(
+      } has been been suffering from a sore hamstring and is ruled out of games for the next ${_.random(1,
         2
       )} games as he recovers.`;
     }
@@ -92,7 +86,7 @@ const rojEvents = {
         player.Team
       } for the birth of his ${chooseOne(["son", "daughter"])}. ${
         player.Name
-      } will take the next ${upToNum(2)} games off to be with his child.`;
+      } will take the next ${_.random(1,2)} games off to be with his child.`;
     }
   },
 
@@ -193,7 +187,7 @@ const rojEvents = {
         player.Team
       } organization for some time now and has now formally requested a trade to a new team. The ${
         player.Team
-      } are expected to move ${player.Name} within the next ${upToNum(
+      } are expected to move ${player.Name} within the next ${_.random(1,
         3
       )} games.`;
     }
@@ -209,7 +203,7 @@ const rojEvents = {
       } of the ${
         player.Team
       } have reportedly cited irreconcilable differences with each other and will refuse to play within the next ${
-        upToNum(3)
+        _.random(1,3)
       } games unless one or the other is traded before that deadline.`;
     },
   },
@@ -228,7 +222,7 @@ const rojEvents = {
     fn: function(player) {
       return `With some sly budgeting, the ${
         player.Team
-      } have managed to find an extra ${upToNum(5)} dollars for this season.`;
+      } have managed to find an extra ${_.random(1,5)} dollars for this season.`;
     }
   },
 
