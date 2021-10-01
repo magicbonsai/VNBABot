@@ -35,7 +35,7 @@ function runRoj(team, setTweet) {
       return rows.map(row => {
         return {
           id: row.event,
-          weight: parseInt(row.prob)
+          weight: parseFloat(row.prob)
         };
       });
     });
@@ -48,7 +48,7 @@ function runRoj(team, setTweet) {
         .map(row => {
           return {
             id: row.event,
-            weight: parseInt(row.prob)
+            weight: parseFloat(row.prob)
           };
         });
     });
@@ -127,7 +127,7 @@ const runDLeague = () => {
       return rows.map(row => {
         return {
           id: row.event,
-          weight: parseInt(row.prob)
+          weight: parseFloat(row.prob)
         };
       });
     });
