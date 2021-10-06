@@ -316,7 +316,7 @@ function positionBias(position, attributes) {
     });
   } else if (position === "big") {
     bks.forEach((bk, idx) => {
-      const correspondingGuardAttr = bks[idx];
+      const correspondingGuardAttr = gks[idx];
       if (
         parseInt(attributes.data[bk]) <
         parseInt(attributes.data[correspondingGuardAttr])
