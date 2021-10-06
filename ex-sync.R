@@ -58,26 +58,37 @@ getPlayerList = function(listUrl) {
   return(playerList)
 }
 
-# Get player stats from past 2 seasons
-getPlayerStats = function(statsUrl, statsUrlOld, playerList, minThreshold = 8) {
+# Get player stats from past 2 + current seasons
+getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, minThreshold = 8) {
   playerStats = data.table(read_sheet(statsUrl, 
                                       "League Leaders", 
                                       col_names = TRUE,
-                                      na = c("", "NA", "N/A")))
+                                      na = c("", "NA", "N/A", "#N/A", "#VALUE!", "#DIV/0!")))
   playerStats = setNames(playerStats, str_replace_all(names(playerStats), " ", "_"))
   playerStats = playerStats[3:.N, ]
   playerStats = playerStats[!is.na(Player)]
-  
+  playerStats[, 3:ncol(playerStats)] = sapply(playerStats[, 3:ncol(playerStats)], function(x){as.numeric(unlist(x))})
+
   playerStatsOld = data.table(read_sheet(statsUrlOld, 
                                          "League Leaders", 
                                          col_names = TRUE,
-                                         na = c("", "NA", "N/A")))
+                                         na = c("", "NA", "N/A", "#N/A", "#VALUE!", "#DIV/0!")))
   playerStatsOld = setNames(playerStatsOld, str_replace_all(names(playerStatsOld), " ", "_"))
   playerStatsOld = playerStatsOld[3:.N, ]
   playerStatsOld = playerStatsOld[!is.na(Player)]
+  playerStatsOld[, 3:ncol(playerStats)] = sapply(playerStatsOld[, 3:ncol(playerStatsOld)], function(x){as.numeric(unlist(x))})
+  
+  playerStatsOldOld = data.table(read_sheet(statsUrlOldOld, 
+                                         "League Leaders", 
+                                         col_names = TRUE,
+                                         na = c("", "NA", "N/A", "#N/A", "#VALUE!", "#DIV/0!")))
+  playerStatsOldOld = setNames(playerStatsOldOld, str_replace_all(names(playerStatsOldOld), " ", "_"))
+  playerStatsOldOld = playerStatsOldOld[3:.N, ]
+  playerStatsOldOld = playerStatsOldOld[!is.na(Player)]
+  playerStatsOldOld[, 3:ncol(playerStats)] = sapply(playerStatsOldOld[, 3:ncol(playerStatsOldOld)], function(x){as.numeric(unlist(x))})
   
   playerStatsFull = merge(playerList[, .(Player, Name, Current_Team = Team, Overall, Position, Height, Weight, Contract_Length, Age, Salary, Type)], 
-                          rbind(playerStats[, Season := "Current"], playerStatsOld[, Season := "Old"]), 
+                          rbindlist(list(playerStats[, Season := "Current"], playerStatsOld[, Season := "Last"], playerStatsOldOld[, Season := "Last_2"])), 
                           by = "Player",
                           all.x = TRUE)
   playerStatsFull[, Height := unlist(lapply(Height, heightToInches))]
@@ -111,7 +122,7 @@ normalizeStats = function(playerStats, categoryValues, corThreshold = 0.8) {
   statsCor = cor(normalizedStats)
   statsCor[upper.tri(statsCor)] = 0
   diag(statsCor) = 0
-  colNames = data.table(Feature = colnames(statsCor[, !apply(statsCor, 2, function(x) any(x > corThreshold))]))
+  colNames = data.table(Feature = colnames(statsCor[, !apply(statsCor, 2, function(x) any(x > corThreshold, na.rm = TRUE))]))
   normalizedStats = normalizedStats[, colNames$Feature, with = FALSE]
   
   return(normalizedStats)
@@ -353,12 +364,13 @@ getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, o
   return(result)
 }
 
-categoryValues = getCategoryValues("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0")
-teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0")
+categoryValues = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
+teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
 
-playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit#gid=0")
-playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=0", 
-                             "https://docs.google.com/spreadsheets/d/1Vp5vPPRHi5m5it3leQLGgYBy9Br7xBL_18QKN9E-9yw/edit#gid=39022674&fvid=1765187134",
+playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
+playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 
+                             "https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=1550230054",
+                             "https://docs.google.com/spreadsheets/d/1Vp5vPPRHi5m5it3leQLGgYBy9Br7xBL_18QKN9E-9yw/edit#gid=1367256051",
                              playerList)
 
 normalizedStats = normalizeStats(playerStats, categoryValues)
