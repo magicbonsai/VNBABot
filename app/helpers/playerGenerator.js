@@ -358,11 +358,11 @@ const weights = [
 const personalityWeights = [
   {
     id: "0",
-    weight: 0.85
+    weight: 0.92
   },
   {
     id: "1",
-    weight: 0.15
+    weight: 0.8
   }
 ];
 
@@ -590,9 +590,6 @@ function generatePlayer(
       ((genWingspan / 100) * 0.2 + 0.94) * genHeight
     );
     const biasedAttributes = positionBias(playerType, attributes);
-    console.log(playerType);
-    console.log(attributes);
-    console.log(biasedAttributes);
     const player = [vitals, biasedAttributes, badges];
     const randomPosition = chooseOne(playerTypeNames[playerType]);
     (async () => {
