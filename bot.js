@@ -77,8 +77,6 @@ const dedueCommand = (prompt, msg) => {
               players.getCell(row.rowNumber - 1, 23).value =
                 cashValues[row.Name] && cashValues[row.Name].Cash_Value > 0
                   ? cashValues[row.Name].Cash_Value
-                  : knnCashValues[row.Name]
-                  ? knnCashValues[row.Name].continuous_target
                   : 0;
             });
 
