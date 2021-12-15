@@ -6,6 +6,9 @@ const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const retirementCheck = require("./app/helpers/retirementCheck");
+const express = require('express');
+const bodyParser = require('body-parser');
+const router = express.Router();
 
 require("dotenv").config();
 const client = new Discord.Client();
@@ -23,6 +26,35 @@ const runRojWithIndexCheck = (teams, index) => {
   }
   return runRoj(teams[index]);
 };
+
+const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+const ANNOUNCEMENTS = '917457507620913166';
+
+router.post('/api/post', (req, res) => {
+  if(!req.body.recipient) {
+    return res.status(400).send({
+      success: 'false',
+      message: 'recipient is required'
+    });
+  } else if(!req.body.description) {
+    return res.status(400).send({
+      success: 'false',
+      message: 'description is required'
+    });
+  }
+  client.channels.get(ANNOUNCEMENTS).send(req.body.description);
+});
+
+const PORT = 8081;
+
+app.use("/", router);
+
+app.listen(PORT, () => {
+  console.log(`server running on port ${PORT}`)
+});
 
 // Main switch statement for commands
 const dedueCommand = (prompt, msg) => {
