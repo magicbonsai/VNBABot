@@ -6,7 +6,10 @@ const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const retirementCheck = require("./app/helpers/retirementCheck");
-
+const express = require('express');
+const bodyParser = require('body-parser');
+const router = express.Router();
+const { postToChannelWith } = require('./app/router/services');
 require("dotenv").config();
 const client = new Discord.Client();
 
@@ -23,6 +26,24 @@ const runRojWithIndexCheck = (teams, index) => {
   }
   return runRoj(teams[index]);
 };
+
+// Router + Express Setup
+
+const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+router.post('/roj/post/toChannel', postToChannelWith(client));
+
+const PORT = process.env.PORT || 8081;
+
+app.use("/", router);
+
+app.listen(PORT, () => {
+  console.log(`server running on port ${PORT}`)
+});
+
+// Main discord bot setup
 
 // Main switch statement for commands
 const dedueCommand = (prompt, msg) => {
