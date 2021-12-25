@@ -6,10 +6,11 @@ const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const retirementCheck = require("./app/helpers/retirementCheck");
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
 const router = express.Router();
-const { postToChannelWith } = require('./app/router/services');
+const { postToChannelWith } = require("./app/router/services");
 require("dotenv").config();
 const client = new Discord.Client();
 
@@ -30,22 +31,18 @@ const runRojWithIndexCheck = (teams, index) => {
 // Router + Express Setup
 
 const app = express();
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-router.post('/roj/post/toChannel', postToChannelWith(client));
+router.post("/roj/post/toChannel", postToChannelWith(client));
 
 const PORT = process.env.PORT || 8081;
 
 app.use("/", router);
 
 app.listen(PORT, () => {
-  console.log(`server running on port ${PORT}`)
+  console.log(`server running on port ${PORT}`);
 });
 
 // Main discord bot setup
@@ -59,7 +56,7 @@ const dedueCommand = (prompt, msg) => {
     case "tweet":
       runRoj(words[1], words[2]);
       break;
-   
+
     case "dleague":
       runDLeague();
       break;
@@ -230,68 +227,68 @@ client.login(process.env.BOT_TOKEN);
 
 let teams = process.env.VALID_TEAMS.split(",");
 
-const preJob = new CronJob("0 14 * * *", function() {
+const preJob = new CronJob("0 14 * * *", function () {
   console.log("teams value", teams);
   teams = _.shuffle(process.env.VALID_TEAMS.split(","));
 });
 
-const job = new CronJob("0 15 * * *", function() {
+const job = new CronJob("0 15 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
     runRojWithIndexCheck(teams, 0);
   }
 });
 
-const job_two = new CronJob("10 15 * * *", function() {
+const job_two = new CronJob("10 15 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
     runRojWithIndexCheck(teams, 1);
   }
 });
 
-const job_three = new CronJob("20 15 * * *", function() {
+const job_three = new CronJob("20 15 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
     runRojWithIndexCheck(teams, 2);
   }
 });
 
-const job_four = new CronJob("30 15 * * *", function() {
+const job_four = new CronJob("30 15 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
     runRojWithIndexCheck(teams, 3);
   }
 });
 
-const job_five = new CronJob("40 15 * * *", function() {
+const job_five = new CronJob("40 15 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
     runRojWithIndexCheck(teams, 4);
   }
 });
 
-const job_six = new CronJob("50 15 * * *", function() {
+const job_six = new CronJob("50 15 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
     runRojWithIndexCheck(teams, 5);
   }
 });
 
-const job_seven = new CronJob("0 16 * * *", function() {
+const job_seven = new CronJob("0 16 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
     runRojWithIndexCheck(teams, 6);
   }
 });
 
-const job_eight = new CronJob("10 16 * * *", function() {
+const job_eight = new CronJob("10 16 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
     runRoj("FA");
   }
 });
 
-const trikovJob = new CronJob("0 13 * * *", function() {
+const trikovJob = new CronJob("0 13 * * *", function () {
   R("ex-sync.R")
     .data({})
     .call({ warn: -1 }, (err, d) => {
@@ -360,19 +357,19 @@ const trikovJob = new CronJob("0 13 * * *", function() {
     });
 });
 
-const job_nine = new CronJob("15 16 * * *", function() {
-  if(!!process.env.DAILY_TWEETS) {
-    console.log('dLeague');
+const job_nine = new CronJob("15 16 * * *", function () {
+  if (!!process.env.DAILY_TWEETS) {
+    console.log("dLeague");
     runDLeague();
   }
-})
+});
 
-const job_ten = new CronJob("20 16 * * *", function() {
-  if(!!process.env.DAILY_TWEETS) {
-    console.log('dLeague');
+const job_ten = new CronJob("20 16 * * *", function () {
+  if (!!process.env.DAILY_TWEETS) {
+    console.log("dLeague");
     runDLeague();
   }
-})
+});
 
 preJob.start();
 job.start();
