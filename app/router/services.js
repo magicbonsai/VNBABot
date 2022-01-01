@@ -57,15 +57,15 @@ const postToTeamWith = discordClient => (req, res) => {
     } = {}
   } = req;
   const guild = discordClient.get_guild(process.env.SERVER_ID);
-  const roleName = guild.roles.find((role = {}) => role.name.toLowerCase() == teamName );
-  if (!roleName) {
+  const role = guild.roles.cache.find(role => role.name === teamName);
+  if (!role) {
     return res.status(400).send({
       success: 'false',
       message: `${teanName} is not a valid team name.`
     });
   }
-  const filteredMembersOfTeam = guild.members.filter(member => member.role == roleName);
-  filteredMembersOfTeam.forEach(member => member.user.send(value));
+  const membersWithRole = guild.roles.cache.get(role.id).members;
+  membersWithRole.forEach(member => member.user.send(value));
   return res.status(201).send({
     success: 'true',
     message: `Message posted successfully to members of the ${teamName}`,
