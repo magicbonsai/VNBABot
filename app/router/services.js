@@ -72,4 +72,4 @@ const postToTeamWith = discordClient => (req, res) => {
   })
 };
 
-module.exports = { postToChannelWith };
+module.exports = { postToChannelWith, postToTeamWith };
