@@ -105,6 +105,59 @@ function runRoj(team, setTweet) {
   })();
 }
 
+const runReport = () => {
+  (async function main() {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+
+    const sheets = doc.sheetsById;
+    const assets = sheets[sheetIds.teamAssets];
+    const events = sheets[sheetIds.news];
+    const players = sheets[sheetIds.players];
+    const retiredPlayerSheet = sheets[sheetIds.retiredPlayers];
+
+
+    const rojUpdates = sheets[sheetIds.updates]; 
+
+    const playerRows = await players.getRows();
+    const validTeams = await assets.getsRows().then(rows => {
+      return rows.filter(row => !row.Frozen).map(
+        row => {
+          return row.Team
+        }
+      )
+    });
+    const retiredPlayerRows = await retiredPlayerSheet.getRows();
+    const weights = await events.getRows().then(rows => {
+      return rows.map(row => {
+        return {
+          id: row.event,
+          weight: parseFloat(row.prob)
+        };
+      });
+    });
+    //for all valid teams run a set of events
+
+    const event = rwc(dLeagueWeights);
+    
+    const chosenPlayer = _.sample(playersToUse);
+    const retiree = _.sample(retiredPlayerRows);
+
+    const status = dLeagueRoulette(event, chosenPlayer, retiree, rojUpdates);
+    status.then(toPost => {
+      if (process.env.ENVIRONMENT === "PRODUCTION") {
+        postRojTweet(toPost);
+      }
+      console.log(toPost);
+    });
+
+  })();
+}; 
+
+
 const runDLeague = () => {
   (async function main() {
     await doc.useServiceAccountAuth({

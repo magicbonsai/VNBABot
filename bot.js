@@ -236,6 +236,20 @@ const preJob = new CronJob("0 14 * * *", function () {
   teams = _.shuffle(process.env.VALID_TEAMS.split(","));
 });
 
+const WednesdayJob = new CronJob("0 15 * * 3", function () {
+
+});
+
+const SaturdayJob = new CronJob("0 15 * * 6", function () {
+
+});
+
+const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {
+
+});
+
+//some sort of trade request tracker
+
 const job = new CronJob("0 15 * * *", function () {
   if (!!process.env.DAILY_TWEETS) {
     console.log("teams value", teams);
