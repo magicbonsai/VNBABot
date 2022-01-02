@@ -1,4 +1,4 @@
-const Discord = require("discord.js");
+const { Client } = require("discord.js");
 const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const _ = require("lodash");
@@ -12,7 +12,10 @@ const bodyParser = require("body-parser");
 const router = express.Router();
 const { postToChannelWith, postToTeamWith } = require("./app/router/services");
 require("dotenv").config();
-const client = new Discord.Client();
+const client = new Client({
+  intents: ["GUILDS", "GUILD_MEMBERS"],
+  fetchAllMembers: true
+});
 
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 

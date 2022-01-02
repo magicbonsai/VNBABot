@@ -56,19 +56,22 @@ const postToTeamWith = discordClient => (req, res) => {
       value
     } = {}
   } = req;
-  const guild = discordClient.get_guild(process.env.SERVER_ID);
-  const role = guild.roles.cache.find(role => role.name === teamName);
+  // Apparently sending a message unprompted to all members with a certain role
+  // may be a little against discord's api usage but for now this is good
+  // without having to keep a list of discord user ids (AZ)
+  const guild = discordClient.guilds.find(guild => guild.id == process.env.SERVER_ID);
+  const role = guild.roles.find(role => role.name === teamName);
   if (!role) {
     return res.status(400).send({
       success: 'false',
-      message: `${teanName} is not a valid team name.`
+      message: `${teamName} is not a valid team name.`
     });
   }
-  const membersWithRole = guild.roles.cache.get(role.id).members;
+  const membersWithRole = guild.roles.get(role.id).members;
   membersWithRole.forEach(member => member.user.send(value));
   return res.status(201).send({
     success: 'true',
-    message: `Message posted successfully to members of the ${teamName}`,
+    message: `Message posted successfully to members with role: ${teamName}`,
   })
 };
 

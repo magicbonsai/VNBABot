@@ -13,6 +13,4 @@ const CHANNEL_IDS = {
   "new-player-help": '918912942089601084',
 };
 
-const VNBA_SERVER_IDID = 917457507620913162;
-
-module.exports = { CHANNEL_IDS, VNBA_SERVER_ID };
+module.exports = { CHANNEL_IDS };
