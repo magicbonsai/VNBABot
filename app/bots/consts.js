@@ -498,6 +498,56 @@ const randomTrait = () => {
   return chooseOne(traits);
 };
 
+const randomAttribute = () => {
+  const attributes = [
+    {
+      id: "DRIVING_LAYUP",
+      name: 'Driving Layup',
+      weight: 5,
+    },
+    {
+      id: "POST_FADEAWAY",
+      name: "Post Fade"
+    },
+    "POST_HOOK",
+    "POST_MOVES",
+    "DRAW_FOUL",
+    "SHOT_CLOSE",
+    "MID-RANGE_SHOT",
+    "3PT_SHOT",
+    "FREE_THROW",
+    "BALL_CONTROL",
+    "PASSING_IQ",
+    "PASSING_ACCURACY",
+    "OFFENSIVE_REBOUND",
+    "STANDING_DUNK",
+    "DRIVING_DUNK",
+    "SHOT_IQ",
+    "PASSING_VISION",
+    "HANDS",
+    "DEFENSIVE_REBOUND",
+    "INTERIOR_DEFENSE",
+    "PERIMETER_DEFENSE",
+    "BLOCK",
+    "STEAL",
+    "REACTION_TIME",
+    "ON-BALL_DEFENSE_IQ",
+    "LATERAL_QUICKNESS",
+    "SPEED",
+    "SPEED_WITH_BALL",
+    "ACCELERATION",
+    "VERTICAL",
+    "STRENGTH",
+    "STAMINA",
+    "HUSTLE",
+    "PASS_PERCEPTION",
+    "DEFENSIVE_CONSISTENCY",
+    "HELP_DEFENSIVE_IQ",
+    "OFFENSIVE_CONSISTENCY",
+  ]
+  return chooseOne(attributes);
+};
+
 const randomBadge = () => {
   const badges = [
     "Extremely Confident",
