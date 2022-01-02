@@ -1,4 +1,4 @@
-const Discord = require("discord.js");
+const { Client } = require("discord.js");
 const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const _ = require("lodash");
@@ -10,9 +10,12 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const router = express.Router();
-const { postToChannelWith } = require("./app/router/services");
+const { postToChannelWith, postToTeamWith } = require("./app/router/services");
 require("dotenv").config();
-const client = new Discord.Client();
+const client = new Client({
+  intents: ["GUILDS", "GUILD_MEMBERS"],
+  fetchAllMembers: true
+});
 
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
@@ -36,6 +39,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 router.post("/roj/post/toChannel", postToChannelWith(client));
+router.post("/roj/post/toTeam", postToTeamWith(client));
 
 const PORT = process.env.PORT || 8081;
 
