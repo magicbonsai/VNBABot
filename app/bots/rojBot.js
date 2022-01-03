@@ -10,7 +10,6 @@ const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
 
-
 function runRoj(team, setTweet) {
   const validTeams = (process.env.VALID_TEAMS || []).split(",");
   const teamToUse = team ? team : _.sample(validTeams);
@@ -141,7 +140,31 @@ const runReport = () => {
     });
     //for all valid teams run a set of events
 
-    const event = rwc(dLeagueWeights);
+    const allUpdates = validTeams.reduce(
+      (acc, currentValue) => {
+        const playersRowsToUse = playerRows.filter(player => player.Team === currentValue );
+        let arrayOfResults = []
+        for (i = 0; i < 5; i++) {
+          let event = rwc(weights);
+          let {
+            fn,
+            selectionFn = _.sample,
+          } = event;
+          let playerRowToUse = selectionFn(playerRowsToUse);
+          let retiree = _.sample(retiredPlayerRows);
+          let {
+            updateKey,
+            messageString
+          } = fn({playerRowToUse, retiree});
+          if(!_.isEmpty(updateKey)) {
+            
+          }
+        };
+      },
+      {}
+    );
+  
+    const event = rwc(weights);
     
     const chosenPlayer = _.sample(playersToUse);
     const retiree = _.sample(retiredPlayerRows);

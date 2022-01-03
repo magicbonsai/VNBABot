@@ -1,95 +1,32 @@
 const generatePlayer = require("../helpers/playerGenerator");
 const fetch = require("node-fetch");
+const rwc = require("random-weighted-choice");
 const _ = require("lodash");
 require("dotenv").config();
 
 const playerTypes = ["guard", "wing", "big"];
 
+const choosePlayerByAge = players => {
+  const playerToWeightMap = players.map(player => {
+    return ({
+      id: player.Name,
+      weight: (1 / player.Age)
+    })
+  })
+  const playerId = rwc(playerToWeightMap);
+  return players.find(player => player.Name === playerId);
+};
+
+// TODO: For all development events and injury events remap everything to return
+// an {
+//   updateKey
+//   messageString
+// }
+// Map all the other events to also at least return an object w/ messageString for parity
+
+
 const rojEvents = {
-  // Injuries
-
-  Flu: {
-    valid: true,
-    fn: function(player) {
-      // logic goes here
-      return `It appears that ${
-        player.Name
-      } has been ill with the flu an will now miss the next ${_.random(
-        1, 2
-      )} games.`;
-    }
-  },
-
-  "Torn ACL": {
-    valid: true,
-    fn: function(player) {
-      return `BREAKING: ${player.Name} of the ${player.Team} has tragically suffered a torn ACL and is now expected to sit out the rest of the season.\
-      The ${player.Team} organization will work with ${player.Name} during the remainder of his season in rehab.`;
-    }
-  },
-
-  "Back Spasms": {
-    valid: true,
-    fn: function(player) {
-      return `BREAKING: ${player.Name} of the ${
-        player.Team
-      } has reportedly been dealing with back spasms and is expected to miss the next ${_.random(1,3)} games as he recovers.`;
-    }
-  },
-
-  "Missed Practice": {
-    valid: true,
-    fn: function(player) {
-      return `${player.Name} of the ${
-        player.Team
-      } has reportedly missed the last ${
-        player.Team
-      } practice session and has been internally suspended for ${_.random(1,2)} games by the ${player.Team} organization.`;
-    }
-  },
-
-  "Failed Drug Test": {
-    valid: true,
-    fn: function(player) {
-      return `BREAKING: ${player.Name} of the ${
-        player.Team
-      } has reportedly tested positive for PEDs and has been suspended by the NBA for ${_.random(1,4)} games by the VNBA.`;
-    }
-  },
-
-  concussion: {
-    valid: true,
-    fn: function(player) {
-      return `${player.Name} of the ${
-        player.Team
-      } has been placed in the VNBA concussion protocal and is expected to miss the next ${_.random(1,
-        3
-      )} games as he recovers.`;
-    }
-  },
-
-  "Sore Hamstring": {
-    valid: true,
-    fn: function(player) {
-      return `${player.Name} of the ${
-        player.Team
-      } has been been suffering from a sore hamstring and is ruled out of games for the next ${_.random(1,
-        2
-      )} games as he recovers.`;
-    }
-  },
-
-  childbirth: {
-    valid: true,
-    fn: function(player) {
-      return `Congratulations to ${player.Name} of the ${
-        player.Team
-      } for the birth of his ${chooseOne(["son", "daughter"])}. ${
-        player.Name
-      } will take the next ${_.random(1,2)} games off to be with his child.`;
-    }
-  },
-
+  
   // New FA
 
   "New FA": {
@@ -129,20 +66,51 @@ const rojEvents = {
   boost: {
     valid: true,
     fn: function(player) {
-      const { id, value } = randomTrait();
-      return `Interesting development, ${player.Name} of the ${
+      const datem = randomAttribute();
+      const {
+        key,
+        data: {
+          name,
+          value
+        } = {},
+      } = datem;
+      const messageString =  `Interesting development, ${player.Name} of the ${
         player.Team
-      } has been putting in extra work at the gym to improve his ${id}. (+${value})`;
-    }
+      } has been putting in extra work at the gym to improve his ${name}. (+${value})`; 
+      return ({
+        updateKey: {
+          key,
+          value,
+        },
+        messageString,
+      });
+    },
+    selectionFn: choosePlayerByAge
   },
 
   badge: {
     valid: true,
     fn: function(player) {
-      return `According to sources, ${player.Name} of the ${
+      const datem = randomBadge();
+      const {
+        key,
+        data: {
+          name,
+          value
+        } = {},
+      } = datem;
+      const messageString =  `According to sources, ${player.Name} of the ${
         player.Team
       } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
-    }
+      return ({
+        updateKey: {
+          key,
+          value,
+        },
+        messageString,
+      });
+    },
+    selectionFn: choosePlayerByAge
   },
 
   hotzone: {
@@ -151,6 +119,16 @@ const rojEvents = {
       return `According to sources, ${player.Name} of the ${
         player.Team
       } has been shooting hot under this zone: ${randomHotZone()}`;
+    },
+    selectionFn: players => {
+      const playerToWeightMap = players.map(player => {
+        return ({
+          id: player.Name,
+          weight: (1 / player.Age)
+        })
+      })
+      const playerId = rwc(playerToWeightMap);
+      return players.find(player => player.Name === playerId);
     }
   },
 
@@ -173,7 +151,8 @@ const rojEvents = {
       } of the ${
         player.Team
       } in one of their Hall of Fame worthy skills. (+1 badge level from the retired players HOF badges)`
-    }
+    },
+    selectionFn: choosePlayerByAge
   },
 
   // Miscellaneous
@@ -237,14 +216,16 @@ const rojEvents = {
     valid: true,
     fn: function(player) {
       return `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch since entering the VNBA!`;
-    }
+    },
+    selectionFn: choosePlayerByAge
   },
 
   wingspan: {
     valid: true,
     fn: function(player) {
       return `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
-    }
+    },
+    selectionFn: choosePlayerByAge
   },
 
   // Inconsequential
@@ -352,6 +333,93 @@ const rojEvents = {
     }
   }
 };
+
+const injuryEvents = {
+// Injuries
+
+  Flu: {
+    valid: true,
+    fn: function(player) {
+      // logic goes here
+      return `It appears that ${
+        player.Name
+      } has been ill with the flu an will now miss the next ${_.random(
+        1, 2
+      )} games.`;
+    }
+  },
+
+  "Torn ACL": {
+    valid: true,
+    fn: function(player) {
+      return `BREAKING: ${player.Name} of the ${player.Team} has tragically suffered a torn ACL and is now expected to sit out the rest of the season.\
+      The ${player.Team} organization will work with ${player.Name} during the remainder of his season in rehab.`;
+    }
+  },
+
+  "Back Spasms": {
+    valid: true,
+    fn: function(player) {
+      return `BREAKING: ${player.Name} of the ${
+        player.Team
+      } has reportedly been dealing with back spasms and is expected to miss the next ${_.random(1,3)} games as he recovers.`;
+    }
+  },
+
+  "Missed Practice": {
+    valid: true,
+    fn: function(player) {
+      return `${player.Name} of the ${
+        player.Team
+      } has reportedly missed the last ${
+        player.Team
+      } practice session and has been internally suspended for ${_.random(1,2)} games by the ${player.Team} organization.`;
+    }
+  },
+
+  "Failed Drug Test": {
+    valid: true,
+    fn: function(player) {
+      return `BREAKING: ${player.Name} of the ${
+        player.Team
+      } has reportedly tested positive for PEDs and has been suspended by the NBA for ${_.random(1,4)} games by the VNBA.`;
+    }
+  },
+
+  concussion: {
+    valid: true,
+    fn: function(player) {
+      return `${player.Name} of the ${
+        player.Team
+      } has been placed in the VNBA concussion protocal and is expected to miss the next ${_.random(1,
+        3
+      )} games as he recovers.`;
+    }
+  },
+
+  "Sore Hamstring": {
+    valid: true,
+    fn: function(player) {
+      return `${player.Name} of the ${
+        player.Team
+      } has been been suffering from a sore hamstring and is ruled out of games for the next ${_.random(1,
+        2
+      )} games as he recovers.`;
+    }
+  },
+
+  childbirth: {
+    valid: true,
+    fn: function(player) {
+      return `Congratulations to ${player.Name} of the ${
+        player.Team
+      } for the birth of his ${chooseOne(["son", "daughter"])}. ${
+        player.Name
+      } will take the next ${_.random(1,2)} games off to be with his child.`;
+    }
+  },
+
+}
 
 const dLeagueEvents = {
   boost: {
@@ -1168,18 +1236,27 @@ export const hotzones = {
 const randomAttribute = () => {
   const categoryKey = _.sample(Object.keys(attributes));
   const attributeKey = _.sample(Object.keys(attributes[categoryKey]));
-  return attributes[categoryKey][attributeKey];
+  return ({
+    key: attributeKey,
+    data: attributes[categoryKey][attributeKey]
+  });
 };
 
 const randomBadge = () => {
   const categoryKey = _.sample(Object.keys(badges));
   const badgeKey = _.sample(Object.keys(badges[categoryKey]));
-  return badges[categoryKey][badgeKey];
+  return ({
+    key: badgeKey,
+    data: attributes[categoryKey][badgeKey]
+  });
 };
 
 const randomHotZone = () => {
   const key = _.sample(Object.keys);
-  return hotzones[key];
+  return ({
+    key,
+    data: hotzones[key]
+  })
 };
 ;
 const randomBadge = () => {
