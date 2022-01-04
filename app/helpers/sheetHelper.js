@@ -8,7 +8,8 @@ const sheetIds = {
   trainingRegime: "33721000",
   retiredPlayers: "242746550",
   dLeague: "1888180632",
-  teamAssets: "395261312"
+  teamAssets: "395261312",
+  requestQueue: "770847722",
 };
 
 module.exports = { sheetIds };

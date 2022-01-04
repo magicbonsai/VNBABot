@@ -78,7 +78,7 @@ const rojEvents = {
         player.Team
       } has been putting in extra work at the gym to improve his ${name}. (+${value})`; 
       return ({
-        type: 'ATTRIBUTE',
+        type: 'ATTRIBUTES',
         updateKey: {
           key,
           value,
@@ -104,7 +104,7 @@ const rojEvents = {
         player.Team
       } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
       return ({
-        type: 'BADGE',
+        type: 'BADGES',
         updateKey: {
           key,
           value,

@@ -61,7 +61,33 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
   ];
 };
 
-const update
+//API format: (playerRow, secondary)
+
+async function updatePlayerObject (playerRow, sheets, type, updateKey) {
+  console.log('playerRow', playerRow);
+  const {
+    Data: oldData,
+    Name: playerName,
+  } = playerRow;
+  const newJSON = updateJSON(type, oldData, updateKey);
+  const requestQueue = sheets[sheetIds.requestQueue];
+  const players = sheets[sheetIds.players];
+  const playerRows = await players.getRows();
+  const requestQueueRows = await requestQueue.getRows();
+  const rowToUpdate = playerRows.find(row => row.Name === playerName);
+  rowToUpdate[Data] = newJSON;
+  await rowToUpdate.save();
+  const requestRowToUpdate = requestQueueRows.find(row => row.Player === playerName);
+  if(requestRowToUpdate) {
+    // There is an existing row so update the data that already exists
+
+  } else {
+    // push up a new Row
+
+  }
+  
+  await playerRow.saveUpdatedCells();
+};
 
 const runReport = () => {
   (async function main() {
@@ -77,6 +103,7 @@ const runReport = () => {
     const players = sheets[sheetIds.players];
 
     const rojUpdates = sheets[sheetIds.updates]; 
+    const requestQueue = sheets[sheetIds.requestQueue];
 
     const playerRows = await players.getRows();
     const validTeams = await assets.getsRows().then(rows => {
@@ -121,12 +148,6 @@ const runReport = () => {
       {}
     );
   
-    const event = rwc(weights);
-    
-    const chosenPlayer = _.sample(playersToUse);
-    const retiree = _.sample(retiredPlayerRows);
-
-    const status = dLeagueRoulette(event, chosenPlayer, retiree, rojUpdates);
     status.then(toPost => {
       if (process.env.ENVIRONMENT === "PRODUCTION") {
         postRojTweet(toPost);
