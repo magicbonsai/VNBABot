@@ -10,6 +10,51 @@ const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
 
+const tabMap = {
+  ATTRIBUTE: {
+    upperBound: 222,
+  },
+  BADGE: {
+    upperBound: 4
+  },
+  HOTZONE: {
+    upperBound: 2,
+  }
+};
+
+const updateJSON = (tabKey, data, updateKey = {}) => {
+  const {
+    key,
+    value
+  } = updateKey;
+  const {
+    upperBound
+  } = tabMap[tabKey];
+  const valuesFromJSON = JSON.parse(data);
+  const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
+  const selectedIndex = valuesFromJSON.findIndex(page => page.Tab === tabKey);
+  let newData = selectedTab.data;
+  newData[key] = `${_.clamp(
+    parseInt(newAttributes[key]) + value,
+    0,
+    upperBound
+  )}`;
+
+  let newJSONWithoutSelectedTab = valueFromJSON.filter(page => page.tab !== tabKey);
+
+  return [
+    ...valuesFromJSON.slice(0, selectedIndex),
+    {
+      module: "PLAYER",
+      tab: tabKey,
+      data: newData
+    },
+    ...valuesFromJSON.slice(selectedIndex +1)
+  ];
+};
+
+const update
+
 const runReport = () => {
   (async function main() {
     await doc.useServiceAccountAuth({
@@ -22,8 +67,6 @@ const runReport = () => {
     const assets = sheets[sheetIds.teamAssets];
     const events = sheets[sheetIds.news];
     const players = sheets[sheetIds.players];
-    const retiredPlayerSheet = sheets[sheetIds.retiredPlayers];
-
 
     const rojUpdates = sheets[sheetIds.updates]; 
 
@@ -35,7 +78,6 @@ const runReport = () => {
         }
       )
     });
-    const retiredPlayerRows = await retiredPlayerSheet.getRows();
     const weights = await events.getRows().then(rows => {
       return rows.map(row => {
         return {
@@ -48,7 +90,7 @@ const runReport = () => {
 
     const allUpdates = validTeams.reduce(
       (acc, currentValue) => {
-        const playersRowsToUse = playerRows.filter(player => player.Team === currentValue );
+        const playerRowsToUse = playerRows.filter(player => player.Team === currentValue );
         let arrayOfResults = []
         for (i = 0; i < 5; i++) {
           let event = rwc(weights);
@@ -57,15 +99,13 @@ const runReport = () => {
             selectionFn = _.sample,
           } = event;
           let playerRowToUse = selectionFn(playerRowsToUse);
-          let retiree = _.sample(retiredPlayerRows);
           let {
             type,
             updateKey,
             messageString
-          } = fn({playerRowToUse, retiree});
-          if(!_.isEmpty(updateKey)) {
-            
-          }
+          } = fn(playerRowToUse);
+          let updateFunction = updateFunctionMap[type];
+          arrayOfResults = [...arrayOfResults, `${messageString}\n`];
         };
       },
       {}
@@ -89,10 +129,10 @@ const runReport = () => {
 
 const updateFunctionMap = {
   MANUAL: () => {},
-  ATTRIBUTE: () => {},
-  HOTZONE: () => {},
-  BADGE: () => {},
-  BUDGET: () => {},
+  ATTRIBUTE: updateJSON,
+  HOTZONE: updateJSON,
+  BADGE: updateJSON,
+  BUDGET: () => {}  ,
 }
 
 
