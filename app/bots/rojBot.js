@@ -10,14 +10,23 @@ const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
 
+// we need to add a multiplier to certain changes
+// attributes are actually stored as a value from 25 - 222, where 
+// 3 points = 1 attribute point in the game itself.
+
+// upperBound will constrain changes to the maximum the key allows.
+
 const tabMap = {
   ATTRIBUTE: {
+    multiplier: 3,
     upperBound: 222,
   },
   BADGE: {
+    multiplier: 1,
     upperBound: 4
   },
   HOTZONE: {
+    multiplier: 1,
     upperBound: 2,
   }
 };
@@ -28,6 +37,7 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
     value
   } = updateKey;
   const {
+    multiplier = 1,
     upperBound
   } = tabMap[tabKey];
   const valuesFromJSON = JSON.parse(data);
@@ -35,12 +45,10 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
   const selectedIndex = valuesFromJSON.findIndex(page => page.Tab === tabKey);
   let newData = selectedTab.data;
   newData[key] = `${_.clamp(
-    parseInt(newAttributes[key]) + value,
+    parseInt(newAttributes[key]) + (value * multiplier),
     0,
     upperBound
   )}`;
-
-  let newJSONWithoutSelectedTab = valueFromJSON.filter(page => page.tab !== tabKey);
 
   return [
     ...valuesFromJSON.slice(0, selectedIndex),
@@ -105,6 +113,8 @@ const runReport = () => {
             messageString
           } = fn(playerRowToUse);
           let updateFunction = updateFunctionMap[type];
+          // the updateFunction will use the relevant function
+          // and also update the relevant sheets (hopefully)
           arrayOfResults = [...arrayOfResults, `${messageString}\n`];
         };
       },
@@ -132,7 +142,7 @@ const updateFunctionMap = {
   ATTRIBUTE: updateJSON,
   HOTZONE: updateJSON,
   BADGE: updateJSON,
-  BUDGET: () => {}  ,
+  BUDGET: () => {},
 }
 
 
