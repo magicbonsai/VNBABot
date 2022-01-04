@@ -19,7 +19,7 @@ const client = new Client({
 
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
-const { runRoj, runDLeague } = require("./app/bots/rojBot");
+const { runRoj } = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
@@ -59,10 +59,6 @@ const dedueCommand = (prompt, msg) => {
   switch (words[0].toLowerCase()) {
     case "tweet":
       runRoj(words[1], words[2]);
-      break;
-
-    case "dleague":
-      runDLeague();
       break;
 
     case "r-s":
