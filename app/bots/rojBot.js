@@ -1,5 +1,6 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
+const { CHANNEL_IDS } = require('../../consts');
 const { rojEvents, dLeagueEvents } = require("./consts");
 const _ = require("lodash");
 require("dotenv").config();
@@ -75,12 +76,17 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
   const players = sheets[sheetIds.players];
   const playerRows = await players.getRows();
   const requestQueueRows = await requestQueue.getRows();
-  const rowToUpdate = playerRows.find(row => row.Name === playerName);
-  rowToUpdate[Data] = newJSON;
-  await rowToUpdate.save();
+
+  // updating the player list
+  const playerRowToUpdate = playerRows.find(row => row.Name === playerName);
+  playerRowToUpdate[Data] = newJSON;
+  await playerRowToUpdate.save();
+
+  //updating the request queue
   const requestRowToUpdate = requestQueueRows.find(row => row.Player === playerName);
   if(requestRowToUpdate) {
     // There is an existing row so update the data that already exists
+    requestRowToUpdate[Date] = new Date().toLocaleString().split(",")[0];
     requestRowToUpdate[Data] = newJSON;
     requestRowToUpdate["Done?"] = undefined;
     await requestRowToUpdate.save();
@@ -98,7 +104,28 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
   
 };
 
-const runReport = () => {
+const runEvent = (playerRowsToUse, weights) => {
+  const eventId = rwc(weights);
+  const {
+    fn,
+    selectionFn = _.sample,
+  } = rojEvents[eventId] || {};
+  const playerRowToUse = selectionFn(playerRowsToUse);
+  const {
+    type,
+    updateKey,
+    messageString
+  } = fn(playerRowToUse);
+  const updateFunction = updateFunctionMap[type];
+  updateFunction(playerRowToUse, sheets, type, updateKey);
+  return {
+    team: playerRowToUse.Team,
+    name: playerToUse.Name,
+    messageString
+  }
+};
+
+const runReportWith = (discordClient) => () => {
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -130,39 +157,54 @@ const runReport = () => {
         };
       });
     });
+
     //for all valid teams run a set of events
+
+    // allUpdates = {
+    //   team_name: [array of messages]
+    //   ...etc
+    // }
 
     const allUpdates = validTeams.reduce(
       (acc, currentValue) => {
         const playerRowsToUse = playerRows.filter(player => player.Team === currentValue );
         let arrayOfResults = []
         for (i = 0; i < 5; i++) {
-          let event = rwc(weights);
-          let {
-            fn,
-            selectionFn = _.sample,
-          } = event;
-          let playerRowToUse = selectionFn(playerRowsToUse);
-          let {
-            type,
-            updateKey,
+          const {
             messageString
-          } = fn(playerRowToUse);
-          let updateFunction = updateFunctionMap[type];
+          } = runEvent(playerRowsToUse, weights);
           // the updateFunction will use the relevant function
           // and also update the relevant sheets (hopefully)
           arrayOfResults = [...arrayOfResults, `${messageString}\n`];
         };
+        return [
+          ...acc,
+          {
+            team: currentValue,
+            messages:arrayOfResults
+          }
+        ];
       },
-      {}
+      []
     );
+    
+    const payload = allUpdates.map(value => {
+      const {
+        team,
+        messages 
+      } = value;
+      const allMessages = messages.join();
+      return `${allMessages}\n`;
+    }).join();
+    
+    discordClient.channels.get(CHANNEL_IDS['updates']).send(payload);
   
-    status.then(toPost => {
-      if (process.env.ENVIRONMENT === "PRODUCTION") {
-        postRojTweet(toPost);
-      }
-      console.log(toPost);
-    });
+    // status.then(toPost => {
+    //   if (process.env.ENVIRONMENT === "PRODUCTION") {
+    //     postRojTweet(toPost);
+    //   }
+    //   console.log(toPost);
+    // });
 
   })();
 }; 
