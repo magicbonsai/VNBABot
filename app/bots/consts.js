@@ -440,7 +440,7 @@ const randomHotZone = () => {
 };
 
 const randomTrait = () => {
-  const traits = [
+  const oldTraits = [
     {
       id: "Finishing",
       value: 5
@@ -495,16 +495,154 @@ const randomTrait = () => {
     },
   ];
 
+  const interimAttributes = [
+    {
+      id: "Standing Dunk",
+      value: 5
+    },
+    {
+      id: "Driving Layup",
+      value: 5
+    },
+    {
+      id: "Driving Dunk",
+      value: 5
+    },
+    {
+      id: "Close Shot",
+      value: 5
+    },
+    {
+      id: "Mid-Range Shot",
+      value: 5
+    },
+    {
+      id: "Three-point Shot",
+      value: 5
+    },
+    {
+      id: "Free Throw",
+      value: 5
+    },
+    {
+      id: "ShotIQ",
+      value: 5
+    },
+    {
+      id: "PassIQ",
+      value: 5
+    },
+    {
+      id: "Pass Vision",
+      value: 5
+    },
+    {
+      id: "Pass Accuracy",
+      value: 5
+    },
+    {
+      id: "Ball Handling",
+      value: 5
+    },
+    {
+      id: "Hands",
+      value: 5
+    },
+    {
+      id: "Post Hook",
+      value: 5
+    },
+    {
+      id: "Post Fade",
+      value: 5
+    },
+    {
+      id: "Post Control",
+      value: 5
+    },
+    {
+      id: "Block",
+      value: 5
+    },
+    {
+      id: "Steal",
+      value: 5
+    },
+    {
+      id: "Pass Perception",
+      value: 5
+    },
+    {
+      id: "Interior Defense",
+      value: 5
+    },
+    {
+      id: "Perimeter Defense",
+      value: 5
+    },
+    {
+      id: "Help Defense IQ",
+      value: 5
+    },
+    {
+      id: "Offensive Rebounding",
+      value: 5
+    },
+    {
+      id: "Defensive Rebounding",
+      value: 5
+    },
+    {
+      id: "Speed",
+      value: 5
+    },
+    {
+      id: "Speed w/ Ball",
+      value: 5
+    },
+    {
+      id: "Acceleration",
+      value: 5
+    },
+    {
+      id: "Lateral Quickness",
+      value: 5
+    },
+    {
+      id: "Stamina",
+      value: 5
+    },
+    {
+      id: "Strength",
+      value: 5
+    },
+    {
+      id: "Vertical",
+      value: 5
+    },
+    {
+      id: "Weight",
+      value: 10
+    },
+    {
+      id: "Offensive Consistency",
+      value: 10
+    },
+    {
+      id: "Defensive Consistency",
+      value: 10
+    },
+    {
+      id: "Intangibles",
+      value: 10
+    },
+  ];
+
   return chooseOne(traits);
 };
 
 const randomBadge = () => {
   const badges = [
-    "Extremely Confident",
-    "Enforcer",
-    "Unpredictable",
-    "Alpha Dog",
-    "Team Player",
     "Acrobat",
     "Tear Dropper",
     "Relentless Finisher",
