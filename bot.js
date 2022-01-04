@@ -225,11 +225,29 @@ client.on("message", msg => {
 
 client.login(process.env.BOT_TOKEN);
 
-let teams = process.env.VALID_TEAMS.split(",");
+let teams = [];
+
+(async function main() {
+  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+  await doc.useServiceAccountAuth({
+    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+  });
+
+  await doc.loadInfo();
+
+  const sheets = doc.sheetsByTitle;
+  const teamAssets = sheets["Team Assets"];
+
+  const teamAssetsRows = await teamAssets.getRows();
+  
+  teams = teamAssetsRows.filter(row => !row.Frozen).map(row => row.Team);
+
+})();
 
 const preJob = new CronJob("0 14 * * *", function () {
   console.log("teams value", teams);
-  teams = _.shuffle(process.env.VALID_TEAMS.split(","));
+  teams = _.shuffle(teams);
 });
 
 const WednesdayJob = new CronJob("0 15 * * 3", function () {

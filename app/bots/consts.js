@@ -78,6 +78,7 @@ const rojEvents = {
         player.Team
       } has been putting in extra work at the gym to improve his ${name}. (+${value})`; 
       return ({
+        type: 'ATTRIBUTE',
         updateKey: {
           key,
           value,
@@ -103,6 +104,7 @@ const rojEvents = {
         player.Team
       } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
       return ({
+        type: 'BADGE',
         updateKey: {
           key,
           value,
@@ -116,9 +118,25 @@ const rojEvents = {
   hotzone: {
     valid: true,
     fn: function(player) {
-      return `According to sources, ${player.Name} of the ${
+      const datem = randomHotZone();
+      const {
+        key,
+        data: {
+          name,
+          value,
+        } = {}
+      } = datem;
+      const messageString =  `According to sources, ${player.Name} of the ${
         player.Team
-      } has been shooting hot under this zone: ${randomHotZone()}`;
+      } has been shooting hot under this zone: ${name}`;
+      return ({
+        type: 'HOTZONE',
+        updateKey: {
+          key,
+          value,
+        },
+        messageString,
+      })
     },
     selectionFn: players => {
       const playerToWeightMap = players.map(player => {
@@ -199,9 +217,18 @@ const rojEvents = {
   budget: {
     valid: true,
     fn: function(player) {
-      return `With some sly budgeting, the ${
+      const value = _.random(1,5);
+      const messageString = `With some sly budgeting, the ${
         player.Team
-      } have managed to find an extra ${_.random(1,5)} dollars for this season.`;
+      } have managed to find an extra ${value} dollars for this season.`;
+      return ({
+        type: 'BUDGET',
+        updateKey: {
+          key: player.Team,
+          value
+        },
+        messageString
+      })
     }
   },
 
@@ -215,7 +242,15 @@ const rojEvents = {
   growth: {
     valid: true,
     fn: function(player) {
-      return `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch since entering the VNBA!`;
+      const messageString = `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch since entering the VNBA!`;
+      return ({
+        type: 'MANUAL',
+        updateKey: {
+          key: 'height',
+          value: player.Name,
+        },
+        messageString,
+      })
     },
     selectionFn: choosePlayerByAge
   },
@@ -223,7 +258,14 @@ const rojEvents = {
   wingspan: {
     valid: true,
     fn: function(player) {
-      return `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
+      const messageString = `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
+      return ({
+        type: 'MANUAL',
+        updateKey: {
+          key: 'wingspan',
+          value: player.Name
+        }
+      })
     },
     selectionFn: choosePlayerByAge
   },
@@ -484,86 +526,6 @@ const dLeagueEvents = {
       return `Incredibly shocking news from the D League, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
     }
   },
-};
-
-// const randomHotZone = () => {
-//   const zones = [
-//     "Under Basket",
-//     "Close Left",
-//     "Close Middle",
-//     "Close Right",
-//     "Mid Left",
-//     "Mid Left-Center",
-//     "Mid Center",
-//     "Mid Right-Center",
-//     "Mid Right",
-//     "Three Left",
-//     "Three Left-Center",
-//     "Three Middle",
-//     "Three Right-Center",
-//     "Three Right"
-//   ];
-
-//   return chooseOne(zones);
-// };
-
-const randomTrait = () => {
-  const traits = [
-    {
-      id: "Finishing",
-      value: 5
-    },
-    {
-      id: "Shooting",
-      value: 5
-    },
-    {
-      id: "Playmaking",
-      value: 5
-    },
-    {
-      id: "Handles",
-      value: 5
-    },
-    {
-      id: "Post Game",
-      value: 5
-    },
-    {
-      id: "Stocks",
-      value: 5
-    },
-    {
-      id: "Defense",
-      value: 5
-    },
-    {
-      id: "Rebounding",
-      value: 5
-    },
-    {
-      id: "Athleticism",
-      value: 5
-    },
-    {
-      id: "Conditioning",
-      value: 5
-    },
-    {
-      id: "Strength",
-      value: 5
-    },
-    {
-      id: "Strength",
-      value: 5
-    },
-    {
-      id: "Weight",
-      value: 10
-    },
-  ];
-
-  return chooseOne(traits);
 };
 
 export const attributes = {
@@ -1190,45 +1152,60 @@ export const badges = {
 
 export const hotzones = {
   "3_LEFT-CENTER": {
+    name: '3 Left-Center',
     value: 1
   },
   "3_RIGHT-CENTER": {
+    name: '3 Right-Center',
+  
     value: 1
   },
   CENTER_3: {
+    name: '3 Center',
     value: 1
   },
   CLOSE_LEFT: {
+    name: 'Close Left',
     value: 1
   },
   CLOSE_MIDDLE: {
+    name: 'Close Middle',
     value: 1
   },
   CLOSE_RIGHT: {
+    name: 'Close Right',
     value: 1
   },
   LEFT_3: {
+    name: '3 Left',
     value: 1
   },
   "MID-RANGE_LEFT": {
+    name: 'Mid-Range Left',
     value: 1
   },
   "MID-RANGE_LEFT_CENTER": {
+    name: 'Mid-Range Left-Center',
     value: 1
   },
   "MID-RANGE_RIGHT": {
+    name: 'Mid-Range Right',
     value: 1
   },
   "MID-RANGE_RIGHT_CENTER": {
+    name: 'Mid-Range Right-Center',
     value: 1
   },
   MID_CENTER: {
+    name: 'Mid-Range Center',
     value: 1
   },
   RIGHT_3: {
+    name: '3 Right',
     value: 1
   },
   UNDER_BASKET: {
+    name: 'Under Basket',
     value: 1
   }
 };
