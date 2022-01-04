@@ -50,7 +50,7 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
     upperBound
   )}`;
 
-  return [
+  return JSON.stringify([
     ...valuesFromJSON.slice(0, selectedIndex),
     {
       module: "PLAYER",
@@ -58,10 +58,10 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
       data: newData
     },
     ...valuesFromJSON.slice(selectedIndex +1)
-  ];
+  ]);
 };
 
-//API format: (playerRow, secondary)
+//API format: (playerRow, sheets, type, updateKey)
 
 async function updatePlayerObject (playerRow, sheets, type, updateKey) {
   console.log('playerRow', playerRow);
@@ -80,7 +80,8 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
   const requestRowToUpdate = requestQueueRows.find(row => row.Player === playerName);
   if(requestRowToUpdate) {
     // There is an existing row so update the data that already exists
-
+    requestRowToUpdate[Data] = newJSON;
+    await requestRowToUpdate.save();
   } else {
     // push up a new Row
 
@@ -158,11 +159,13 @@ const runReport = () => {
   })();
 }; 
 
+//API format: (playerRow, sheets, type, updateKey)
+
 const updateFunctionMap = {
   MANUAL: () => {},
-  ATTRIBUTE: updateJSON,
-  HOTZONE: updateJSON,
-  BADGE: updateJSON,
+  ATTRIBUTE: updatePlayerObject,
+  HOTZONE: updatePlayerObject,
+  BADGE: updatePlayerObject,
   BUDGET: () => {},
 }
 
