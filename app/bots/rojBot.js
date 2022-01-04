@@ -92,7 +92,7 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
       Team,
       Description: "{}",
       Data: newJSON,
-      "Done?": undefined;
+      "Done?": undefined
     })
   }
   
