@@ -68,6 +68,7 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
   const {
     Data: oldData,
     Name: playerName,
+    Team,
   } = playerRow;
   const newJSON = updateJSON(type, oldData, updateKey);
   const requestQueue = sheets[sheetIds.requestQueue];
@@ -81,13 +82,20 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
   if(requestRowToUpdate) {
     // There is an existing row so update the data that already exists
     requestRowToUpdate[Data] = newJSON;
+    requestRowToUpdate["Done?"] = undefined;
     await requestRowToUpdate.save();
   } else {
     // push up a new Row
-
+    await requestQueue.addRow({
+      Date: new Date().toLocaleString().split(",")[0],
+      Player: playerName,
+      Team,
+      Description: "{}",
+      Data: newJSON,
+      "Done?": undefined;
+    })
   }
   
-  await playerRow.saveUpdatedCells();
 };
 
 const runReport = () => {
