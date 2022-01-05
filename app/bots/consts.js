@@ -222,9 +222,9 @@ const rojEvents = {
         player.Team
       } have managed to find an extra ${value} dollars for this season.`;
       return ({
-        type: 'BUDGET',
+        type: 'ASSETS',
         updateKey: {
-          key: player.Team,
+          key: 'Cash',
           value
         },
         messageString
@@ -528,7 +528,7 @@ const dLeagueEvents = {
   },
 };
 
-export const attributes = {
+const attributes = {
   Shooting: {
     SHOT_CLOSE: {
       name: "Close Shot",
@@ -694,7 +694,7 @@ export const attributes = {
 };
 
 
-export const badges = {
+const badges = {
   Finishing: {
     ACROBAT: {
       name: "Acrobat",
@@ -1150,7 +1150,7 @@ export const badges = {
   },
 };
 
-export const hotzones = {
+const hotzones = {
   "3_LEFT-CENTER": {
     name: '3 Left-Center',
     value: 1
@@ -1336,4 +1336,4 @@ const chooseOne = choices => {
   return choices[Math.floor(Math.random() * choices.length)];
 };
 
-module.exports = { rojEvents, dLeagueEvents, randomCause, randomBadge, randomHotZone, randomTrait, };
+module.exports = { rojEvents, dLeagueEvents, randomCause, randomBadge, randomHotZone, };

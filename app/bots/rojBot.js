@@ -46,7 +46,7 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
   const selectedIndex = valuesFromJSON.findIndex(page => page.Tab === tabKey);
   let newData = selectedTab.data;
   newData[key] = `${_.clamp(
-    parseInt(newAttributes[key]) + (value * multiplier),
+    parseInt(newData[key]) + (value * multiplier),
     0,
     upperBound
   )}`;
@@ -83,12 +83,13 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
   await playerRowToUpdate.save();
 
   //updating the request queue
-  const requestRowToUpdate = requestQueueRows.find(row => row.Player === playerName);
+  const requestRowToUpdate = requestQueueRows.find(row => 
+    ((row.Player === playerName) && (!row["Done?"])));
   if(requestRowToUpdate) {
     // There is an existing row so update the data that already exists
-    requestRowToUpdate[Date] = new Date().toLocaleString().split(",")[0];
+    requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
     requestRowToUpdate[Data] = newJSON;
-    requestRowToUpdate["Done?"] = undefined;
+    // requestRowToUpdate["Done?"] = undefined;
     await requestRowToUpdate.save();
   } else {
     // push up a new Row
@@ -102,6 +103,14 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
     })
   }
   
+};
+
+
+async function updateAssets (playerRow, sheets, type, updateKey) {
+  const {
+    Team,
+  } = playerRow;
+  const teamAssetsSheet = sheets[sheetIds.teamAssets];
 };
 
 const runEvent = (playerRowsToUse, weights) => {
@@ -125,7 +134,7 @@ const runEvent = (playerRowsToUse, weights) => {
   }
 };
 
-const runReportWith = (discordClient) => () => {
+const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -165,11 +174,13 @@ const runReportWith = (discordClient) => () => {
     //   ...etc
     // }
 
+    const shuffledTeams = _.shuffle(validTeams);
+
     const allUpdates = validTeams.reduce(
       (acc, currentValue) => {
         const playerRowsToUse = playerRows.filter(player => player.Team === currentValue );
         let arrayOfResults = []
-        for (i = 0; i < 5; i++) {
+        for (i = 0; i < numberOfEvents; i++) {
           const {
             messageString
           } = runEvent(playerRowsToUse, weights);
@@ -198,13 +209,6 @@ const runReportWith = (discordClient) => () => {
     }).join();
     
     discordClient.channels.get(CHANNEL_IDS['updates']).send(payload);
-  
-    // status.then(toPost => {
-    //   if (process.env.ENVIRONMENT === "PRODUCTION") {
-    //     postRojTweet(toPost);
-    //   }
-    //   console.log(toPost);
-    // });
 
   })();
 }; 
@@ -216,7 +220,7 @@ const updateFunctionMap = {
   ATTRIBUTE: updatePlayerObject,
   HOTZONE: updatePlayerObject,
   BADGE: updatePlayerObject,
-  BUDGET: () => {},
+  ASSETS: () => {},
 }
 
 
