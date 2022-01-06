@@ -18,11 +18,11 @@ faker.setLocale("en");
 // upperBound will constrain changes to the maximum the key allows.
 
 const tabMap = {
-  ATTRIBUTE: {
+  ATTRIBUTES: {
     multiplier: 3,
     upperBound: 222,
   },
-  BADGE: {
+  BADGES: {
     multiplier: 1,
     upperBound: 4
   },
@@ -40,7 +40,7 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
   const {
     multiplier = 1,
     upperBound
-  } = tabMap[tabKey];
+  } = tabMap[tabKey] || {};
   const valuesFromJSON = JSON.parse(data);
   const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
   const selectedIndex = valuesFromJSON.findIndex(page => page.Tab === tabKey);
@@ -64,8 +64,11 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
 
 //API format: (playerRow, sheets, type, updateKey)
 
+const createChangeListJSON = (existingJSON = '{}') => {
+
+};
+
 async function updatePlayerObject (playerRow, sheets, type, updateKey) {
-  console.log('playerRow', playerRow);
   const {
     Data: oldData,
     Name: playerName,
@@ -79,7 +82,7 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
 
   // updating the player list
   const playerRowToUpdate = playerRows.find(row => row.Name === playerName);
-  playerRowToUpdate[Data] = newJSON;
+  playerRowToUpdate.Data = newJSON;
   await playerRowToUpdate.save();
 
   //updating the request queue
@@ -88,19 +91,20 @@ async function updatePlayerObject (playerRow, sheets, type, updateKey) {
   if(requestRowToUpdate) {
     // There is an existing row so update the data that already exists
     requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
-    requestRowToUpdate[Data] = newJSON;
+    requestRowToUpdate["Data"] = newJSON;
     // requestRowToUpdate["Done?"] = undefined;
     await requestRowToUpdate.save();
   } else {
     // push up a new Row
-    await requestQueue.addRow({
+    const newRow = {
       Date: new Date().toLocaleString().split(",")[0],
       Player: playerName,
       Team,
       Description: "{}",
       Data: newJSON,
       "Done?": undefined
-    })
+    };
+    await requestQueue.addRow(newRow);
   }
   
 };
@@ -110,10 +114,32 @@ async function updateAssets (playerRow, sheets, type, updateKey) {
   const {
     Team,
   } = playerRow;
+  const {
+    key,
+    value 
+  } = updateKey;
   const teamAssetsSheet = sheets[sheetIds.teamAssets];
+  const teamAssetsRows = teamAssetsSheet.getRows();
+
+  const rowToUpdate = teamAssetsRows.find(row => row.Team === Team);
+
+  rowToUpdate[key] = parseInt(rowToUpdate[key]) + value; 
+  console.log('cashupdate', rowToUpdate, key, value);
+  // await rowToUpdate.save();
 };
 
-const runEvent = (playerRowsToUse, weights) => {
+//API format: (playerRow, sheets, type, updateKey)
+
+const updateFunctionMap = {
+  MANUAL: () => {},
+  ATTRIBUTES: updatePlayerObject,
+  HOTZONE: updatePlayerObject,
+  BADGES: updatePlayerObject,
+  ASSETS: () => {},
+}
+
+
+const runEvent = (playerRowsToUse, weights, sheets) => {
   const eventId = rwc(weights);
   const {
     fn,
@@ -125,11 +151,12 @@ const runEvent = (playerRowsToUse, weights) => {
     updateKey,
     messageString
   } = fn(playerRowToUse);
+  console.log('result', type, updateKey);
   const updateFunction = updateFunctionMap[type];
   updateFunction(playerRowToUse, sheets, type, updateKey);
   return {
     team: playerRowToUse.Team,
-    name: playerToUse.Name,
+    name: playerRowToUse.Name,
     messageString
   }
 };
@@ -151,7 +178,7 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
     const requestQueue = sheets[sheetIds.requestQueue];
 
     const playerRows = await players.getRows();
-    const validTeams = await assets.getsRows().then(rows => {
+    const validTeams = await assets.getRows().then(rows => {
       return rows.filter(row => !row.Frozen).map(
         row => {
           return row.Team
@@ -173,17 +200,18 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
     //   team_name: [array of messages]
     //   ...etc
     // }
+    console.log('validTeams', validTeams)
 
-    const shuffledTeams = _.shuffle(validTeams);
+    const shuffledTeams = _.shuffle(['Celtics']);
 
-    const allUpdates = validTeams.reduce(
+    const allUpdates = shuffledTeams.reduce(
       (acc, currentValue) => {
         const playerRowsToUse = playerRows.filter(player => player.Team === currentValue );
         let arrayOfResults = []
         for (i = 0; i < numberOfEvents; i++) {
           const {
             messageString
-          } = runEvent(playerRowsToUse, weights);
+          } = runEvent(playerRowsToUse, weights, sheets);
           // the updateFunction will use the relevant function
           // and also update the relevant sheets (hopefully)
           arrayOfResults = [...arrayOfResults, `${messageString}\n`];
@@ -198,6 +226,7 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
       },
       []
     );
+    console.log('allUpdates', allUpdates);
     
     const payload = allUpdates.map(value => {
       const {
@@ -208,21 +237,10 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
       return `${allMessages}\n`;
     }).join();
     
-    discordClient.channels.get(CHANNEL_IDS['updates']).send(payload);
+    // discordClient.channels.get(CHANNEL_IDS.updates).send(payload);
 
   })();
 }; 
-
-//API format: (playerRow, sheets, type, updateKey)
-
-const updateFunctionMap = {
-  MANUAL: () => {},
-  ATTRIBUTE: updatePlayerObject,
-  HOTZONE: updatePlayerObject,
-  BADGE: updatePlayerObject,
-  ASSETS: () => {},
-}
-
 
 // Deprecated functions
 
@@ -403,4 +421,4 @@ const chooseOne = choices => {
   return choices[Math.floor(Math.random() * choices.length)];
 };
 
-module.exports = { runRoj, runDLeague };
+module.exports = { runRoj, runDLeague, runReportWith };

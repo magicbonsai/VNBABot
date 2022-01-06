@@ -102,7 +102,7 @@ const rojEvents = {
       } = datem;
       const messageString =  `According to sources, ${player.Name} of the ${
         player.Team
-      } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
+      } has been aiming to earn a role within his team. The role? ${name}.`;
       return ({
         type: 'BADGES',
         updateKey: {
@@ -1157,7 +1157,6 @@ const hotzones = {
   },
   "3_RIGHT-CENTER": {
     name: '3 Right-Center',
-  
     value: 1
   },
   CENTER_3: {
@@ -1224,98 +1223,18 @@ const randomBadge = () => {
   const badgeKey = _.sample(Object.keys(badges[categoryKey]));
   return ({
     key: badgeKey,
-    data: attributes[categoryKey][badgeKey]
+    data: badges[categoryKey][badgeKey]
   });
 };
 
 const randomHotZone = () => {
-  const key = _.sample(Object.keys);
+  const key = _.sample(Object.keys(hotzones));
   return ({
     key,
     data: hotzones[key]
   })
 };
-;
-// const randomBadge = () => {
-//   const badges = [
-//     "Acrobat",
-//     "Tear Dropper",
-//     "Relentless Finisher",
-//     "Post Spin Technician",
-//     "Drop Stepper",
-//     "Putback Boss",
-//     "Backdown Punisher",
-//     "Consistent Finisher",
-//     "Contact Finisher",
-//     "Cross-key Scorer",
-//     "Deep Hooker",
-//     "Pick and Roller",
-//     "Fancy Footwork",
-//     "Fastbreak Finisher",
-//     "Giant Slayer",
-//     "Pro Touch",
-//     "ShowTime",
-//     "Slithery Finisher",
-//     "Catch and Shooter",
-//     "Corner Specialist",
-//     "Difficult Shots",
-//     "Pick and Popper",
-//     "Clutch Shooter",
-//     "Deadeye",
-//     "Deep Fades",
-//     "Flexible Release",
-//     "Green Machine",
-//     "Hot Zone Hunter",
-//     "Hot Starter",
-//     "Ice In Veins",
-//     "Pump Faker",
-//     "Quick Draw",
-//     "Range Extender",
-//     "Slippery Off Ball",
-//     "Steady Shooter",
-//     "Tireless Shooter",
-//     "Volume Shooter",
-//     "Ankle Breaker",
-//     "Flashy Passer",
-//     "Break Starter",
-//     "Lob City Passer",
-//     "Dimer",
-//     "Bail Out",
-//     "Downhill",
-//     "Dream Shake",
-//     "Handles for Days",
-//     "Needle Threader",
-//     "Pass Faker",
-//     "Quick First Stepper",
-//     "Space Creator",
-//     "Stop & Go",
-//     "Tight Handles",
-//     "Unpluckable",
-//     "Floor General",
-//     "Pick Pocket",
-//     "Rim Protector",
-//     "Pick Dodger",
-//     "Chase Down Artist",
-//     "Clamps",
-//     "Defensive Leader",
-//     "Heart Crusher",
-//     "Interceptor",
-//     "Intimidator",
-//     "Moving Truck",
-//     "Off Ball Pest",
-//     "Pogo Stick",
-//     "Post Move Lockdown",
-//     "Tireless Defender",
-//     "Trapper",
-//     "Lob City Finisher",
-//     "Brick Wall",
-//     "Box",
-//     "Rebound Chaser",
-//     "Worm"
-//   ];
 
-//   return chooseOne(badges);
-// };
 
 const randomCause = () => {
   const causes = [
@@ -1336,4 +1255,4 @@ const chooseOne = choices => {
   return choices[Math.floor(Math.random() * choices.length)];
 };
 
-module.exports = { rojEvents, dLeagueEvents, randomCause, randomBadge, randomHotZone, };
+module.exports = { rojEvents, dLeagueEvents, injuryEvents, randomCause, randomBadge, randomHotZone, };

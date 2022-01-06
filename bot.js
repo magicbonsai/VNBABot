@@ -19,7 +19,7 @@ const client = new Client({
 
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
-const { runRoj } = require("./app/bots/rojBot");
+const { runRoj, runReportWith } = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
@@ -30,6 +30,8 @@ const runRojWithIndexCheck = (teams, index) => {
   }
   return runRoj(teams[index]);
 };
+
+const runReport = runReportWith(client);
 
 // Router + Express Setup
 
@@ -57,8 +59,12 @@ const dedueCommand = (prompt, msg) => {
 
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
-    case "tweet":
-      runRoj(words[1], words[2]);
+    // case "tweet":
+    //   runRoj(words[1], words[2]);
+    //   break;
+  
+    case "report": 
+      runReport();
       break;
 
     case "r-s":
