@@ -161,7 +161,7 @@ const runEvent = (playerRowsToUse, weights, sheets) => {
   }
 };
 
-const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
+const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 2) => {
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
