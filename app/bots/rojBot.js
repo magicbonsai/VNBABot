@@ -155,30 +155,29 @@ async function updateAssets (playerRow, doc, type, updateKey) {
 async function addManualTask (playerRow, doc, type, updateKey) {
   const {
     Name,
+    Team
   } = playerRow;
   const {
     key,
-    value 
   } = updateKey;
   await doc.loadInfo();
   const sheets = doc.sheetsById;
-  const teamAssetsSheet = sheets[sheetIds.teamAssets];
-  const teamAssetsRows = await teamAssetsSheet.getRows();
+  const rojUpdatesSheet = sheets[sheetIds.updates];
 
-  // await rojUpdatesSheet.addRow({
-  //   Date: date,
-  //   Player: player.Name,
-  //   "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
-  //   Team: player.Team,
-  //   Event: event,
-  //   Tweet: quote
-  // });
+  await rojUpdatesSheet.addRow({
+    Date: date,
+    Player: Name,
+    "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
+    Team: Team,
+    Event: key,
+    Tweet: "Manually update this value"
+  });
 };
 
 //API format for all updateFunctions: (playerRow, doc, type, updateKey)
 
 const updateFunctionMap = {
-  MANUAL: () => {},
+  MANUAL: addManualTask,
   ATTRIBUTES: updatePlayerObject,
   HOTZONE: updatePlayerObject,
   BADGES: updatePlayerObject,
