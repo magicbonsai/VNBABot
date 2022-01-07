@@ -248,6 +248,7 @@ const rojEvents = {
         updateKey: {
           key: 'height',
           value: player.Name,
+          infoString: 'Increase player height by 1 inch.'
         },
         messageString,
       })
@@ -258,13 +259,15 @@ const rojEvents = {
   wingspan: {
     valid: true,
     fn: function(player) {
-      const messageString = `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`
+      const messageString = `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing!`
       return ({
         type: 'MANUAL',
         updateKey: {
           key: 'wingspan',
-          value: player.Name
-        }
+          value: player.Name,
+          infoString: '(+5 on the wingspan slider in player body)'
+        },
+        messageString
       })
     },
     selectionFn: choosePlayerByAge

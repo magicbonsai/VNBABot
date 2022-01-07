@@ -222,6 +222,12 @@ client.on("message", msg => {
 client.login(process.env.BOT_TOKEN);
 
 
+/**
+ * TODO: Augment this cronjob for the bot to do more daily tasks like:
+ * - decrease the duration of an injury on a player
+ * - ??
+ * - (AZ)
+ */
 const preJob = new CronJob("0 14 * * *", function () {
   // validTeams = (async function main() {
   //   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);

@@ -61,8 +61,9 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
 };
 
 
-//API format: (playerRow, sheets, type, updateKey)
-// sheets provided must be the most up to date local
+// create a JSON description object that shows what got updated on a player recently.
+// Right now all it does it show the weight of the value in question, in the future 
+// I should probably augment it to show new and old values.
 
 const createChangeListJSON = (type, updateKey, existingJSON = '{}') => {
   const valueAsJSON = !!existingJSON ? JSON.parse(existingJSON) : JSON.parse('{}');
@@ -78,6 +79,9 @@ const createChangeListJSON = (type, updateKey, existingJSON = '{}') => {
   });
   return JSON.stringify(mergedObject);
 };
+
+//API format: (playerRow, sheets, type, updateKey)
+// sheets provided must be the most up to date local
 
 async function updatePlayerObject (playerRow, doc, type, updateKey) {
   const {
@@ -152,6 +156,8 @@ async function updateAssets (playerRow, doc, type, updateKey) {
   return;
 };
 
+// Add a task for streamers to do on players or other things that can't be done easily through the player JSON
+
 async function addManualTask (playerRow, doc, type, updateKey) {
   const {
     Name,
@@ -159,6 +165,7 @@ async function addManualTask (playerRow, doc, type, updateKey) {
   } = playerRow;
   const {
     key,
+    infoString,
   } = updateKey;
   await doc.loadInfo();
   const sheets = doc.sheetsById;
@@ -170,7 +177,7 @@ async function addManualTask (playerRow, doc, type, updateKey) {
     "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
     Team: Team,
     Event: key,
-    Tweet: "Manually update this value"
+    Tweet: infoString,
   });
 };
 
