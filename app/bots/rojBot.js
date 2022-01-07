@@ -47,7 +47,6 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
   let newData = selectedTab.data;
   const newKeyValue = parseInt(selectedTab.data[key]) + (value * multiplier);
   const clampedNewValue = _.clamp(newKeyValue, 0, upperBound);
-  console.log('old/new', selectedTab.data[key], newKeyValue);
   newData[key] = `${clampedNewValue}`;
 
   return JSON.stringify([
@@ -65,20 +64,25 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
 //API format: (playerRow, sheets, type, updateKey)
 // sheets provided must be the most up to date local
 
-const createChangeListJSON = (existingJSON = '{}') => {
-  const valueAsJSON = JSON.stringify(existingJSON);
-  
+const createChangeListJSON = (type, updateKey, existingJSON = '{}') => {
+  const valueAsJSON = !!existingJSON ? JSON.parse(existingJSON) : JSON.parse('{}');
+  const updateObject = {
+    STATS: {
+      [type]: [updateKey]
+    }
+  };
+  const mergedObject = _.mergeWith(valueAsJSON, updateObject, (objValue, srcValue) => {
+    if(_.isArray(objValue)) {
+      return objValue.concat(srcValue);
+    }
+  });
+  return JSON.stringify(mergedObject);
 };
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 async function updatePlayerObject (playerRow, doc, type, updateKey) {
   const {
     Name: playerName,
   } = playerRow;
-  console.log('starting update')
   await doc.loadInfo();
   const sheets = doc.sheetsById;
   const requestQueue = sheets[sheetIds.requestQueue];
@@ -90,7 +94,7 @@ async function updatePlayerObject (playerRow, doc, type, updateKey) {
   let playerRowToUpdate = playerRows.find(row => row.Name === playerName);
   const {
     Team,
-    Data: oldData
+    Data: oldData,
   } = playerRowToUpdate || {}
   const newJSON = updateJSON(type, oldData, updateKey);
   playerRowToUpdate["Data"] = newJSON;
@@ -100,10 +104,14 @@ async function updatePlayerObject (playerRow, doc, type, updateKey) {
   const requestRowToUpdate = requestQueueRows.find(row => 
     ((row.Player === playerName) && (!row["Done?"])));
   if(requestRowToUpdate) {
+    const {
+      Description: existingJSON
+    } = requestRowToUpdate;
+    const changeListJSON = createChangeListJSON(type, updateKey, existingJSON);
     // There is an existing row so update the data that already exists
     requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
     requestRowToUpdate["Data"] = newJSON;
-    // requestRowToUpdate["Done?"] = undefined;
+    requestRowToUpdate["Description"] = changeListJSON;
     await requestRowToUpdate.save();
   } else {
     // push up a new Row
@@ -111,13 +119,12 @@ async function updatePlayerObject (playerRow, doc, type, updateKey) {
       Date: new Date().toLocaleString().split(",")[0],
       Player: playerName,
       Team,
-      Description: "{}",
+      Description: createChangeListJSON(type, updateKey),
       Data: newJSON,
       "Done?": undefined
     };
     await requestQueue.addRow(newRow);
   }
-  console.log('done');
   return;
 };
 
@@ -130,24 +137,52 @@ async function updateAssets (playerRow, doc, type, updateKey) {
     key,
     value 
   } = updateKey;
+  await doc.loadInfo();
+  const sheets = doc.sheetsById;
   const teamAssetsSheet = sheets[sheetIds.teamAssets];
-  const teamAssetsRows = teamAssetsSheet.getRows();
+  const teamAssetsRows = await teamAssetsSheet.getRows();
 
-  const rowToUpdate = teamAssetsRows.find(row => row.Team === Team);
+  let rowToUpdate = teamAssetsRows.find(row => row.Team === Team);
+  const oldValue = parseInt(rowToUpdate[key]);
+  const newValue = oldValue + value;
 
-  rowToUpdate[key] = parseInt(rowToUpdate[key]) + value; 
-  console.log('cashupdate', rowToUpdate, key, value);
+  rowToUpdate[key] = newValue; 
+  console.log('cashRow', rowToUpdate.Team, oldValue, newValue )
   // await rowToUpdate.save();
+  return;
 };
 
-//API format: (playerRow, doc, type, updateKey)
+async function addManualTask (playerRow, doc, type, updateKey) {
+  const {
+    Name,
+  } = playerRow;
+  const {
+    key,
+    value 
+  } = updateKey;
+  await doc.loadInfo();
+  const sheets = doc.sheetsById;
+  const teamAssetsSheet = sheets[sheetIds.teamAssets];
+  const teamAssetsRows = await teamAssetsSheet.getRows();
+
+  // await rojUpdatesSheet.addRow({
+  //   Date: date,
+  //   Player: player.Name,
+  //   "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
+  //   Team: player.Team,
+  //   Event: event,
+  //   Tweet: quote
+  // });
+};
+
+//API format for all updateFunctions: (playerRow, doc, type, updateKey)
 
 const updateFunctionMap = {
   MANUAL: () => {},
   ATTRIBUTES: updatePlayerObject,
   HOTZONE: updatePlayerObject,
   BADGES: updatePlayerObject,
-  ASSETS: () => {},
+  ASSETS: updateAssets,
 }
 
 
@@ -173,11 +208,7 @@ async function runEvent (playerRowsToUse, weights, doc) {
   }
 };
 
-const runEventAsync = (playerRowsToUse, weights, doc) => new Promise((resolve) => {
-  runEvent(playerRowsToUse, weights, doc, resolve);
-});
-
-const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
+const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 4) => {
   (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -227,7 +258,6 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
           const {
             messageString
             // pass the doc all the way up to the updateFunction
-          // } = await runEventAsync(playerRowsToUse, weights, doc).then(result => result);
           }= await runEvent(playerRowsToUse, weights, doc);
           // the updateFunction will use the relevant function
           // and also update the relevant sheets (hopefully)
@@ -244,26 +274,6 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
       []
     );
 
-    // let allUpdates = [];
-
-    // for(i = 0; i < shuffledTeams.length; i++) {
-    //   let currentValue = shufftTeams[i];
-    //   const playerRowsToUse = playerRows.filter(player => player.Team === currentValue );
-    //   let arrayOfResults = [];
-    //   for (i = 0; i < numberOfEvents; i++) {
-    //     const {
-    //       messageString
-    //       // pass the doc all the way up to the updateFunction
-    //     } = await runEvent(playerRowsToUse, weights, doc);
-    //     // the updateFunction will use the relevant function
-    //     // and also update the relevant sheets (hopefully)
-    //     arrayOfResults = [...arrayOfResults, `${messageString}\n`];
-    //   };
-    //   allUpdates.push({
-    //     team: currentValue,
-    //     messages: arrayOfResults
-    //   });
-    // };
 
     console.log('allUpdates', allUpdates);
 
@@ -283,181 +293,181 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 5) => {
 
 // Deprecated functions
 
-function runRoj(team, setTweet) {
-  const validTeams = (process.env.VALID_TEAMS || []).split(",");
-  const teamToUse = team ? team : _.sample(validTeams);
-  (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
+// function runRoj(team, setTweet) {
+//   const validTeams = (process.env.VALID_TEAMS || []).split(",");
+//   const teamToUse = team ? team : _.sample(validTeams);
+//   (async function main() {
+//     await doc.useServiceAccountAuth({
+//       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+//       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+//     });
+//     await doc.loadInfo();
 
-    const sheets = doc.sheetsById;
-    const news = sheets[sheetIds.news];
-    const players = sheets[sheetIds.players];
-    const retiredPlayers = sheets[sheetIds.retiredPlayers];
+//     const sheets = doc.sheetsById;
+//     const news = sheets[sheetIds.news];
+//     const players = sheets[sheetIds.players];
+//     const retiredPlayers = sheets[sheetIds.retiredPlayers];
 
-    const rojUpdates = sheets[sheetIds.updates];
-    const trainingRegime = sheets[sheetIds.trainingRegime];
+//     const rojUpdates = sheets[sheetIds.updates];
+//     const trainingRegime = sheets[sheetIds.trainingRegime];
 
-    // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
+//     // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
 
-    const getVNBANewsWeights = news.getRows().then(rows => {
-      return rows.map(row => {
-        return {
-          id: row.event,
-          weight: parseFloat(row.prob)
-        };
-      });
-    });
+//     const getVNBANewsWeights = news.getRows().then(rows => {
+//       return rows.map(row => {
+//         return {
+//           id: row.event,
+//           weight: parseFloat(row.prob)
+//         };
+//       });
+//     });
 
-    const getFANewsWeights = news.getRows().then(rows => {
-      return rows
-        .filter(row => {
-          return row.isBoost;
-        })
-        .map(row => {
-          return {
-            id: row.event,
-            weight: parseFloat(row.prob)
-          };
-        });
-    });
+//     const getFANewsWeights = news.getRows().then(rows => {
+//       return rows
+//         .filter(row => {
+//           return row.isBoost;
+//         })
+//         .map(row => {
+//           return {
+//             id: row.event,
+//             weight: parseFloat(row.prob)
+//           };
+//         });
+//     });
 
-    players.getRows().then(playerRows => {
-      const teamPlayers = playerRows.filter(
-        player => player.Team === teamToUse
-      );
-      const faPlayers = playerRows.filter(player => player.Team === "FA");
-      const weights = [
-        {
-          id: "team",
-          weight: teamPlayers.length
-        },
-        {
-          id: "fa",
-          weight: 13 - teamPlayers.length
-        }
-      ];
-      const { playersToUse, getNewsWeights } =
-        rwc(weights) === "team"
-          ? {
-              playersToUse: teamPlayers.filter(player => !player["D League"]),
-              getNewsWeights: getVNBANewsWeights
-            }
-          : {
-              playersToUse: faPlayers,
-              getNewsWeights: getFANewsWeights
-            };
+//     players.getRows().then(playerRows => {
+//       const teamPlayers = playerRows.filter(
+//         player => player.Team === teamToUse
+//       );
+//       const faPlayers = playerRows.filter(player => player.Team === "FA");
+//       const weights = [
+//         {
+//           id: "team",
+//           weight: teamPlayers.length
+//         },
+//         {
+//           id: "fa",
+//           weight: 13 - teamPlayers.length
+//         }
+//       ];
+//       const { playersToUse, getNewsWeights } =
+//         rwc(weights) === "team"
+//           ? {
+//               playersToUse: teamPlayers.filter(player => !player["D League"]),
+//               getNewsWeights: getVNBANewsWeights
+//             }
+//           : {
+//               playersToUse: faPlayers,
+//               getNewsWeights: getFANewsWeights
+//             };
 
-      getNewsWeights.then(newsWeights => {
-        retiredPlayers.getRows().then(retiredRows => {
-          const chosenPlayer = _.sample(playersToUse);
-          const chosenPlayerTwo = _.sample(playersToUse);
-          const chosenRetiree = _.sample(retiredRows);
-          const result = setTweet || rwc(newsWeights);
-          const status = newsRoulette(
-            result,
-            chosenPlayer,
-            chosenPlayerTwo,
-            chosenRetiree,
-            rojUpdates,
-            trainingRegime
-          );
-          status.then(toPost => {
-            if (process.env.ENVIRONMENT === "PRODUCTION") {
-              postRojTweet(toPost);
-            }
-            console.log(toPost);
-          });
-        })
-      });
-    });
-  })();
-}
+//       getNewsWeights.then(newsWeights => {
+//         retiredPlayers.getRows().then(retiredRows => {
+//           const chosenPlayer = _.sample(playersToUse);
+//           const chosenPlayerTwo = _.sample(playersToUse);
+//           const chosenRetiree = _.sample(retiredRows);
+//           const result = setTweet || rwc(newsWeights);
+//           const status = newsRoulette(
+//             result,
+//             chosenPlayer,
+//             chosenPlayerTwo,
+//             chosenRetiree,
+//             rojUpdates,
+//             trainingRegime
+//           );
+//           status.then(toPost => {
+//             if (process.env.ENVIRONMENT === "PRODUCTION") {
+//               postRojTweet(toPost);
+//             }
+//             console.log(toPost);
+//           });
+//         })
+//       });
+//     });
+//   })();
+// }
 
-const runDLeague = () => {
-  (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
+// const runDLeague = () => {
+//   (async function main() {
+//     await doc.useServiceAccountAuth({
+//       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+//       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+//     });
+//     await doc.loadInfo();
 
-    const sheets = doc.sheetsById;
-    const dLeagueEvents = sheets[sheetIds.dLeague];
-    const players = sheets[sheetIds.players];
-    const retiredPlayerSheet = sheets[sheetIds.retiredPlayers];
+//     const sheets = doc.sheetsById;
+//     const dLeagueEvents = sheets[sheetIds.dLeague];
+//     const players = sheets[sheetIds.players];
+//     const retiredPlayerSheet = sheets[sheetIds.retiredPlayers];
 
 
-    const rojUpdates = sheets[sheetIds.updates]; 
+//     const rojUpdates = sheets[sheetIds.updates]; 
 
-    const playerRows = await players.getRows();
-    const retiredPlayerRows = await retiredPlayerSheet.getRows();
-    const dLeagueWeights = await dLeagueEvents.getRows().then(rows => {
-      return rows.map(row => {
-        return {
-          id: row.event,
-          weight: parseFloat(row.prob)
-        };
-      });
-    });
+//     const playerRows = await players.getRows();
+//     const retiredPlayerRows = await retiredPlayerSheet.getRows();
+//     const dLeagueWeights = await dLeagueEvents.getRows().then(rows => {
+//       return rows.map(row => {
+//         return {
+//           id: row.event,
+//           weight: parseFloat(row.prob)
+//         };
+//       });
+//     });
 
-    const event = rwc(dLeagueWeights);
+//     const event = rwc(dLeagueWeights);
     
-    const playersToUse = playerRows.filter(player => !!player["D League"]);
-    const chosenPlayer = _.sample(playersToUse);
-    const retiree = _.sample(retiredPlayerRows);
+//     const playersToUse = playerRows.filter(player => !!player["D League"]);
+//     const chosenPlayer = _.sample(playersToUse);
+//     const retiree = _.sample(retiredPlayerRows);
 
-    const status = dLeagueRoulette(event, chosenPlayer, retiree, rojUpdates);
-    status.then(toPost => {
-      if (process.env.ENVIRONMENT === "PRODUCTION") {
-        postRojTweet(toPost);
-      }
-      console.log(toPost);
-    });
+//     const status = dLeagueRoulette(event, chosenPlayer, retiree, rojUpdates);
+//     status.then(toPost => {
+//       if (process.env.ENVIRONMENT === "PRODUCTION") {
+//         postRojTweet(toPost);
+//       }
+//       console.log(toPost);
+//     });
 
-  })();
-};
+//   })();
+// };
 
-async function dLeagueRoulette(event, player, retiree, rojUpdatesSheet) {
-  const { fn } = dLeagueEvents[event];
-  const date = new Date().toLocaleString().split(",")[0];
-  const quote = fn({player, retiree});
-  if (process.env.ENVIRONMENT !== "DEVELOPMENT") {
-    await rojUpdatesSheet.addRow({
-      Date: date,
-      Player: player.Name,
-      "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
-      Team: player.Team,
-      Event: event,
-      Tweet: quote
-    });
-  }
-  return quote;
-};
+// async function dLeagueRoulette(event, player, retiree, rojUpdatesSheet) {
+//   const { fn } = dLeagueEvents[event];
+//   const date = new Date().toLocaleString().split(",")[0];
+//   const quote = fn({player, retiree});
+//   if (process.env.ENVIRONMENT !== "DEVELOPMENT") {
+//     await rojUpdatesSheet.addRow({
+//       Date: date,
+//       Player: player.Name,
+//       "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
+//       Team: player.Team,
+//       Event: event,
+//       Tweet: quote
+//     });
+//   }
+//   return quote;
+// };
 
-async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet) {
-  let quote = "no news today";
-  const { valid, fn } = rojEvents[event];
-  const date = new Date().toLocaleString().split(",")[0];
-  quote = fn(player, playerTwo, retiree);
-    if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
-      await rojUpdatesSheet.addRow({
-        Date: date,
-        Player: player.Name,
-        "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
-        Team: player.Team,
-        Event: event,
-        Tweet: quote
-      });
-    }
-  return quote;
-};
+// async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet) {
+//   let quote = "no news today";
+//   const { valid, fn } = rojEvents[event];
+//   const date = new Date().toLocaleString().split(",")[0];
+//   quote = fn(player, playerTwo, retiree);
+//     if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
+//       await rojUpdatesSheet.addRow({
+//         Date: date,
+//         Player: player.Name,
+//         "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
+//         Team: player.Team,
+//         Event: event,
+//         Tweet: quote
+//       });
+//     }
+//   return quote;
+// };
 
-const chooseOne = choices => {
-  return choices[Math.floor(Math.random() * choices.length)];
-};
+// const chooseOne = choices => {
+//   return choices[Math.floor(Math.random() * choices.length)];
+// };
 
-module.exports = { runRoj, runDLeague, runReportWith };
+module.exports = { runReportWith };

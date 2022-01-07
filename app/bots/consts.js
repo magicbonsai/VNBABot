@@ -217,7 +217,7 @@ const rojEvents = {
   budget: {
     valid: true,
     fn: function(player) {
-      const value = _.random(1,5);
+      const value = _.random(1,3);
       const messageString = `With some sly budgeting, the ${
         player.Team
       } have managed to find an extra ${value} dollars for this season.`;
