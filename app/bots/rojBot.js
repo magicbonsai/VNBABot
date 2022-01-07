@@ -1,6 +1,6 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
-const { CHANNEL_IDS } = require('../../consts');
+const { CHANNEL_IDS } = require("../../consts");
 const { rojEvents, dLeagueEvents } = require("./consts");
 const _ = require("lodash");
 require("dotenv").config();
@@ -12,7 +12,7 @@ const faker = require("faker");
 faker.setLocale("en");
 
 // we need to add a multiplier to certain changes
-// attributes are actually stored as a value from 25 - 222, where 
+// attributes are actually stored as a value from 25 - 222, where
 // 3 points = 1 attribute point in the game itself.
 
 // upperBound will constrain changes to the maximum the key allows.
@@ -20,7 +20,7 @@ faker.setLocale("en");
 const tabMap = {
   ATTRIBUTES: {
     multiplier: 3,
-    upperBound: 222,
+    upperBound: 222
   },
   BADGES: {
     multiplier: 1,
@@ -28,24 +28,18 @@ const tabMap = {
   },
   HOTZONE: {
     multiplier: 1,
-    upperBound: 2,
+    upperBound: 2
   }
 };
 
 const updateJSON = (tabKey, data, updateKey = {}) => {
-  const {
-    key,
-    value
-  } = updateKey;
-  const {
-    multiplier = 1,
-    upperBound
-  } = tabMap[tabKey] || {};
+  const { key, value } = updateKey;
+  const { multiplier = 1, upperBound } = tabMap[tabKey] || {};
   const valuesFromJSON = JSON.parse(data);
   const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
   const selectedIndex = valuesFromJSON.findIndex(page => page.tab === tabKey);
   let newData = selectedTab.data;
-  const newKeyValue = parseInt(selectedTab.data[key]) + (value * multiplier);
+  const newKeyValue = parseInt(selectedTab.data[key]) + value * multiplier;
   const clampedNewValue = _.clamp(newKeyValue, 0, upperBound);
   newData[key] = `${clampedNewValue}`;
 
@@ -60,33 +54,36 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
   ]);
 };
 
-
 // create a JSON description object that shows what got updated on a player recently.
-// Right now all it does it show the weight of the value in question, in the future 
+// Right now all it does it show the weight of the value in question, in the future
 // I should probably augment it to show new and old values.
 
-const createChangeListJSON = (type, updateKey, existingJSON = '{}') => {
-  const valueAsJSON = !!existingJSON ? JSON.parse(existingJSON) : JSON.parse('{}');
+const createChangeListJSON = (type, updateKey, existingJSON = "{}") => {
+  const valueAsJSON = !!existingJSON
+    ? JSON.parse(existingJSON)
+    : JSON.parse("{}");
   const updateObject = {
     STATS: {
       [type]: [updateKey]
     }
   };
-  const mergedObject = _.mergeWith(valueAsJSON, updateObject, (objValue, srcValue) => {
-    if(_.isArray(objValue)) {
-      return objValue.concat(srcValue);
+  const mergedObject = _.mergeWith(
+    valueAsJSON,
+    updateObject,
+    (objValue, srcValue) => {
+      if (_.isArray(objValue)) {
+        return objValue.concat(srcValue);
+      }
     }
-  });
+  );
   return JSON.stringify(mergedObject);
 };
 
 //API format: (playerRow, sheets, type, updateKey)
 // sheets provided must be the most up to date local
 
-async function updatePlayerObject (playerRow, doc, type, updateKey) {
-  const {
-    Name: playerName,
-  } = playerRow;
+async function updatePlayerObject(playerRow, doc, type, updateKey) {
+  const { Name: playerName } = playerRow;
   await doc.loadInfo();
   const sheets = doc.sheetsById;
   const requestQueue = sheets[sheetIds.requestQueue];
@@ -96,21 +93,17 @@ async function updatePlayerObject (playerRow, doc, type, updateKey) {
   // updating the player list
   // Find the most update to date info on the player
   let playerRowToUpdate = playerRows.find(row => row.Name === playerName);
-  const {
-    Team,
-    Data: oldData,
-  } = playerRowToUpdate || {}
+  const { Team, Data: oldData } = playerRowToUpdate || {};
   const newJSON = updateJSON(type, oldData, updateKey);
   playerRowToUpdate["Data"] = newJSON;
   await playerRowToUpdate.save();
 
   //updating the request queue
-  const requestRowToUpdate = requestQueueRows.find(row => 
-    ((row.Player === playerName) && (!row["Done?"])));
-  if(requestRowToUpdate) {
-    const {
-      Description: existingJSON
-    } = requestRowToUpdate;
+  const requestRowToUpdate = requestQueueRows.find(
+    row => row.Player === playerName && !row["Done?"]
+  );
+  if (requestRowToUpdate) {
+    const { Description: existingJSON } = requestRowToUpdate;
     const changeListJSON = createChangeListJSON(type, updateKey, existingJSON);
     // There is an existing row so update the data that already exists
     requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
@@ -130,17 +123,11 @@ async function updatePlayerObject (playerRow, doc, type, updateKey) {
     await requestQueue.addRow(newRow);
   }
   return;
-};
+}
 
-
-async function updateAssets (playerRow, doc, type, updateKey) {
-  const {
-    Team,
-  } = playerRow;
-  const {
-    key,
-    value 
-  } = updateKey;
+async function updateAssets(playerRow, doc, type, updateKey) {
+  const { Team } = playerRow;
+  const { key, value } = updateKey;
   await doc.loadInfo();
   const sheets = doc.sheetsById;
   const teamAssetsSheet = sheets[sheetIds.teamAssets];
@@ -150,23 +137,17 @@ async function updateAssets (playerRow, doc, type, updateKey) {
   const oldValue = parseInt(rowToUpdate[key]);
   const newValue = oldValue + value;
 
-  rowToUpdate[key] = newValue; 
-  console.log('cashRow', rowToUpdate.Team, oldValue, newValue )
+  rowToUpdate[key] = newValue;
+  console.log("cashRow", rowToUpdate.Team, oldValue, newValue);
   // await rowToUpdate.save();
   return;
-};
+}
 
 // Add a task for streamers to do on players or other things that can't be done easily through the player JSON
 
-async function addManualTask (playerRow, doc, type, updateKey) {
-  const {
-    Name,
-    Team
-  } = playerRow;
-  const {
-    key,
-    infoString,
-  } = updateKey;
+async function addManualTask(playerRow, doc, type, updateKey) {
+  const { Name, Team } = playerRow;
+  const { key, infoString } = updateKey;
   await doc.loadInfo();
   const sheets = doc.sheetsById;
   const rojUpdatesSheet = sheets[sheetIds.updates];
@@ -177,9 +158,9 @@ async function addManualTask (playerRow, doc, type, updateKey) {
     "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
     Team: Team,
     Event: key,
-    Tweet: infoString,
+    Tweet: infoString
   });
-};
+}
 
 //API format for all updateFunctions: (playerRow, doc, type, updateKey)
 
@@ -188,114 +169,107 @@ const updateFunctionMap = {
   ATTRIBUTES: updatePlayerObject,
   HOTZONE: updatePlayerObject,
   BADGES: updatePlayerObject,
-  ASSETS: updateAssets,
-}
+  ASSETS: updateAssets
+};
 
-
-async function runEvent (playerRowsToUse, weights, doc) {
+async function runEvent(playerRowsToUse, weights, doc) {
   const eventId = rwc(weights);
-  const {
-    fn,
-    selectionFn = _.sample,
-  } = rojEvents[eventId] || {};
+  const { fn, selectionFn = _.sample } = rojEvents[eventId] || {};
   const playerRowToUse = selectionFn(playerRowsToUse);
-  const {
-    type,
-    updateKey,
-    messageString
-  } = fn(playerRowToUse);
-  console.log('result', type, updateKey);
+  const { type, updateKey, messageString } = fn(playerRowToUse);
+  console.log("result", type, updateKey);
   const updateFunction = updateFunctionMap[type];
   await updateFunction(playerRowToUse, doc, type, updateKey);
   return {
     team: playerRowToUse.Team,
     name: playerRowToUse.Name,
     messageString
-  }
-};
+  };
+}
 
-const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 4) => {
-  (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
-
-    const sheets = doc.sheetsById;
-    const assets = sheets[sheetIds.teamAssets];
-    const events = sheets[sheetIds.news];
-    const players = sheets[sheetIds.players];
-
-    const playerRows = await players.getRows();
-    const validTeams = await assets.getRows().then(rows => {
-      return rows.filter(row => row.Frozen === 'FALSE').map(
-        row => {
-          return row.Team
-        }
-      )
-    });
-    const weights = await events.getRows().then(rows => {
-      return rows.map(row => {
-        return {
-          id: row.event,
-          weight: parseFloat(row.prob)
-        };
+const runReportWith =
+  discordClient =>
+  (forceTeam, numberOfEvents = 4) => {
+    (async function main() {
+      await doc.useServiceAccountAuth({
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
       });
-    });
+      await doc.loadInfo();
 
-    //for all valid teams run a set of events
+      const sheets = doc.sheetsById;
+      const assets = sheets[sheetIds.teamAssets];
+      const events = sheets[sheetIds.news];
+      const players = sheets[sheetIds.players];
 
-    // allUpdates = {
-    //   team_name: [array of messages]
-    //   ...etc
-    // }
-    console.log('validTeams', validTeams)
+      const playerRows = await players.getRows();
+      const validTeams = await assets.getRows().then(rows => {
+        return rows
+          .filter(row => row.Frozen === "FALSE")
+          .map(row => {
+            return row.Team;
+          });
+      });
+      const weights = await events.getRows().then(rows => {
+        return rows.map(row => {
+          return {
+            id: row.event,
+            weight: parseFloat(row.prob)
+          };
+        });
+      });
 
-    const shuffledTeams = _.shuffle(['Celtics']);
+      //for all valid teams run a set of events
 
-    const allUpdates = await shuffledTeams.reduce(
-      async (memo, currentValue) => {
-        const acc = await memo;
-        // we need to refresh the local copy of the doc after every iteration of the loop.
-        const playerRowsToUse = playerRows.filter(player => player.Team === currentValue );
-        let arrayOfResults = []
-        for (i = 0; i < numberOfEvents; i++) {
-          const {
-            messageString
-            // pass the doc all the way up to the updateFunction
-          }= await runEvent(playerRowsToUse, weights, doc);
-          // the updateFunction will use the relevant function
-          // and also update the relevant sheets (hopefully)
-          arrayOfResults = [...arrayOfResults, `${messageString}\n`];
-        };
-        return [
-          ...acc,
-          {
-            team: currentValue,
-            messages: arrayOfResults
+      // allUpdates = {
+      //   team_name: [array of messages]
+      //   ...etc
+      // }
+      console.log("validTeams", validTeams);
+
+      const shuffledTeams = _.shuffle(["Celtics"]);
+
+      const allUpdates = await shuffledTeams.reduce(
+        async (memo, currentValue) => {
+          const acc = await memo;
+          // we need to refresh the local copy of the doc after every iteration of the loop.
+          const playerRowsToUse = playerRows.filter(
+            player => player.Team === currentValue
+          );
+          let arrayOfResults = [];
+          for (i = 0; i < numberOfEvents; i++) {
+            const {
+              messageString
+              // pass the doc all the way up to the updateFunction
+            } = await runEvent(playerRowsToUse, weights, doc);
+            // the updateFunction will use the relevant function
+            // and also update the relevant sheets (hopefully)
+            arrayOfResults = [...arrayOfResults, `${messageString}\n`];
           }
-        ];
-      },
-      []
-    );
+          return [
+            ...acc,
+            {
+              team: currentValue,
+              messages: arrayOfResults
+            }
+          ];
+        },
+        []
+      );
 
+      console.log("allUpdates", allUpdates);
 
-    console.log('allUpdates', allUpdates);
+      const payload = allUpdates
+        .map(value => {
+          const { team, messages } = value;
+          const allMessages = messages.join();
+          return `${allMessages}\n`;
+        })
+        .join();
 
-    const payload = allUpdates.map(value => {
-      const {
-        team,
-        messages 
-      } = value;
-      const allMessages = messages.join();
-      return `${allMessages}\n`;
-    }).join();
-    
-    // discordClient.channels.get(CHANNEL_IDS.updates).send(payload);
-
-  })();
-}; 
+      // discordClient.channels.get(CHANNEL_IDS.updates).send(payload);
+    })();
+  };
 
 // Deprecated functions
 
@@ -406,8 +380,7 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 4) => {
 //     const players = sheets[sheetIds.players];
 //     const retiredPlayerSheet = sheets[sheetIds.retiredPlayers];
 
-
-//     const rojUpdates = sheets[sheetIds.updates]; 
+//     const rojUpdates = sheets[sheetIds.updates];
 
 //     const playerRows = await players.getRows();
 //     const retiredPlayerRows = await retiredPlayerSheet.getRows();
@@ -421,7 +394,7 @@ const runReportWith = (discordClient) => (forceTeam, numberOfEvents = 4) => {
 //     });
 
 //     const event = rwc(dLeagueWeights);
-    
+
 //     const playersToUse = playerRows.filter(player => !!player["D League"]);
 //     const chosenPlayer = _.sample(playersToUse);
 //     const retiree = _.sample(retiredPlayerRows);
