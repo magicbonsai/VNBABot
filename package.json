@@ -19,7 +19,7 @@
     "discord.js": "^11.5.1",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "faker": "marak/faker.js#master",
+    "faker": "6.6.6",
     "fast-average-color": "^6.2.0",
     "fast-average-color-node": "^1.0.3",
     "ffmpeg-extract-frames": "^2.0.2",
