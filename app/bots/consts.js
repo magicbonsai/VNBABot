@@ -67,9 +67,9 @@ const rojEvents = {
     fn: function (player) {
       const datem = randomAttribute();
       const { key, data: { name, value } = {} } = datem;
-      const messageString = `${
+      const messageString = `**${
         player.Name
-      } ${boostEvents()} (${name} +${value})`;
+      }** ${boostEvents()} (${name} +${value})`;
       return {
         type: "ATTRIBUTES",
         updateKey: {
@@ -87,7 +87,7 @@ const rojEvents = {
     fn: function (player) {
       const datem = randomBadge();
       const { key, data: { name, value } = {} } = datem;
-      const messageString = `${player.Name} ${boostEvents()} (${name} +1).`;
+      const messageString = `**${player.Name}** ${boostEvents()} (${name} +1).`;
       return {
         type: "BADGES",
         updateKey: {
@@ -105,7 +105,7 @@ const rojEvents = {
     fn: function (player) {
       const datem = randomHotZone();
       const { key, data: { name, value } = {} } = datem;
-      const messageString = `According to sources, ${player.Name} of the ${player.Team} has been shooting hot under this zone: ${name}`;
+      const messageString = `**${player.Name}** has been shooting hot under this zone: ${name}`;
       return {
         type: "HOTZONE",
         updateKey: {
@@ -215,13 +215,15 @@ const rojEvents = {
   growth: {
     valid: true,
     fn: function (player) {
-      const messageString = `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch since entering the VNBA!`;
+      const messageString = `In a shocking turn of events, **${player.Name}** apparently grown an inch since entering the VNBA!`;
       return {
         type: "MANUAL",
         updateKey: {
           key: "height",
-          value: player.Name,
-          infoString: "Increase player height by 1 inch."
+          value: {
+            name: player.Name,
+            infoString: "Increase player height by 1 inch."
+          },
         },
         messageString
       };
@@ -232,13 +234,15 @@ const rojEvents = {
   wingspan: {
     valid: true,
     fn: function (player) {
-      const messageString = `Incredibly shocking news, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing!`;
+      const messageString = `Incredibly shocking news, **${player.Name}** has reportedly seen a remarkable increase to his wingspan! Astonishing!`;
       return {
         type: "MANUAL",
         updateKey: {
           key: "wingspan",
-          value: player.Name,
-          infoString: "(+5 on the wingspan slider in player body)"
+          value: {
+            name: player.Name,
+            infoString: "(+5 on the wingspan slider in player body)"
+          },
         },
         messageString
       };
@@ -446,69 +450,6 @@ const injuryEvents = {
       } for the birth of his ${chooseOne(["son", "daughter"])}. ${
         player.Name
       } will take the next ${_.random(1, 2)} games off to be with his child.`;
-    }
-  }
-};
-
-const dLeagueEvents = {
-  boost: {
-    valid: true,
-    fn: function ({ player }) {
-      const { id, value } = randomTrait();
-      return `Reporting from the D League: ${player.Name} of the ${player.Team} has been putting in extra work at the gym to improve his ${id}. (+${value})`;
-    }
-  },
-
-  badge: {
-    valid: true,
-    fn: function ({ player }) {
-      return `Reporting from the D League: ${player.Name} of the ${
-        player.Team
-      } has been aiming to earn a role within his team. The role? ${randomBadge()}.`;
-    }
-  },
-
-  hotzone: {
-    valid: true,
-    fn: function ({ player }) {
-      return `Reporting from the D League: ${player.Name} of the ${
-        player.Team
-      } has been shooting hot under this zone: ${randomHotZone()}`;
-    }
-  },
-
-  signaturepackage: {
-    valid: true,
-    fn: function ({ player, playerTwo, retiree }) {
-      return `Reporting from the D League: it sounds like ${
-        player.Name
-      } of the ${player.Team} has been reaching out to retired player ${
-        retiree.Name
-      } to potentially rework his ${_.sample([
-        "shooting form",
-        "layup package",
-        "dribbling package"
-      ])}.`;
-    }
-  },
-
-  retiredbadge: {
-    valid: true,
-    fn: function ({ player, playerTwo, retiree }) {
-      return `Reporting from the D League: retired player ${retiree.Name} has reportedly been mentoring ${player.Name} of the ${player.Team} in one of their Hall of Fame worthy skills. (+1 badge level from the retired players HOF badges)`;
-    }
-  },
-  growth: {
-    valid: true,
-    fn: function ({ player }) {
-      return `In a shocking turn of events, ${player.Name} of the ${player.Team} apparently grown an inch whilst in the D League!`;
-    }
-  },
-
-  wingspan: {
-    valid: true,
-    fn: function ({ player }) {
-      return `Incredibly shocking news from the D League, ${player.Name} of the ${player.Team} has reportedly seen a remarkable increase to his wingspan! Astonishing! (+5 on the wingspan slider in player body)`;
     }
   }
 };
@@ -1279,7 +1220,6 @@ const boostEvents = () => {
 
 module.exports = {
   rojEvents,
-  dLeagueEvents,
   injuryEvents,
   randomCause,
   randomBadge,

@@ -1,7 +1,7 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
 const { CHANNEL_IDS } = require("../../consts");
-const { rojEvents, dLeagueEvents } = require("./consts");
+const { rojEvents } = require("./consts");
 const _ = require("lodash");
 require("dotenv").config();
 
@@ -139,7 +139,7 @@ async function updateAssets(playerRow, doc, type, updateKey) {
 
   rowToUpdate[key] = newValue;
   console.log("cashRow", rowToUpdate.Team, oldValue, newValue);
-  // await rowToUpdate.save();
+  await rowToUpdate.save();
   return;
 }
 
@@ -147,15 +147,20 @@ async function updateAssets(playerRow, doc, type, updateKey) {
 
 async function addManualTask(playerRow, doc, type, updateKey) {
   const { Name, Team } = playerRow;
-  const { key, infoString } = updateKey;
+  const { 
+    key, 
+    value: {
+      infoString
+    } = {}
+  } = updateKey;
   await doc.loadInfo();
   const sheets = doc.sheetsById;
   const rojUpdatesSheet = sheets[sheetIds.updates];
 
   await rojUpdatesSheet.addRow({
-    Date: date,
+    Date: new Date().toLocaleString().split(",")[0],
     Player: Name,
-    "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
+    "Current Team": `=VLOOKUP("${Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
     Team: Team,
     Event: key,
     Tweet: infoString
@@ -201,6 +206,7 @@ const runReportWith =
       const assets = sheets[sheetIds.teamAssets];
       const events = sheets[sheetIds.news];
       const players = sheets[sheetIds.players];
+      const archive = sheets[sheetIds.reportArchive];
 
       const playerRows = await players.getRows();
       const validTeams = await assets.getRows().then(rows => {
@@ -225,9 +231,7 @@ const runReportWith =
       //   team_name: [array of messages]
       //   ...etc
       // }
-      console.log("validTeams", validTeams);
-
-      const shuffledTeams = _.shuffle(["Celtics"]);
+      const shuffledTeams = _.shuffle(['Celtics', 'Celtics']);
 
       const allUpdates = await shuffledTeams.reduce(
         async (memo, currentValue) => {
@@ -262,191 +266,19 @@ const runReportWith =
       const payload = allUpdates
         .map(value => {
           const { team, messages } = value;
-          const allMessages = messages.join();
-          return `${allMessages}\n`;
+          const allMessages = messages.join('');
+          return `Report for the **${team}**:\n${allMessages}\n`;
         })
-        .join();
+        .join('');
+      
+      const fullPayload = `Here is the Twice-Weekly report for ${new Date().toLocaleString().split(",")[0]}:\n\n`.concat(payload);
 
-      // discordClient.channels.get(CHANNEL_IDS.updates).send(payload);
+      discordClient.channels.get(CHANNEL_IDS.updates).send(fullPayload);
+      await archive.addRow({
+        Date: new Date().toLocaleString().split(",")[0],
+        Content: fullPayload
+      })
     })();
   };
-
-// Deprecated functions
-
-// function runRoj(team, setTweet) {
-//   const validTeams = (process.env.VALID_TEAMS || []).split(",");
-//   const teamToUse = team ? team : _.sample(validTeams);
-//   (async function main() {
-//     await doc.useServiceAccountAuth({
-//       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-//       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-//     });
-//     await doc.loadInfo();
-
-//     const sheets = doc.sheetsById;
-//     const news = sheets[sheetIds.news];
-//     const players = sheets[sheetIds.players];
-//     const retiredPlayers = sheets[sheetIds.retiredPlayers];
-
-//     const rojUpdates = sheets[sheetIds.updates];
-//     const trainingRegime = sheets[sheetIds.trainingRegime];
-
-//     // Using environmentVariables to set valid teams for tweets (maybe this should be sheets) (AZ)
-
-//     const getVNBANewsWeights = news.getRows().then(rows => {
-//       return rows.map(row => {
-//         return {
-//           id: row.event,
-//           weight: parseFloat(row.prob)
-//         };
-//       });
-//     });
-
-//     const getFANewsWeights = news.getRows().then(rows => {
-//       return rows
-//         .filter(row => {
-//           return row.isBoost;
-//         })
-//         .map(row => {
-//           return {
-//             id: row.event,
-//             weight: parseFloat(row.prob)
-//           };
-//         });
-//     });
-
-//     players.getRows().then(playerRows => {
-//       const teamPlayers = playerRows.filter(
-//         player => player.Team === teamToUse
-//       );
-//       const faPlayers = playerRows.filter(player => player.Team === "FA");
-//       const weights = [
-//         {
-//           id: "team",
-//           weight: teamPlayers.length
-//         },
-//         {
-//           id: "fa",
-//           weight: 13 - teamPlayers.length
-//         }
-//       ];
-//       const { playersToUse, getNewsWeights } =
-//         rwc(weights) === "team"
-//           ? {
-//               playersToUse: teamPlayers.filter(player => !player["D League"]),
-//               getNewsWeights: getVNBANewsWeights
-//             }
-//           : {
-//               playersToUse: faPlayers,
-//               getNewsWeights: getFANewsWeights
-//             };
-
-//       getNewsWeights.then(newsWeights => {
-//         retiredPlayers.getRows().then(retiredRows => {
-//           const chosenPlayer = _.sample(playersToUse);
-//           const chosenPlayerTwo = _.sample(playersToUse);
-//           const chosenRetiree = _.sample(retiredRows);
-//           const result = setTweet || rwc(newsWeights);
-//           const status = newsRoulette(
-//             result,
-//             chosenPlayer,
-//             chosenPlayerTwo,
-//             chosenRetiree,
-//             rojUpdates,
-//             trainingRegime
-//           );
-//           status.then(toPost => {
-//             if (process.env.ENVIRONMENT === "PRODUCTION") {
-//               postRojTweet(toPost);
-//             }
-//             console.log(toPost);
-//           });
-//         })
-//       });
-//     });
-//   })();
-// }
-
-// const runDLeague = () => {
-//   (async function main() {
-//     await doc.useServiceAccountAuth({
-//       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-//       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-//     });
-//     await doc.loadInfo();
-
-//     const sheets = doc.sheetsById;
-//     const dLeagueEvents = sheets[sheetIds.dLeague];
-//     const players = sheets[sheetIds.players];
-//     const retiredPlayerSheet = sheets[sheetIds.retiredPlayers];
-
-//     const rojUpdates = sheets[sheetIds.updates];
-
-//     const playerRows = await players.getRows();
-//     const retiredPlayerRows = await retiredPlayerSheet.getRows();
-//     const dLeagueWeights = await dLeagueEvents.getRows().then(rows => {
-//       return rows.map(row => {
-//         return {
-//           id: row.event,
-//           weight: parseFloat(row.prob)
-//         };
-//       });
-//     });
-
-//     const event = rwc(dLeagueWeights);
-
-//     const playersToUse = playerRows.filter(player => !!player["D League"]);
-//     const chosenPlayer = _.sample(playersToUse);
-//     const retiree = _.sample(retiredPlayerRows);
-
-//     const status = dLeagueRoulette(event, chosenPlayer, retiree, rojUpdates);
-//     status.then(toPost => {
-//       if (process.env.ENVIRONMENT === "PRODUCTION") {
-//         postRojTweet(toPost);
-//       }
-//       console.log(toPost);
-//     });
-
-//   })();
-// };
-
-// async function dLeagueRoulette(event, player, retiree, rojUpdatesSheet) {
-//   const { fn } = dLeagueEvents[event];
-//   const date = new Date().toLocaleString().split(",")[0];
-//   const quote = fn({player, retiree});
-//   if (process.env.ENVIRONMENT !== "DEVELOPMENT") {
-//     await rojUpdatesSheet.addRow({
-//       Date: date,
-//       Player: player.Name,
-//       "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
-//       Team: player.Team,
-//       Event: event,
-//       Tweet: quote
-//     });
-//   }
-//   return quote;
-// };
-
-// async function newsRoulette(event, player, playerTwo, retiree, rojUpdatesSheet) {
-//   let quote = "no news today";
-//   const { valid, fn } = rojEvents[event];
-//   const date = new Date().toLocaleString().split(",")[0];
-//   quote = fn(player, playerTwo, retiree);
-//     if (process.env.ENVIRONMENT !== "DEVELOPMENT" && !!valid) {
-//       await rojUpdatesSheet.addRow({
-//         Date: date,
-//         Player: player.Name,
-//         "Current Team": `=VLOOKUP("${player.Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
-//         Team: player.Team,
-//         Event: event,
-//         Tweet: quote
-//       });
-//     }
-//   return quote;
-// };
-
-// const chooseOne = choices => {
-//   return choices[Math.floor(Math.random() * choices.length)];
-// };
 
 module.exports = { runReportWith };
