@@ -248,9 +248,10 @@ const runReportWith =
       //   team_name: [array of messages]
       //   ...etc
       // }
-      const shuffledTeams = [..._.shuffle(validTeams, "FA")];
+      const shuffledTeams = _.shuffle(validTeams);
+      const allTeams = [...shuffledTeams, "FA"];
 
-      const allUpdates = await shuffledTeams.reduce(
+      const allUpdates = await allTeams.reduce(
         async (memo, currentValue) => {
           const acc = await memo;
           // we need to refresh the local copy of the doc after every iteration of the loop.
@@ -285,6 +286,16 @@ const runReportWith =
 
       console.log("allUpdates", allUpdates);
 
+      const fullDiscordMessageMap = [
+        `Here is the Twice-Weekly report for ${new Date().toLocaleString().split(",")[0]}:\n\n`,
+        ...allUpdates
+        .map(value => {
+          const { team, messages } = value;
+          const allMessages = messages.join('');
+          return `Report for the **${team}**:\n${allMessages}\n`;
+        })
+      ]
+
       const payload = allUpdates
         .map(value => {
           const { team, messages } = value;
@@ -297,7 +308,8 @@ const runReportWith =
         new Date().toLocaleString().split(",")[0]
       }:\n\n`.concat(payload);
 
-      discordClient.channels.get(CHANNEL_IDS.updates).send(fullPayload);
+      fullDiscordMessageMap.forEach(message => discordClient.channels.get(CHANNEL_IDS.updates).send(message));
+
       await archive.addRow({
         Date: new Date().toLocaleString().split(",")[0],
         Content: fullPayload
