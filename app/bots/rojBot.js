@@ -194,7 +194,7 @@ async function runEvent(playerRowsToUse, weights, doc) {
 
 const runReportWith =
   discordClient =>
-  (forceTeam, numberOfEvents = 4) => {
+  (numberOfEvents = 5, forceTeam) => {
     (async function main() {
       await doc.useServiceAccountAuth({
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -231,7 +231,7 @@ const runReportWith =
       //   team_name: [array of messages]
       //   ...etc
       // }
-      const shuffledTeams = _.shuffle(['Celtics', 'Celtics']);
+      const shuffledTeams = _.shuffle(validTeams);
 
       const allUpdates = await shuffledTeams.reduce(
         async (memo, currentValue) => {

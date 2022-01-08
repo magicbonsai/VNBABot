@@ -248,11 +248,11 @@ const preJob = new CronJob("0 14 * * *", function () {
 });
 
 const WednesdayJob = new CronJob("0 15 * * 3", function () {
-
+  runReport();
 });
 
 const SaturdayJob = new CronJob("0 15 * * 6", function () {
-
+  runReport();
 });
 
 const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {
@@ -331,6 +331,7 @@ const trikovJob = new CronJob("0 13 * * *", function () {
 });
 
 preJob.start();
-
 trikovJob.start();
+WednesdayJob.start();
+SaturdayJob.start();
 
