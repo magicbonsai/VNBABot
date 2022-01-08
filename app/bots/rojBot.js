@@ -147,12 +147,7 @@ async function updateAssets(playerRow, doc, type, updateKey) {
 
 async function addManualTask(playerRow, doc, type, updateKey) {
   const { Name, Team } = playerRow;
-  const { 
-    key, 
-    value: {
-      infoString
-    } = {}
-  } = updateKey;
+  const { key, value: { infoString } = {} } = updateKey;
   await doc.loadInfo();
   const sheets = doc.sheetsById;
   const rojUpdatesSheet = sheets[sheetIds.updates];
@@ -193,10 +188,10 @@ async function runEvent(playerRowsToUse, weights, doc) {
 }
 
 const toWeights = (weights, faWeights) => team => {
-  switch(team) {
-    case 'FA':
+  switch (team) {
+    case "FA":
       return faWeights;
-    default: 
+    default:
       return weights;
   }
 };
@@ -233,15 +228,17 @@ const runReportWith =
           };
         });
       });
-      
-      const faWeights = await events.getRows.then(rows => {
-        return rows.filter(row => row.isBoost).map(row => {
-          return {
-            id: row.event,
-            weight: parseFloat(row.prob)
-          };
-        })
-      })
+
+      const faWeights = await events.getRows().then(rows => {
+        return rows
+          .filter(row => row.isBoost)
+          .map(row => {
+            return {
+              id: row.event,
+              weight: parseFloat(row.prob)
+            };
+          });
+      });
 
       const weightsByTeam = toWeights(weights, faWeights);
 
@@ -251,7 +248,7 @@ const runReportWith =
       //   team_name: [array of messages]
       //   ...etc
       // }
-      const shuffledTeams = [..._.shuffle(validTeams, 'FA')];
+      const shuffledTeams = [..._.shuffle(validTeams, "FA")];
 
       const allUpdates = await shuffledTeams.reduce(
         async (memo, currentValue) => {
@@ -266,7 +263,11 @@ const runReportWith =
             const {
               messageString
               // pass the doc all the way up to the updateFunction
-            } = await runEvent(playerRowsToUse, weightsByTeam(currentValue), doc);
+            } = await runEvent(
+              playerRowsToUse,
+              weightsByTeam(currentValue),
+              doc
+            );
             // the updateFunction will use the relevant function
             // and also update the relevant sheets (hopefully)
             arrayOfResults = [...arrayOfResults, `${messageString}\n`];
@@ -287,18 +288,20 @@ const runReportWith =
       const payload = allUpdates
         .map(value => {
           const { team, messages } = value;
-          const allMessages = messages.join('');
+          const allMessages = messages.join("");
           return `Report for the **${team}**:\n${allMessages}\n`;
         })
-        .join('');
-      
-      const fullPayload = `Here is the Twice-Weekly report for ${new Date().toLocaleString().split(",")[0]}:\n\n`.concat(payload);
+        .join("");
+
+      const fullPayload = `Here is the Twice-Weekly report for ${
+        new Date().toLocaleString().split(",")[0]
+      }:\n\n`.concat(payload);
 
       discordClient.channels.get(CHANNEL_IDS.updates).send(fullPayload);
       await archive.addRow({
         Date: new Date().toLocaleString().split(",")[0],
         Content: fullPayload
-      })
+      });
     })();
   };
 
