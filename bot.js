@@ -19,17 +19,12 @@ const client = new Client({
 
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
-const { runRoj, runDLeague } = require("./app/bots/rojBot");
+const { runReportWith } = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
-const runRojWithIndexCheck = (teams, index) => {
-  if (!teams[index]) {
-    return;
-  }
-  return runRoj(teams[index]);
-};
+const runReport = runReportWith(client);
 
 // Router + Express Setup
 
@@ -57,12 +52,9 @@ const dedueCommand = (prompt, msg) => {
 
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
-    case "tweet":
-      runRoj(words[1], words[2]);
-      break;
 
-    case "dleague":
-      runDLeague();
+    case "report": 
+      runReport();
       break;
 
     case "r-s":
@@ -229,68 +221,45 @@ client.on("message", msg => {
 
 client.login(process.env.BOT_TOKEN);
 
-let teams = process.env.VALID_TEAMS.split(",");
 
+/**
+ * TODO: Augment this cronjob for the bot to do more daily tasks like:
+ * - decrease the duration of an injury on a player
+ * - ??
+ * - (AZ)
+ */
 const preJob = new CronJob("0 14 * * *", function () {
-  console.log("teams value", teams);
-  teams = _.shuffle(process.env.VALID_TEAMS.split(","));
+  // validTeams = (async function main() {
+  //   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+  //   await doc.useServiceAccountAuth({
+  //     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  //     private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+  //   });
+  
+  //   await doc.loadInfo();
+  
+  //   const sheets = doc.sheetsByTitle;
+  //   const teamAssets = sheets["Team Assets"];
+  
+  //   const teamAssetsRows = await teamAssets.getRows();
+  //   console.log('am I here')
+
+  // })();
 });
 
-const job = new CronJob("0 15 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("teams value", teams);
-    runRojWithIndexCheck(teams, 0);
-  }
+const WednesdayJob = new CronJob("0 15 * * 3", function () {
+  runReport();
 });
 
-const job_two = new CronJob("10 15 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("teams value", teams);
-    runRojWithIndexCheck(teams, 1);
-  }
+const SaturdayJob = new CronJob("0 15 * * 6", function () {
+  runReport();
 });
 
-const job_three = new CronJob("20 15 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("teams value", teams);
-    runRojWithIndexCheck(teams, 2);
-  }
+const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {
+
 });
 
-const job_four = new CronJob("30 15 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("teams value", teams);
-    runRojWithIndexCheck(teams, 3);
-  }
-});
-
-const job_five = new CronJob("40 15 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("teams value", teams);
-    runRojWithIndexCheck(teams, 4);
-  }
-});
-
-const job_six = new CronJob("50 15 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("teams value", teams);
-    runRojWithIndexCheck(teams, 5);
-  }
-});
-
-const job_seven = new CronJob("0 16 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("teams value", teams);
-    runRojWithIndexCheck(teams, 6);
-  }
-});
-
-const job_eight = new CronJob("10 16 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("teams value", teams);
-    runRoj("FA");
-  }
-});
+//some sort of trade request tracker
 
 const trikovJob = new CronJob("0 13 * * *", function () {
   R("ex-sync.R")
@@ -361,29 +330,8 @@ const trikovJob = new CronJob("0 13 * * *", function () {
     });
 });
 
-const job_nine = new CronJob("15 16 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("dLeague");
-    runDLeague();
-  }
-});
-
-const job_ten = new CronJob("20 16 * * *", function () {
-  if (!!process.env.DAILY_TWEETS) {
-    console.log("dLeague");
-    runDLeague();
-  }
-});
-
 preJob.start();
-job.start();
-job_two.start();
-job_three.start();
-job_four.start();
-job_five.start();
-job_six.start();
-job_seven.start();
-job_eight.start();
 trikovJob.start();
-job_nine.start();
-job_ten.start();
+WednesdayJob.start();
+SaturdayJob.start();
+
