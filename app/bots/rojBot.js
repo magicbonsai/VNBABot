@@ -192,6 +192,15 @@ async function runEvent(playerRowsToUse, weights, doc) {
   };
 }
 
+const toWeights = (weights, faWeights) => team => {
+  switch(team) {
+    case 'FA':
+      return faWeights;
+    default: 
+      return weights;
+  }
+};
+
 const runReportWith =
   discordClient =>
   (numberOfEvents = 5, forceTeam) => {
@@ -224,6 +233,17 @@ const runReportWith =
           };
         });
       });
+      
+      const faWeights = await events.getRows.then(rows => {
+        return rows.filter(row => row.isBoost).map(row => {
+          return {
+            id: row.event,
+            weight: parseFloat(row.prob)
+          };
+        })
+      })
+
+      const weightsByTeam = toWeights(weights, faWeights);
 
       //for all valid teams run a set of events
 
@@ -231,7 +251,7 @@ const runReportWith =
       //   team_name: [array of messages]
       //   ...etc
       // }
-      const shuffledTeams = _.shuffle(validTeams);
+      const shuffledTeams = [..._.shuffle(validTeams, 'FA')];
 
       const allUpdates = await shuffledTeams.reduce(
         async (memo, currentValue) => {
@@ -240,12 +260,13 @@ const runReportWith =
           const playerRowsToUse = playerRows.filter(
             player => player.Team === currentValue
           );
+
           let arrayOfResults = [];
           for (i = 0; i < numberOfEvents; i++) {
             const {
               messageString
               // pass the doc all the way up to the updateFunction
-            } = await runEvent(playerRowsToUse, weights, doc);
+            } = await runEvent(playerRowsToUse, weightsByTeam(currentValue), doc);
             // the updateFunction will use the relevant function
             // and also update the relevant sheets (hopefully)
             arrayOfResults = [...arrayOfResults, `${messageString}\n`];
