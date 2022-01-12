@@ -300,7 +300,7 @@ const runReportWith =
         .map(value => {
           const { team, messages } = value;
           const allMessages = messages.join("");
-          return `Report for the **${team}**:\n${allMessages}\n`;
+          return `\nReport for the **${team}**:\n${allMessages}\n`;
         })
         .join("");
 
