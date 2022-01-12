@@ -1,7 +1,7 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
 const { sheetIds } = require("../helpers/sheetHelper");
 const { CHANNEL_IDS } = require("../../consts");
-const { rojEvents } = require("./consts");
+const { rojEvents, tabMap } = require("./consts");
 const _ = require("lodash");
 require("dotenv").config();
 
@@ -10,27 +10,6 @@ const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
 const rwc = require("random-weighted-choice");
 const faker = require("faker");
 faker.setLocale("en");
-
-// we need to add a multiplier to certain changes
-// attributes are actually stored as a value from 25 - 222, where
-// 3 points = 1 attribute point in the game itself.
-
-// upperBound will constrain changes to the maximum the key allows.
-
-const tabMap = {
-  ATTRIBUTES: {
-    multiplier: 3,
-    upperBound: 222
-  },
-  BADGES: {
-    multiplier: 1,
-    upperBound: 4
-  },
-  HOTZONE: {
-    multiplier: 1,
-    upperBound: 2
-  }
-};
 
 const updateJSON = (tabKey, data, updateKey = {}) => {
   const { key, value } = updateKey;
