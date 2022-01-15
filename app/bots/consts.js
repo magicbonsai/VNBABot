@@ -44,6 +44,8 @@ const toKeysWithCappedValues = (playerRow, tabKey) => {
         ...acc,
         key
       ];
+    } else {
+      return acc;
     }
   }, []);
 };
@@ -1111,7 +1113,7 @@ const hotzones = {
 
 const randomAttribute = (keysToFilter = []) => {
   const categoryKey = _.sample(Object.keys(attributes));
-  const filteredAttrbuteKeys = Object.keys(attributes[categoryKey]).filter(key => !keysToFilter.includes(key));
+  const filteredAttributeKeys = Object.keys(attributes[categoryKey]).filter(key => !keysToFilter.includes(key));
   const attributeKey = _.sample(filteredAttributeKeys);
   return {
     key: attributeKey,
@@ -1122,7 +1124,7 @@ const randomAttribute = (keysToFilter = []) => {
 const randomBadge = (keysToFilter = []) => {
   const categoryKey = _.sample(Object.keys(badges));
   const filteredBadgeKeys = Object.keys(badges[categoryKey]).filter(key => !keysToFilter.includes(key));
-  const badgeKey = _.sample(Object.keys(filteredBadgeKeys));
+  const badgeKey = _.sample(filteredBadgeKeys);
   return {
     key: badgeKey,
     data: badges[categoryKey][badgeKey]
