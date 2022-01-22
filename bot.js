@@ -54,7 +54,7 @@ const dedueCommand = (prompt, msg) => {
   switch (words[0].toLowerCase()) {
 
     case "report": 
-      runReport(words[0]);
+      runReport(parseInt(words[0]));
       break;
 
     case "r-s":
