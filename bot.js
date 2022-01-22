@@ -54,7 +54,7 @@ const dedueCommand = (prompt, msg) => {
   switch (words[0].toLowerCase()) {
 
     case "report": 
-      runReport();
+      runReport(words[0]);
       break;
 
     case "r-s":
@@ -248,11 +248,19 @@ const preJob = new CronJob("0 14 * * *", function () {
 });
 
 const WednesdayJob = new CronJob("0 15 * * 3", function () {
-  runReport();
+  runReport(3);
+});
+
+const WednesdayJob2 =new CronJob("0 15 30 * 3", function () {
+  runReport(3);
 });
 
 const SaturdayJob = new CronJob("0 15 * * 6", function () {
-  runReport();
+  runReport(3);
+});
+
+const SaturdayJob2 = new CronJob("0 15 30 * 6", function () {
+  runReport(3);
 });
 
 const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {
