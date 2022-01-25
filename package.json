@@ -26,6 +26,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "google-spreadsheet": "^3.0.11",
     "image-js": "^0.31.1",
+    "jaccard-similarity-sentences": "1.0.2",
     "jimp": "^0.16.1",
     "js-regression": "^1.0.10",
     "lodash": "^4.17.15",
