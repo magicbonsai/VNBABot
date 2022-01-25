@@ -11,6 +11,7 @@ const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const { getAverageColor } = require("fast-average-color-node");
+const jaccard = require('jaccard-similarity-sentences');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -126,6 +127,29 @@ function validateName(playerName) {
   }
   return newName.join("");
 }
+
+// iterate through all team rows and find the most similar name; 
+const returnMostCommonKey = (playerName, team) => {
+  console.log('name', playerName);
+  const { key } = team.reduce((acc, row) => {
+    const {
+      highestMeasure,
+    } = acc;
+    const {
+      Name
+    } = row;
+    const measure = jaccard.jaccardSimilarity(playerName, Name);
+    if (measure > highestMeasure) {
+      return ({
+        highestMeasure: measure,
+        key: Name
+      })
+    }
+    return acc;
+  }, {});
+  console.log('commonKey', key);
+  return key;
+};
 
 function updateRawStats(data, gameId) {
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
@@ -452,7 +476,7 @@ async function tessImages(videoLink) {
 }
 
 // main function
-async function scrape(videoLink) {
+async function scrape(videoLink, team1, team2) {
   // hook in discord bot for messages
 
   youtubedl(videoLink, {
