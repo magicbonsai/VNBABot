@@ -129,9 +129,9 @@ function validateName(playerName) {
 }
 
 // iterate through all team rows and find the most similar name; 
-const returnMostCommonKey = (playerName, team) => {
+const returnMostCommonKey = (playerName, players) => {
   console.log('name', playerName);
-  const { key } = team.reduce((acc, row) => {
+  const { key } = players.reduce((acc, row) => {
     const {
       highestMeasure,
     } = acc;
@@ -173,7 +173,8 @@ function updateRawStats(data, gameId) {
       });
       const scrapedData = {};
       data.forEach(player => {
-        const sdKey = intialToPlayerKey(player.Player);
+        const mostCommonName = returnMostCommonKey(player.Player, playerRows);
+        const sdKey = intialToPlayerKey(mostCommonName);
         if (!!playerTable[sdKey]) {
           if (!scrapedData[sdKey]) {
             scrapedData[sdKey] = {};
