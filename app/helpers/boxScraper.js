@@ -11,7 +11,7 @@ const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const { getAverageColor } = require("fast-average-color-node");
-const jaccard = require('jaccard-similarity-sentences');
+const distance = require('set-distance');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -138,7 +138,7 @@ const returnMostCommonKey = (playerName, team) => {
     const {
       Name
     } = row;
-    const measure = jaccard.jaccardSimilarity(playerName, Name);
+    const measure = distance.Jaccard(playerName, Name);
     if (measure > highestMeasure) {
       return ({
         highestMeasure: measure,
