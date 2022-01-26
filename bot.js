@@ -341,5 +341,7 @@ const trikovJob = new CronJob("0 13 * * *", function () {
 preJob.start();
 trikovJob.start();
 WednesdayJob.start();
+WednesdayJob2.start();
 SaturdayJob.start();
+SaturdayJob2.start();
 
