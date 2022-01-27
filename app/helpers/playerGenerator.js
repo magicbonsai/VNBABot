@@ -5,6 +5,8 @@ const _ = require("lodash");
 const faker = require("faker");
 faker.setLocale("en");
 const { sheetIds } = require("./sheetHelper");
+const tendencyDictionary = require('./tendencyDictionary');
+const { hotzones: hotzoneKeys } = require('../bots/consts');
 
 // NBA2k attribute formula to be readable by the 2ktools
 // 0 - 222
@@ -249,6 +251,59 @@ const getBadgeTotal = data => {
     (acc, curr) => acc + parseInt(curr),
     0
   );
+};
+
+const generateTendencies = (attributes, badges, hotzones) => {
+  const {
+    data: {
+      data: attributeData
+    } = {}
+  } = attributes;
+  const {
+    data: {
+      data: badgeData
+    } = {}
+  } = badges;
+  const {
+    data: {
+      data: hotzoneData
+    } = {}
+  } = hotzones;
+  const parsedAttributeData = Object.keys(attributeData).reduce((acc, key) => {
+    return ({
+      ...acc,
+      key: parseInt(attributeData[key])
+    })
+  }, {});
+  const parsedBadgeData = Object.keys(badgeData).reduce((acc, key) => {
+    return ({
+      ...acc,
+      key: parseInt(badgeData[key])
+    })
+  }, {});
+  const parsedHotzoneData = Object.keys(hotzoneData).reduce((acc, key) => {
+    return ({
+      ...acc,
+      key: parseInt(hotzoneData[key])
+    })
+  }, {});
+  let newTendencies = {};
+};
+
+const generateHotzones = () => {
+  const hotzones = Object.keys(hotzoneKeys).reduce((acc, key) => {
+    return ({
+      ...acc,
+      key: `${_.random(1,4)}`
+    }, {});
+  });
+  return {
+    data: {
+      module: "PLAYER",
+      tab: "HOTZONE",
+      data: hotzones,
+    }
+  };
 };
 
 function generateAttributes() {
@@ -581,6 +636,7 @@ function generatePlayer(
     const playersSheet = sheets[playersId];
     const { data: attributes, attributeTotal } = generateAttributes();
     const { data: badges, badgeTotal } = generateBadges();
+    const { data: hotzones, } = generateHotzones();
     const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
     const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(
       playerType
@@ -590,7 +646,7 @@ function generatePlayer(
       ((genWingspan / 100) * 0.2 + 0.94) * genHeight
     );
     const biasedAttributes = positionBias(playerType, attributes);
-    const player = [vitals, biasedAttributes, badges];
+    const player = [vitals, biasedAttributes, hotzones, badges];
     const randomPosition = chooseOne(playerTypeNames[playerType]);
     (async () => {
       await generatedPlayersSheet.addRow({
