@@ -1,34 +1,60 @@
 const _ = require('lodash');
+const { badges: badgeKeys } = require('../bots/consts');
 
 const toRandomValue = (stat, low, high) => {
   return _.random(low*stat, high*stat);
 };
 
+const toHotzoneTendency = (key, attributeKey) => (attributes, badges, hotzones) => {
+  const {
+    [attributeKey]: attr = 0,
+  } = attributes;
+  const {
+    [key]: hotzoneKey,
+  } = hotzones;
+  const {
+    ["HOT_ZONE_HUNTER"]: hotZoneHunter,
+  } = badges;
+  // hotzone value ranges from -1 to 1, scaling to 1 to 3;
+  const adjustedHotzone = hotzoneKey + 2;
+  return _.clamp(toRandomValue(attr, 0.2, 0.4) + toRandomValue(adjustedHotzone, 5, 15) + toRandomValue(hotZoneHunter, 1, 4));
+};
+
+const toDribbleMoveTendency = (attributes, badges,) => {
+  const {
+    ["BALL_CONTROL"]: ballHandling,
+  } = attributes;
+  const {
+    ["ANKLE_BREAKER"]: ankleBreaker,
+    ["TIGHT_HANDLES"]: tightHandles,
+  } = badges;
+};
+
 const tendencyDictionary = {
-  "STEP_THROUGH_SHOT_TENDENCY": (attributes, badges) => {
+  "STEP_THROUGH_SHOT_TENDENCY": (attributes, badges, hotzones) => {
     
   },
-  "SHOT_UNDER_BASKET_TENDENCY": "45",
+  "SHOT_UNDER_BASKET_TENDENCY": toHotzoneTendency("UNDER_BASKET"),
   "SHOT_CLOSE_TENDENCY": "50",
-  "SHOT_CLOSE_LEFT_TENDENCY": "23",
-  "SHOT_CLOSE_MIDDLE_TENDENCY": "20",
-  "SHOT_CLOSE_RIGHT_TENDENCY": "57",
+  "SHOT_CLOSE_LEFT_TENDENCY": toHotzoneTendency("CLOSE_LEFT", "SHOT_CLOSE"),
+  "SHOT_CLOSE_MIDDLE_TENDENCY": toHotzoneTendency("CLOSE_MIDDLE", "SHOT_CLOSE"),
+  "SHOT_CLOSE_RIGHT_TENDENCY": toHotzoneTendency("CLOSE_RIGHT", "SHOT_CLOSE"),
   "SHOT_MID-RANGE_TENDENCY": "10",
   "SPOT_UP_SHOT_MID-RANGE_TENDENCY": "60",
   "OFF_SCREEN_SHOT_MID-RANGE_TENDENCY": "35",
-  "SHOT_MID_LEFT_TENDENCY": "21",
-  "SHOT_MID_LEFT-CENTER_TENDENCY": "21",
-  "SHOT_MID_CENTER_TENDENCY": "4",
-  "SHOT_MID_RIGHT-CENTER_TENDENCY": "6",
-  "SHOT_MID_RIGHT_TENDENCY": "48",
+  "SHOT_MID_LEFT_TENDENCY": toHotzoneTendency("MID_RANGE_LEFT", "MID-RANGE_SHOT"),
+  "SHOT_MID_LEFT-CENTER_TENDENCY": toHotzoneTendency("MID_RANGE_LEFT_CENTER", "MID-RANGE_SHOT"),
+  "SHOT_MID_CENTER_TENDENCY": toHotzoneTendency("MID_CENTER", "MID-RANGE_SHOT"),
+  "SHOT_MID_RIGHT-CENTER_TENDENCY": toHotzoneTendency("MID_RANGE_RIGHT_CENTER", "MID-RANGE_SHOT"),
+  "SHOT_MID_RIGHT_TENDENCY": toHotzoneTendency("MID_RANGE_RIGHT", "MID-RANGE_SHOT"),
   "SHOT_THREE_TENDENCY": "35",
   "SPOT_UP_SHOT_THREE_TENDENCY": "85",
   "OFF_SCREEN_SHOT_THREE_TENDENCY": "30",
-  "SHOT_THREE_LEFT_TENDENCY": "20",
-  "SHOT_THREE_LEFT-CENTER_TENDENCY": "10",
-  "SHOT_THREE_CENTER_TENDENCY": "20",
-  "SHOT_THREE_RIGHT-CENTER_TENDENCY": "40",
-  "SHOT_THREE_RIGHT_TENDENCY": "10",
+  "SHOT_THREE_LEFT_TENDENCY": toHotzoneTendency("LEFT_3", "3PT_SHOT"),
+  "SHOT_THREE_LEFT-CENTER_TENDENCY": toHotzoneTendency("3_LEFT-CENTER", "3PT_SHOT"),
+  "SHOT_THREE_CENTER_TENDENCY": toHotzoneTendency("CENTER_3", "3PT_SHOT"),
+  "SHOT_THREE_RIGHT-CENTER_TENDENCY": toHotzoneTendency("3_RIGHT-CENTER", "3PT_SHOT"),
+  "SHOT_THREE_RIGHT_TENDENCY": toHotzoneTendency("RIGHT_3", "3PT_SHOT"),
   "CONTESTED_JUMPER_THREE_TENDENCY": "30",
   "CONTESTED_JUMPER_MID-RANGE_TENDENCY": "60",
   "STEPBACK_JUMPER_THREE_TENDENCY": "0",
@@ -89,7 +115,9 @@ const tendencyDictionary = {
   "POST_DRIVE_TENDENCY": "55",
   "POST_SPIN_TENDENCY": "35",
   "POST_DROP_STEP_TENDENCY": "15",
-  "POST_HOP_STEP_TENDENCY": "15",
+  "POST_HOP_STEP_TENDENCY": (attributes, badges) => {
+
+  },
   "SHOT_TENDENCY": () => {
     return _.random(0,99);
   },
@@ -122,13 +150,13 @@ const tendencyDictionary = {
     return _.clamp(_.random(30,60) + _.random(0.1 * threePoint, 0.2 * threePoint) + _.random(catchShoot, catchShoot*3) + _.random(deadEye, deadEye*2),0,99);
   },
   "ISO_VS._ELITE_DEFENDER_TENDENCY": () => {
-    return _.random(0,35);
+    return _.random(0,99);
   },
   "ISO_VS._GOOD_DEFENDER_TENDENCY": () => {
-    return _.random(0,55);
+    return _.random(0,99);
   },
   "ISO_VS._AVERAGE_DEFENDER_TENDENCY": () => {
-    return _.random(0,75);
+    return _.random(0,99);
   },
   "ISO_VS._POOR_DEFENDER_TENDENCY": () => {
     return _.random(0,99);
@@ -185,7 +213,7 @@ const tendencyDictionary = {
     const {
       ENFORCER
     } = badges;
-    return _.clamp(toRandomValue(99 - id, 0.2, 0.3) + toRandomValue(99 - pd, 0.1, 0.2) + toRandomValue(ENFORCER, 0, 3));
+    return _.clamp(toRandomValue(99 - id, 0.2, 0.3) + toRandomValue(99 - pd, 0.1, 0.2) + toRandomValue(ENFORCER, 0, 3), 0, 99);
   },
   "HARD_FOUL_TENDENCY": (attributes, badges) => {
     const {
@@ -195,8 +223,30 @@ const tendencyDictionary = {
     const {
       ENFORCER
     } = badges;
-    return _.clamp(toRandomValue(99 - id, 0.1, 0.2) + toRandomValue(99 - pd, 0.0, 0.2) + toRandomValue(ENFORCER, 0, 4));
+    return _.clamp(toRandomValue(99 - id, 0.1, 0.2) + toRandomValue(99 - pd, 0.0, 0.2) + toRandomValue(ENFORCER, 0, 4), 0, 99);
   }
 };
+
+/**
+ * TENDENCY: {
+ *  attributes: {
+ *    attr1: {
+ *      upper: 0.2
+ *      lower: 0.1
+ *      delta: -1
+ *    }
+ *    attr2: {
+ *    }
+ *
+ *  }
+ *  badges: {
+ *    badge1: {
+ *      upper: 4
+ *      lower: 1
+ *      delta: 1
+ *    }
+ *  }
+ * }
+ */
 
 module.exports = tendencyDictionary;

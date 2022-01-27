@@ -272,7 +272,7 @@ const generateTendencies = (attributes, badges, hotzones) => {
   const parsedAttributeData = Object.keys(attributeData).reduce((acc, key) => {
     return ({
       ...acc,
-      key: parseInt(attributeData[key])
+      key: (parseInt(attributeData[key]) / 3) + 25
     })
   }, {});
   const parsedBadgeData = Object.keys(badgeData).reduce((acc, key) => {
@@ -294,7 +294,7 @@ const generateHotzones = () => {
   const hotzones = Object.keys(hotzoneKeys).reduce((acc, key) => {
     return ({
       ...acc,
-      key: `${_.random(1,4)}`
+      key: `${_.random(-1, 1)}`
     }, {});
   });
   return {
