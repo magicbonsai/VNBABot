@@ -1,10 +1,25 @@
 const _ = require('lodash');
+const rn = require("random-normal");
 const { badges: badgeKeys } = require('../bots/consts');
 
 const toRandomValue = (stat, low, high) => {
   return _.random(low*stat, high*stat);
 };
 
+// attribute-badge association to a tendency
+// 3pt shot and deadeye => contest 3 tendency
+// driving layup, pro touch, consistent finisher, etc => drivinh layup tendency
+
+// shooting attributes, badges, 
+// deadeye 3, flexible release 2, quick draw 1, difficult shots 1
+// attribute 3pt
+// shot 3 tendency
+// take the totals
+// 7
+// attribute 80 3pt
+// 
+// attribute maps to a exponential-esque distribution to create a mean of normal distribution
+// 
 const toHotzoneTendency = (key, attributeKey) => (attributes, badges, hotzones) => {
   const {
     [attributeKey]: attr = 0,
@@ -18,6 +33,7 @@ const toHotzoneTendency = (key, attributeKey) => (attributes, badges, hotzones) 
   // hotzone value ranges from -1 to 1, scaling to 1 to 3;
   const adjustedHotzone = hotzoneKey + 2;
   return _.clamp(toRandomValue(attr, 0.2, 0.4) + toRandomValue(adjustedHotzone, 5, 15) + toRandomValue(hotZoneHunter, 1, 4));
+  return _.clamp(rn({ mean: attr, dev: 4}), 0, 99);
 };
 
 const toDribbleMoveTendency = (attributes, badges,) => {
@@ -202,6 +218,8 @@ const tendencyDictionary = {
     } = attributes;
     const {
       ["RIM_PROTECTOR"]: rimProtector
+      //pogo stick
+      // chasedown artist
     } = badges;
     return _.clamp(toRandomValue(BLOCK, 0.5, 0.7) + toRandomValue(rimProtector, 2, 5), 0, 99);
   },
