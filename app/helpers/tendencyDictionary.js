@@ -20,6 +20,33 @@ const toRandomValue = (stat, low, high) => {
 // 
 // attribute maps to a exponential-esque distribution to create a mean of normal distribution
 // 
+
+// sample a log base 2, badge total, Rnormal,
+
+const log2 = (num) => Math.log(num) / Math.log(2);
+
+const toTendencyRNormal = ({attrKeys = [], badgeKeys = [], hotzoneKey, meanScalar = 1}) => (attributes, badges, hotzones) => {
+  const attrAverage = attrKeys.reduce((acc, key) => {
+    return acc + attributes[key];
+  }, 0) / attrKeys.length;
+
+  const badgeKeysSum = badgeKeys.reduce((acc, key) => {
+    return acc + badges[key];
+  });
+
+  const {
+    [hotzoneKey]: hotzone = 1,
+  } = hotzones;
+  const hotzonescalar = hotzone - 1; // -1 to 1 scale;
+  const timesToSample = Math.floor(log2(badgeKeysSum));
+  let sampledValues = [];
+  for(i = 0; i < timesToSample; i++) {
+    sampledValues.push(_.clamp(rn({ mean: (attrAverage + 15) * meanScalar, sd: (attrAverage - 20) * 0.2})), 0, 100);
+  };
+  const maxValue = _.max(sampledValues);
+
+  return _.clamp(maxValue + (hotzonescalar * 25), 0, 100);
+};
 const toHotzoneTendency = (key, attributeKey) => (attributes, badges, hotzones) => {
   const {
     [attributeKey]: attr = 0,
@@ -36,50 +63,95 @@ const toHotzoneTendency = (key, attributeKey) => (attributes, badges, hotzones) 
   return _.clamp(rn({ mean: attr, dev: 4}), 0, 99);
 };
 
-const toDribbleMoveTendency = (attributes, badges,) => {
-  const {
-    ["BALL_CONTROL"]: ballHandling,
-  } = attributes;
-  const {
-    ["ANKLE_BREAKER"]: ankleBreaker,
-    ["TIGHT_HANDLES"]: tightHandles,
-  } = badges;
-};
-
 const tendencyDictionary = {
-  "STEP_THROUGH_SHOT_TENDENCY": (attributes, badges, hotzones) => {
-    
-  },
+  "STEP_THROUGH_SHOT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["SHOT_CLOSE", "MID-RANGE_SHOT", "3PT_SHOT", "SHOT_IQ"],
+    badgeKeys: ["PUMP_FAKE_MAESTRO", ],
+    meanScalar: 0.6,
+  }),
   "SHOT_UNDER_BASKET_TENDENCY": toHotzoneTendency("UNDER_BASKET"),
-  "SHOT_CLOSE_TENDENCY": "50",
+  "SHOT_CLOSE_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["SHOT_CLOSE", "STANDING_DUNK", "SHOT_IQ"],
+    badgeKeys: ["PUMP_FAKE_MAESTRO", "GIANT_SLAYER", ""],
+  }),
   "SHOT_CLOSE_LEFT_TENDENCY": toHotzoneTendency("CLOSE_LEFT", "SHOT_CLOSE"),
   "SHOT_CLOSE_MIDDLE_TENDENCY": toHotzoneTendency("CLOSE_MIDDLE", "SHOT_CLOSE"),
   "SHOT_CLOSE_RIGHT_TENDENCY": toHotzoneTendency("CLOSE_RIGHT", "SHOT_CLOSE"),
-  "SHOT_MID-RANGE_TENDENCY": "10",
-  "SPOT_UP_SHOT_MID-RANGE_TENDENCY": "60",
-  "OFF_SCREEN_SHOT_MID-RANGE_TENDENCY": "35",
+  "SHOT_MID-RANGE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["MID-RANGE_SHOT"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW"],
+  }),
+  "SPOT_UP_SHOT_MID-RANGE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["MID-RANGE_SHOT"],
+    badgeKeys: ["CATCH_SHOOT", "PICK_POPPER", "SLIPPERY_OFF-BALL"],
+  }),
+  "OFF_SCREEN_SHOT_MID-RANGE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["MID-RANGE_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "DIFFICULT_SHOTS"],
+  }),
   "SHOT_MID_LEFT_TENDENCY": toHotzoneTendency("MID_RANGE_LEFT", "MID-RANGE_SHOT"),
   "SHOT_MID_LEFT-CENTER_TENDENCY": toHotzoneTendency("MID_RANGE_LEFT_CENTER", "MID-RANGE_SHOT"),
   "SHOT_MID_CENTER_TENDENCY": toHotzoneTendency("MID_CENTER", "MID-RANGE_SHOT"),
   "SHOT_MID_RIGHT-CENTER_TENDENCY": toHotzoneTendency("MID_RANGE_RIGHT_CENTER", "MID-RANGE_SHOT"),
   "SHOT_MID_RIGHT_TENDENCY": toHotzoneTendency("MID_RANGE_RIGHT", "MID-RANGE_SHOT"),
-  "SHOT_THREE_TENDENCY": "35",
-  "SPOT_UP_SHOT_THREE_TENDENCY": "85",
-  "OFF_SCREEN_SHOT_THREE_TENDENCY": "30",
+  "SHOT_THREE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["3PT_SHOT"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "RANGE_EXTENDER"],
+  }),
+  "SPOT_UP_SHOT_THREE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["3PT_SHOT"],
+    badgeKeys: ["CATCH_SHOOT", "PICK_POPPER", "SLIPPERY_OFF-BALL"],
+  }),
+  "OFF_SCREEN_SHOT_THREE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["3PT_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "RANGE_EXTENDER", "DIFFICULT_SHOTS"],
+  }),
   "SHOT_THREE_LEFT_TENDENCY": toHotzoneTendency("LEFT_3", "3PT_SHOT"),
   "SHOT_THREE_LEFT-CENTER_TENDENCY": toHotzoneTendency("3_LEFT-CENTER", "3PT_SHOT"),
   "SHOT_THREE_CENTER_TENDENCY": toHotzoneTendency("CENTER_3", "3PT_SHOT"),
   "SHOT_THREE_RIGHT-CENTER_TENDENCY": toHotzoneTendency("3_RIGHT-CENTER", "3PT_SHOT"),
   "SHOT_THREE_RIGHT_TENDENCY": toHotzoneTendency("RIGHT_3", "3PT_SHOT"),
-  "CONTESTED_JUMPER_THREE_TENDENCY": "30",
-  "CONTESTED_JUMPER_MID-RANGE_TENDENCY": "60",
-  "STEPBACK_JUMPER_THREE_TENDENCY": "0",
-  "STEPBACK_JUMPER_MID-RANGE_TENDENCY": "10",
-  "SPIN_JUMPER_TENDENCY": "5",
-  "TRANSITION_PULL_UP_THREE_TENDENCY": "0",
-  "DRIVE_PULL_UP_THREE_TENDENCY": "0",
-  "DRIVE_PULL_UP_MID-RANGE_TENDENCY": "0",
-  "USE_GLASS_TENDENCY": "25",
+  "CONTESTED_JUMPER_THREE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["3PT_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "STEADY_SHOOTER", "DEAD_EYE"],
+    meanScalar: 0.4
+  }),
+  "CONTESTED_JUMPER_MID-RANGE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["MID-RANGE_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "STEADY_SHOOTER", "DEAD_EYE"],
+    meanScalar: 0.4
+  }),
+  "STEPBACK_JUMPER_THREE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["3PT_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR"],
+    meanScalar: 0.4
+  }),
+  "STEPBACK_JUMPER_MID-RANGE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["MID-RANGE_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR"],
+    meanScalar: 0.4
+  }),
+  "SPIN_JUMPER_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["MID-RANGE_SHOT","3PT_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR"],
+    meanScalar: 0.4
+  }),
+  "TRANSITION_PULL_UP_THREE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["3PT_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR"],
+    meanScalar: 0.3
+  }),
+  "DRIVE_PULL_UP_THREE_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["3PT_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR"],
+    meanScalar: 0.3
+  }),
+  "DRIVE_PULL_UP_MID-RANGE_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["MID-RANGE_SHOT", "SHOT_IQ"],
+    badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR"],
+    meanScalar: 0.3
+  }),
+  "USE_GLASS_TENDENCY": () => _.random(1,99),
   "DRIVING_LAYUP_TENDENCY": "10",
   "STANDING_DUNK_TENDENCY": "75",
   "DRIVING_DUNK_TENDENCY": "75",
@@ -102,38 +174,123 @@ const tendencyDictionary = {
   "SPOT_UP_DRIVE_TENDENCY": "55",
   "OFF_SCREEN_DRIVE_TENDENCY": "55",
   "DRIVE_RIGHT_TENDENCY": "75",
-  "DRIVE_CROSSOVER_TENDENCY": "0",
-  "DRIVE_SPIN_TENDENCY": "0",
-  "DRIVING_STEP_BACK_TENDENCY": "0",
-  "DRIVING_HALF_SPIN_TENDENCY": "0",
-  "DRIVING_DOUBLE_CROSSOVER_TENDENCY": "0",
-  "DRIVING_BEHIND_THE_BACK_TENDENCY": "0",
-  "DRIVING_DRIBBLE_HESITATION_TENDENCY": "0",
-  "DRIVING_IN_AND_OUT_TENDENCY": "0",
+  "DRIVE_CROSSOVER_TENDENCY": toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  }),
+  "DRIVE_SPIN_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  }),
+  "DRIVING_STEP_BACK_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  }),
+  "DRIVING_HALF_SPIN_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  }),
+  "DRIVING_DOUBLE_CROSSOVER_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  }),
+  "DRIVING_BEHIND_THE_BACK_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  }),
+  "DRIVING_DRIBBLE_HESITATION_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  }),
+  "DRIVING_IN_AND_OUT_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  }),
   "NO_DRIVING_DRIBBLE_MOVE_TENDENCY": "99",
-  "ATTACK_STRONG_ON_DRIVE_TENDENCY": "75",
-  "DISH_TO_OPEN_MAN_TENDENCY": "35",
-  "FLASHY_PASS_TENDENCY": "15",
-  "ALLEY-OOP_PASS_TENDENCY": "0",
-  "POST_UP_TENDENCY": "70",
-  "POST_SHIMMY_SHOT_TENDENCY": "15",
-  "POST_FACE_UP_TENDENCY": "25",
-  "POST_BACK_DOWN_TENDENCY": "35",
-  "POST_AGGRESSIVE_BACKDOWN_TENDENCY": "10",
-  "SHOOT_FROM_POST_TENDENCY": "80",
-  "POST_HOOK_LEFT_TENDENCY": "60",
-  "POST_HOOK_RIGHT_TENDENCY": "65",
-  "POST_FADE_LEFT_TENDENCY": "23",
-  "POST_FADE_RIGHT_TENDENCY": "31",
-  "POST_UP_AND_UNDER_TENDENCY": "30",
-  "POST_HOP_SHOT_TENDENCY": "10",
-  "POST_STEP_BACK_SHOT_TENDENCY": "65",
-  "POST_DRIVE_TENDENCY": "55",
-  "POST_SPIN_TENDENCY": "35",
-  "POST_DROP_STEP_TENDENCY": "15",
-  "POST_HOP_STEP_TENDENCY": (attributes, badges) => {
-
-  },
+  "ATTACK_STRONG_ON_DRIVE_TENDENCY":  toTendencyRNormal({
+    attrKeys: ["DRIVING_LAYUP", "DRIVING_DUNK", "SHOT_IQ"],
+    badgeKeys: ["PRO_TOUCH", "GIANT_SLAYER", "CONTACT_FINISHER", "CONSISTENT_FINISHER", "SLITHERY_FINISHER"],
+  }),
+  "DISH_TO_OPEN_MAN_TENDENCY": toTendencyRNormal({
+    attrKeys: ["PASSING_IQ", "PASSING_VISION", "PASSING_ACCURACY"],
+    badgeKeys: ["DIMER", "NEEDLE_THREADER", "BAIL_OUT"],
+  }),
+  "FLASHY_PASS_TENDENCY": toTendencyRNormal({
+    attrKeys: ["PASSING_IQ", "PASSING_VISION", "PASSING_ACCURACY"],
+    badgeKeys: ["DIMER", "NEEDLE_THREADER", "FLASHY_PASSER"],
+  }),
+  "ALLEY-OOP_PASS_TENDENCY": toTendencyRNormal({
+    attrKeys: ["PASSING_IQ", "PASSING_VISION", "PASSING_ACCURACY"],
+    badgeKeys: ["DIMER", "NEEDLE_THREADER", "LOB_CITY_PASSER"],
+  }),
+  "POST_UP_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_MOVES", "POST_FADEAWAY", "POST_HOOK"],
+    badgeKeys: [],
+  }),
+  "POST_SHIMMY_SHOT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_MOVES"],
+    badgeKeys: ["DREAM_SHAKE"],
+  }),
+  "POST_FACE_UP_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_MOVES"],
+    badgeKeys: ["QUICK_FIRST_STEP", "DREAM_SHAKE"],
+  }),
+  "POST_BACK_DOWN_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_MOVES", "POST_FADEAWAY"],
+    badgeKeys: ["DREAM_SHAKE"],
+  }),
+  "POST_AGGRESSIVE_BACKDOWN_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_MOVES"],
+    badgeKeys: ["BACKDOWN_PUNISHER"],
+  }),
+  "SHOOT_FROM_POST_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_HOOK", "POST_FADEAWAY", "SHOT_IQ"],
+    badgeKeys: ["DEEP_HOOKS", "DEEP_FADES"],
+  }),
+  "POST_HOOK_LEFT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_HOOK"],
+    badgeKeys: ["DEEP_HOOKS"],
+  }),
+  "POST_HOOK_RIGHT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_HOOK"],
+    badgeKeys: ["DEEP_HOOKS"],
+  }),
+  "POST_FADE_LEFT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_FADEAWAY"],
+    badgeKeys: ["DEEP_FADES"],
+  }),
+  "POST_FADE_RIGHT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_FADEAWAY"],
+    badgeKeys: ["DEEP_FADES"],
+  }),
+  "POST_UP_AND_UNDER_TENDENCY": toTendencyRNormal({
+    attrKeys: ["SHOT_IQ", "SHOT_CLOSE"],
+    badgeKeys: ["DROP-STEPPER", "DREAM_SHAKE", "PUMP_FAKE_MAESTRO"],
+  }),
+  "POST_HOP_SHOT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_HOOK", "MID-RANGE_SHOT"],
+    badgeKeys: ["DIFFICULT_SHOTS", "SPACE_CREATOR"],
+  }),
+  "POST_STEP_BACK_SHOT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["POST_FADEAWAY", "MID-RANGE_SHOT"],
+    badgeKeys: ["DEEP_FADES", "DIFFICULT_SHOTS", "SPACE_CREATOR"],
+  }),
+  "POST_DRIVE_TENDENCY": toTendencyRNormal({
+    attrKeys: ["STRENGTH"],
+    badgeKeys: ["POST_SPIN_TECHNICIAN"],
+  }),
+  "POST_SPIN_TENDENCY": toTendencyRNormal({
+    attrKeys: ["ACCELERATION"],
+    badgeKeys: ["POST_SPIN_TECHNICIAN"],
+  }),
+  "POST_DROP_STEP_TENDENCY": toTendencyRNormal({
+    attrKeys: ["SHOT_IQ", "SHOT_CLOSE"],
+    badgeKeys: ["DROP-STEPPER"],
+  }),
+  "POST_HOP_STEP_TENDENCY": toTendencyRNormal({
+    attrKeys: ["SHOT_IQ", "SHOT_CLOSE"],
+    badgeKeys: ["DROP-STEPPER"],
+  }),
   "SHOT_TENDENCY": () => {
     return _.random(0,99);
   },
