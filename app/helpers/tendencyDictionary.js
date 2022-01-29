@@ -318,7 +318,7 @@ const tendencyDictionary = {
     badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "NO_DRIVING_DRIBBLE_MOVE_TENDENCY": toTendencyRNormalInverse({
-    attrKeys: ["BALL_CONTROL", "HANDS"],
+    attrKeys: ["BALL_CONTROL"],
     badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "ATTACK_STRONG_ON_DRIVE_TENDENCY":  toTendencyRNormal({
