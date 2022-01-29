@@ -256,28 +256,28 @@ const tendencyDictionary = {
     badgeKeys: ["PUMP_FAKE_MAESTRO", "PASS_FAKE_MAESTRO", "QUICK_FIRST_STEP"]
   }),
   "TRIPLE_THREAT_JAB_STEP_TENDENCY": toTendencyRNormal({
-    attrKeys: ["SHOT_IQ", "ACCELERATION", "BALL_CONTROL"],
-    badgeKeys: ["QUICK_FIRST_STEP"]
+    attrKeys: ["SHOT_IQ", "ACCELERATION", "BALL_CONTROL", "MID-RANGE_SHOT", "3PT_SHOT"],
+    badgeKeys: ["QUICK_FIRST_STEP", "FLOOR_GENERAL", "QUICK_DRAW"]
   }),
   "TRIPLE_THREAT_IDLE_TENDENCY": toTendencyRNormal({
-    attrKeys: [],
-    badgeKeys: ["QUICK_FIRST_STEP"]
+    attrKeys: ["SHOT_IQ", "OFFENSIVE_CONSISTENCY"],
+    badgeKeys: ["QUICK_FIRST_STEP", "FLOOR_GENERAL"]
   }),
   "TRIPLE_THREAT_SHOOT_TENDENCY": toTendencyRNormal({
     attrKeys: ["SHOT_IQ", "3PT_SHOT","MID-RANGE_SHOT", "SHOT_CLOSE"],
-    badgeKeys: ["PUMP_FAKE_MAESTRO", "STEADY_SHOOTER"]
+    badgeKeys: ["PUMP_FAKE_MAESTRO", "STEADY_SHOOTER", "QUICK_DRAW"]
   }),
   "SETUP_WITH_SIZEUP_TENDENCY": toTendencyRNormal({
-    attrKeys: [],
-    badgeKeys: ["QUICK_FIRST_STEP"]
+    attrKeys: ["SHOT_IQ", "OFFENSIVE_CONSISTENCY"],
+    badgeKeys: ["QUICK_FIRST_STEP", "TIGHT_HANDLES", "FLOOR_GENERAL"]
   }),
   "SETUP_WITH_HESITATION_TENDENCY": toTendencyRNormal({
-    attrKeys: ["SHOT_IQ", "3PT_SHOT"],
-    badgeKeys: ["QUICK_FIRST_STEP", "STOP_GO"]
+    attrKeys: ["SHOT_IQ", "3PT_SHOT", "MID-RANGE_SHOT"],
+    badgeKeys: ["QUICK_FIRST_STEP", "STOP_GO", "SPACE_CREATOR"]
   }),
   "NO_SETUP_DRIBBLE_TENDENCY": toTendencyRNormal({
     attrKeys: ["SPEED_WITH_BALL", "BALL_CONTROL"],
-    badgeKeys: ["QUICK_FIRST_STEP"]
+    badgeKeys: ["QUICK_FIRST_STEP", "TIGHT_HANDLES", "UNPLUCKABLE"]
   }),
   "DRIVE_TENDENCY": toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
@@ -294,39 +294,39 @@ const tendencyDictionary = {
   "DRIVE_RIGHT_TENDENCY": () => _.random(0, 99),
   "DRIVE_CROSSOVER_TENDENCY": toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "DRIVE_SPIN_TENDENCY":  toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "DRIVING_STEP_BACK_TENDENCY":  toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "DRIVING_HALF_SPIN_TENDENCY":  toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "DRIVING_DOUBLE_CROSSOVER_TENDENCY":  toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "DRIVING_BEHIND_THE_BACK_TENDENCY":  toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "DRIVING_DRIBBLE_HESITATION_TENDENCY":  toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "DRIVING_IN_AND_OUT_TENDENCY":  toTendencyRNormal({
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "NO_DRIVING_DRIBBLE_MOVE_TENDENCY": toTendencyRNormalInverse({
     attrKeys: ["BALL_CONTROL", "HANDS"],
-    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE", "HANDLES_FOR_DAYS"],
   }),
   "ATTACK_STRONG_ON_DRIVE_TENDENCY":  toTendencyRNormal({
     attrKeys: ["DRIVING_LAYUP", "DRIVING_DUNK", "SHOT_IQ"],
@@ -342,27 +342,27 @@ const tendencyDictionary = {
   }),
   "ALLEY-OOP_PASS_TENDENCY": toTendencyRNormal({
     attrKeys: ["PASSING_IQ", "PASSING_VISION", "PASSING_ACCURACY"],
-    badgeKeys: ["DIMER", "NEEDLE_THREADER", "LOB_CITY_PASSER"],
+    badgeKeys: ["DIMER", "NEEDLE_THREADER", "LOB_CITY_PASSER", "FLASHY_PASSER"],
   }),
   "POST_UP_TENDENCY": toTendencyRNormal({
     attrKeys: ["POST_MOVES", "POST_FADEAWAY", "POST_HOOK"],
-    badgeKeys: [],
+    badgeKeys: ["BACKDOWN_PUNISHER", "DROP-STEPPER", "DREAM_SHAKE"],
   }),
   "POST_SHIMMY_SHOT_TENDENCY": toTendencyRNormal({
     attrKeys: ["POST_MOVES"],
     badgeKeys: ["DREAM_SHAKE"],
   }),
   "POST_FACE_UP_TENDENCY": toTendencyRNormal({
-    attrKeys: ["POST_MOVES"],
+    attrKeys: ["POST_MOVES", "ACCELERATION"],
     badgeKeys: ["QUICK_FIRST_STEP", "DREAM_SHAKE"],
   }),
   "POST_BACK_DOWN_TENDENCY": toTendencyRNormal({
-    attrKeys: ["POST_MOVES", "POST_FADEAWAY"],
-    badgeKeys: ["DREAM_SHAKE"],
+    attrKeys: ["POST_MOVES", "POST_FADEAWAY", "STRENGTH"],
+    badgeKeys: ["DREAM_SHAKE", "BACKDOWN_PUNISHER", "DROP-STEPPER"],
   }),
   "POST_AGGRESSIVE_BACKDOWN_TENDENCY": toTendencyRNormal({
-    attrKeys: ["POST_MOVES"],
-    badgeKeys: ["BACKDOWN_PUNISHER"],
+    attrKeys: ["POST_MOVES", "STRENGTH"],
+    badgeKeys: ["BACKDOWN_PUNISHER", "DROP-STEPPER"],
   }),
   "SHOOT_FROM_POST_TENDENCY": toTendencyRNormal({
     attrKeys: ["POST_HOOK", "POST_FADEAWAY", "SHOT_IQ"],
