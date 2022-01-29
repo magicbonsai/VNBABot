@@ -405,11 +405,12 @@ const tendencyDictionary = {
     attrKeys: ["SHOT_IQ", "SHOT_CLOSE"],
     badgeKeys: ["DROP-STEPPER"],
   }),
-  "SHOT_TENDENCY": () => {
-    return _.random(0,99);
-  },
+  "SHOT_TENDENCY": toTendencyRNormal({
+    attrKeys: ["SHOT_IQ", "SHOT_CLOSE",  "3PT_SHOT", "MID-RANGE_SHOT", "POST_FADEAWAY", "POST_HOOK", "DRIVING_LAYUP", "DRIVING_DUNK"],
+    badgeKeys: ["FLOOR_GENERAL", "GREEN_MACHINE", "SHOWTIME", "HOT_START"],
+  }),
   "TOUCHES_TENDENCY": () => {
-    return _.random(0,99);
+    return `${_.random(0,99)}`;
   },
   "ROLL_VS._POP_TENDENCY": (attributes, badges) => {
     const {
@@ -420,30 +421,31 @@ const tendencyDictionary = {
       ["PICK_POPPER"]: pickPopper,
       ["CATCH_SHOOT"]: catchShoot,
     } = badges;
-    return _.clamp(
+    const result = _.clamp(
       _.random(35,65) + _.random(0.1 * threePoint, 0.2 * threePoint) + _.random(1*pickPopper, 2* pickPopper) + _.random(1*catchShoot, 2*catchShoot) - _.random(4*pickRoller, 6*pickRoller), 
       0, 
       99
     );
+    return `${result}`;
   },
   "TRANSITION_SPOT_UP_TENDENCY": toTendencyRNormal({
     attrKeys: ["3PT_SHOT", "MID-RANGE_SHOT"],
     badgeKeys: ["CATCH_SHOOT", "SLIPPERY_OFF-BALL", ],
   }),
   "ISO_VS._ELITE_DEFENDER_TENDENCY": () => {
-    return _.random(0,99);
+    return `${_.random(0,99)}`;
   },
   "ISO_VS._GOOD_DEFENDER_TENDENCY": () => {
-    return _.random(0,99);
+    return `${_.random(0,99)}`;
   },
   "ISO_VS._AVERAGE_DEFENDER_TENDENCY": () => {
-    return _.random(0,99);
+    return `${_.random(0,99)}`;
   },
   "ISO_VS._POOR_DEFENDER_TENDENCY": () => {
-    return _.random(0,99);
+    return `${_.random(0,99)}`;
   },
   "PLAY_DISCIPLINE_TENDENCY": () => {
-    return _.random(5,99);
+    return `${_.random(0,99)}`;
   },
   "PASS_INTERCEPTION_TENDENCY": toTendencyRNormal({
     attrKeys: ["PASS_PERCEPTION"],
