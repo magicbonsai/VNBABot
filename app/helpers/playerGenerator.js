@@ -255,19 +255,13 @@ const getBadgeTotal = data => {
 
 const generateTendencies = (attributes, badges, hotzones) => {
   const {
-    data: {
-      data: attributeData
-    } = {}
+    data: attributeData
   } = attributes;
   const {
-    data: {
-      data: badgeData
-    } = {}
+    data: badgeData
   } = badges;
   const {
-    data: {
-      data: hotzoneData
-    } = {}
+    data: hotzoneData
   } = hotzones;
   const parsedAttributeData = Object.keys(attributeData).reduce((acc, key) => {
     return ({
@@ -306,7 +300,7 @@ const generateHotzones = () => {
   const hotzones = Object.keys(hotzoneKeys).reduce((acc, key) => {
     return ({
       ...acc,
-      key: `${_.random(-1, 1)}`
+      [key]: `${_.random(-1, 1)}`
     }, {});
   });
   return {
@@ -530,6 +524,7 @@ const updateValues = (values, delta) => {
   const vitalsTab = valuesFromJSON.find(page => page.tab === "VITALS");
   const attributesTab = valuesFromJSON.find(page => page.tab === "ATTRIBUTES");
   const badgesTab = valuesFromJSON.find(page => page.tab === "BADGES");
+  const hotzoneTab = valuesFromJSON.find(page => page.tab === "HOTZONE");
   let newAttributes = attributesTab.data;
   let newBadges = badgesTab.data;
   const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
@@ -553,6 +548,7 @@ const updateValues = (values, delta) => {
   badgeDelta.forEach(({ key, value }) => {
     newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
   });
+  const { data: newTendencies } = generateTendencies({ data: newAttributes}, { data: newBadges }, hotzoneTab);
   const newValues = [
     vitalsTab,
     {
@@ -564,7 +560,13 @@ const updateValues = (values, delta) => {
       module: "PLAYER",
       tab: "BADGES",
       data: newBadges
-    }
+    },
+    {
+      module: "PLAYER",
+      tab: "TENDENCIES",
+      data: newTendencies,
+    },
+    hotzoneTab,
   ];
   return {
     newValues,

@@ -45,26 +45,11 @@ const toTendencyRNormal = ({attrKeys = [], badgeKeys = [], hotzoneKey, meanScala
   };
   const maxValue = _.max(sampledValues);
 
-  return _.clamp(maxValue + (hotzonescalar * 25), 0, 100);
+  return `${_.clamp(maxValue + (hotzonescalar * 25), 0, 100)}`;
 };
 
 const toTendencyRNormalInverse = ({attrKeys = [], badgeKeys = [], hotzoneKey, meanScalar = 1}) => (attributes, badges, hotzones) => {
-  return 100 - toTendencyRNormal(attributes, badges, hotzones);
-};
-
-const toHotzoneTendency = (key, attributeKey) => (attributes, badges, hotzones) => {
-  const {
-    [attributeKey]: attr = 0,
-  } = attributes;
-  const {
-    [key]: hotzoneKey,
-  } = hotzones;
-  const {
-    ["HOT_ZONE_HUNTER"]: hotZoneHunter,
-  } = badges;
-  // hotzone value ranges from -1 to 1, scaling to 1 to 3;
-  const adjustedHotzone = hotzoneKey + 2;
-  return _.clamp(toRandomValue(attr, 0.2, 0.4) + toRandomValue(adjustedHotzone, 5, 15) + toRandomValue(hotZoneHunter, 1, 4));
+  return `${100 - parseInt(toTendencyRNormal({attrKeys = [], badgeKeys = [], hotzoneKey, meanScalar = 1})(attributes, badges, hotzones))}`;
 };
 
 const tendencyDictionary = {
@@ -161,7 +146,6 @@ const tendencyDictionary = {
     badgeKeys: ["HOT_ZONE_HUNTER", "GREEN_MACHINE", "RANGE_EXTENDER"],
     hotzoneKey: "CENTER_3"
   }),
-  "SHOT_THREE_RIGHT-CENTER_TENDENCY": toHotzoneTendency("3_RIGHT-CENTER", "3PT_SHOT"),
   "SHOT_THREE_RIGHT-CENTER_TENDENCY": toTendencyRNormal({
     attrKeys: ["3PT_SHOT"],
     badgeKeys: ["HOT_ZONE_HUNTER", "GREEN_MACHINE", "RANGE_EXTENDER"],
