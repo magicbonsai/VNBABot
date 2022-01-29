@@ -177,7 +177,7 @@ const toWeights = (weights, faWeights) => team => {
 
 const runReportWith =
   discordClient =>
-  (numberOfEvents = 5, forceTeam) => {
+  (numberOfEvents = 3, forceTeam) => {
     (async function main() {
       await doc.useServiceAccountAuth({
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
