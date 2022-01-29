@@ -247,19 +247,19 @@ const preJob = new CronJob("0 14 * * *", function () {
   // })();
 });
 
-const WednesdayJob = new CronJob("0 15 * * 3", function () {
+const WednesdayJob = new CronJob("0 16 * * 3", function () {
   runReport(3);
 });
 
-const WednesdayJob2 =new CronJob("0 15 30 * 3", function () {
+const WednesdayJob2 =new CronJob("0 16 30 * 3", function () {
   runReport(3);
 });
 
-const SaturdayJob = new CronJob("0 15 * * 6", function () {
+const SaturdayJob = new CronJob("0 16 * * 6", function () {
   runReport(3);
 });
 
-const SaturdayJob2 = new CronJob("0 15 30 * 6", function () {
+const SaturdayJob2 = new CronJob("0 16 30 * 6", function () {
   runReport(3);
 });
 
