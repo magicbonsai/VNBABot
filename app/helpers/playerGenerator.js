@@ -266,31 +266,32 @@ const generateTendencies = (attributes, badges, hotzones) => {
   const parsedAttributeData = Object.keys(attributeData).reduce((acc, key) => {
     return ({
       ...acc,
-      key: (parseInt(attributeData[key]) / 3) + 25
+      [key]: (parseInt(attributeData[key]) / 3) + 25
     })
   }, {});
   const parsedBadgeData = Object.keys(badgeData).reduce((acc, key) => {
     return ({
       ...acc,
-      key: parseInt(badgeData[key])
+      [key]: parseInt(badgeData[key])
     })
   }, {});
   const parsedHotzoneData = Object.keys(hotzoneData).reduce((acc, key) => {
     return ({
       ...acc,
-      key: parseInt(hotzoneData[key])
+      [key]: parseInt(hotzoneData[key])
     })
   }, {});
+  console.log('red', parsedAttributeData)
   const newTendencies = Object.keys(tendencyDictionary).reduce((acc, key) => {
     return ({
       ...acc,
       [key]: tendencyDictionary[key](parsedAttributeData, parsedBadgeData, parsedHotzoneData)
     });
-  }, {})
+  }, {});
   return ({
     data: {
       module: "PLAYER",
-      tab: "HOTZONE",
+      tab: "TENDENCIES",
       data: newTendencies
     }
   })
@@ -300,9 +301,10 @@ const generateHotzones = () => {
   const hotzones = Object.keys(hotzoneKeys).reduce((acc, key) => {
     return ({
       ...acc,
-      [key]: `${_.random(-1, 1)}`
-    }, {});
-  });
+      [key]: `${_.random(0, 2)}`
+    });
+  }, {});
+  console.log('bar', hotzones);
   return {
     data: {
       module: "PLAYER",
@@ -556,17 +558,13 @@ const updateValues = (values, delta) => {
       tab: "ATTRIBUTES",
       data: newAttributes
     },
+    newTendencies,
+    hotzoneTab,
     {
       module: "PLAYER",
       tab: "BADGES",
       data: newBadges
     },
-    {
-      module: "PLAYER",
-      tab: "TENDENCIES",
-      data: newTendencies,
-    },
-    hotzoneTab,
   ];
   return {
     newValues,
@@ -651,6 +649,7 @@ function generatePlayer(
     const { data: attributes, attributeTotal } = generateAttributes();
     const { data: badges, badgeTotal } = generateBadges();
     const { data: hotzones, } = generateHotzones();
+    console.log('hotzones', hotzones);
     const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
     const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(
       playerType

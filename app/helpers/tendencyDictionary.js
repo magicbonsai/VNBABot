@@ -32,54 +32,63 @@ const toTendencyRNormal = ({attrKeys = [], badgeKeys = [], hotzoneKey, meanScala
 
   const badgeKeysSum = badgeKeys.reduce((acc, key) => {
     return acc + badges[key];
-  });
-
+  }, 1);
   const {
-    [hotzoneKey]: hotzone = 1,
+    [hotzoneKey]: hotzone = 0,
   } = hotzones;
-  const hotzonescalar = hotzone - 1; // -1 to 1 scale;
-  const timesToSample = Math.floor(log2(badgeKeysSum));
+  const hotzonescalar = hotzone - 1;
+  const timesToSample = Math.floor(log2(badgeKeysSum)) + 1;
   let sampledValues = [];
+  const mean = (attrAverage - 15) * meanScalar;
+  const stdev = ((attrAverage - 20) * 0.2);
   for(i = 0; i < timesToSample; i++) {
-    sampledValues.push(_.clamp(rn({ mean: (attrAverage + 15) * meanScalar, sd: (attrAverage - 20) * 0.2})), 0, 100);
+    sampledValues.push(rn({ mean: mean, dev: stdev }));
   };
   const maxValue = _.max(sampledValues);
-
-  return `${_.clamp(maxValue + (hotzonescalar * 25), 0, 100)}`;
+  const filteredValues = sampledValues.filter(value => {
+    if(value < 100 || value > 0) {
+      return true;
+    }
+    return false;
+  });
+  if(!filteredValues.length) {
+    return `${Math.floor(_.clamp(maxValue + (hotzonescalar * 20), 0, 100))}`;
+  }
+  return `${Math.floor(_.clamp(_.max(filteredValues) + (hotzonescalar * 10), 0, 100))}`;
 };
 
 const toTendencyRNormalInverse = ({attrKeys = [], badgeKeys = [], hotzoneKey, meanScalar = 1}) => (attributes, badges, hotzones) => {
-  return `${100 - parseInt(toTendencyRNormal({attrKeys = [], badgeKeys = [], hotzoneKey, meanScalar = 1})(attributes, badges, hotzones))}`;
+  return `${100 - parseInt(toTendencyRNormal({attrKeys, badgeKeys, hotzoneKey, meanScalar})(attributes, badges, hotzones))}`;
 };
 
 const tendencyDictionary = {
   "STEP_THROUGH_SHOT_TENDENCY": toTendencyRNormal({
     attrKeys: ["SHOT_CLOSE", "MID-RANGE_SHOT", "3PT_SHOT", "SHOT_IQ"],
-    badgeKeys: ["PUMP_FAKE_MAESTRO", ],
+    badgeKeys: ["PUMP_FAKE_MAESTRO"],
     meanScalar: 0.6,
   }),
   "SHOT_UNDER_BASKET_TENDENCY": toTendencyRNormal({
     attrKeys: ["SHOT_CLOSE", "STANDING_DUNK"],
-    badgeKeys: ["HOT_ZONE_HUNTER", "CROSS_KEY_SCORER"],
+    badgeKeys: ["HOT_ZONE_HUNTER", "CROSS-KEY_SCORER", "GIANT_SLAYER"],
     hotzoneKey: "UNDER_BASKET"
   }),
   "SHOT_CLOSE_TENDENCY":  toTendencyRNormal({
     attrKeys: ["SHOT_CLOSE", "STANDING_DUNK", "SHOT_IQ"],
-    badgeKeys: ["PUMP_FAKE_MAESTRO", "GIANT_SLAYER", ""],
+    badgeKeys: ["PUMP_FAKE_MAESTRO", "GIANT_SLAYER"],
   }),
   "SHOT_CLOSE_LEFT_TENDENCY": toTendencyRNormal({
     attrKeys: ["SHOT_CLOSE"],
-    badgeKeys: ["HOT_ZONE_HUNTER", "CROSS_KEY_SCORER", "GREEN_MACHINE"],
+    badgeKeys: ["HOT_ZONE_HUNTER", "CROSS-KEY_SCORER", "GREEN_MACHINE"],
     hotzoneKey: "CLOSE_LEFT"
   }),
   "SHOT_CLOSE_MIDDLE_TENDENCY": toTendencyRNormal({
     attrKeys: ["SHOT_CLOSE"],
-    badgeKeys: ["HOT_ZONE_HUNTER", "CROSS_KEY_SCORER", "GREEN_MACHINE"],
+    badgeKeys: ["HOT_ZONE_HUNTER", "CROSS-KEY_SCORER", "GREEN_MACHINE"],
     hotzoneKey: "CLOSE_MIDDLE"
   }),
   "SHOT_CLOSE_RIGHT_TENDENCY": toTendencyRNormal({
     attrKeys: ["SHOT_CLOSE"],
-    badgeKeys: ["HOT_ZONE_HUNTER", "CROSS_KEY_SCORER", "GREEN_MACHINE"],
+    badgeKeys: ["HOT_ZONE_HUNTER", "CROSS-KEY_SCORER", "GREEN_MACHINE"],
     hotzoneKey: "CLOSE_RIGHT"
   }),
   "SHOT_MID-RANGE_TENDENCY": toTendencyRNormal({
@@ -158,43 +167,43 @@ const tendencyDictionary = {
   }),
   "CONTESTED_JUMPER_THREE_TENDENCY": toTendencyRNormal({
     attrKeys: ["3PT_SHOT", "SHOT_IQ"],
-    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "STEADY_SHOOTER", "DEADEYE"],
-    meanScalar: 0.4
+    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "STEADY_SHOOTER", "DEADEYE", "SLIPPERY_OFF-BALL"],
+    meanScalar: 0.6
   }),
   "CONTESTED_JUMPER_MID-RANGE_TENDENCY": toTendencyRNormal({
     attrKeys: ["MID-RANGE_SHOT", "SHOT_IQ"],
-    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "STEADY_SHOOTER", "DEADEYE"],
-    meanScalar: 0.4
+    badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "STEADY_SHOOTER", "DEADEYE", "SLIPPERY_OFF-BALL"],
+    meanScalar: 0.6
   }),
   "STEPBACK_JUMPER_THREE_TENDENCY": toTendencyRNormal({
     attrKeys: ["3PT_SHOT", "SHOT_IQ"],
     badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR", "DEADEYE", "STEADY_SHOOTER"],
-    meanScalar: 0.4
+    meanScalar: 0.6
   }),
   "STEPBACK_JUMPER_MID-RANGE_TENDENCY": toTendencyRNormal({
     attrKeys: ["MID-RANGE_SHOT", "SHOT_IQ"],
     badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR", "DEADEYE", "STEADY_SHOOTER"],
-    meanScalar: 0.4
+    meanScalar: 0.6
   }),
   "SPIN_JUMPER_TENDENCY":  toTendencyRNormal({
     attrKeys: ["MID-RANGE_SHOT","3PT_SHOT", "SHOT_IQ"],
     badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR", "DEADEYE", "STEADY_SHOOTER"],
-    meanScalar: 0.4
+    meanScalar: 0.6
   }),
   "TRANSITION_PULL_UP_THREE_TENDENCY": toTendencyRNormal({
     attrKeys: ["3PT_SHOT", "SHOT_IQ"],
     badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR", "DEADEYE", "STEADY_SHOOTER"],
-    meanScalar: 0.3
+    meanScalar: 0.6
   }),
   "DRIVE_PULL_UP_THREE_TENDENCY":  toTendencyRNormal({
     attrKeys: ["3PT_SHOT", "SHOT_IQ"],
     badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR", "DEADEYE", "STEADY_SHOOTER"],
-    meanScalar: 0.3
+    meanScalar: 0.6
   }),
   "DRIVE_PULL_UP_MID-RANGE_TENDENCY":  toTendencyRNormal({
     attrKeys: ["MID-RANGE_SHOT", "SHOT_IQ"],
     badgeKeys: ["FLEXIBLE_RELEASE", "DIFFICULT_SHOTS", "SPACE_CREATOR", "DEADEYE", "STEADY_SHOOTER"],
-    meanScalar: 0.3
+    meanScalar: 0.6
   }),
   "USE_GLASS_TENDENCY": () => _.random(1,99),
   "DRIVING_LAYUP_TENDENCY": toTendencyRNormal({
@@ -212,7 +221,7 @@ const tendencyDictionary = {
   "FLASHY_DUNK_TENDENCY": () => _.random(0, 99),
   "ALLEY-OOP_TENDENCY": toTendencyRNormal({
     attrKeys: ["DRIVING_DUNK", "SPEED", "STANDING_DUNK", "ACCELERATION"],
-    badgeKeys: ["LOB_CITY_FINISHER", "SLIPPERY_OFF_BALL", "PICK_ROLLER"]
+    badgeKeys: ["LOB_CITY_FINISHER", "SLIPPERY_OFF-BALL", "PICK_ROLLER"]
   }),
   "PUTBACK_TENDENCY": toTendencyRNormal({
     attrKeys: ["SHOT_CLOSE", "OFFENSIVE_REBOUND", ],
@@ -233,7 +242,7 @@ const tendencyDictionary = {
   }),
   "FLOATER_TENDENCY": toTendencyRNormal({
     attrKeys: ["DRIVING_LAYUP", "SHOT_CLOSE", "MID-RANGE_SHOT"],
-    badgeKeys: ["TEAR_DROPPER", "CROSS_KEY_SCORER", "STEADY_SHOOTER"]
+    badgeKeys: ["TEAR_DROPPER", "CROSS-KEY_SCORER", "STEADY_SHOOTER"]
   }),
   "TRIPLE_THREAT_PUMP_FAKE_TENDENCY": toTendencyRNormal({
     attrKeys: ["SHOT_IQ", "ACCELERATION", "PASSING_IQ", "PASSING_VISION"],
@@ -441,7 +450,7 @@ const tendencyDictionary = {
     badgeKeys: ["INTERCEPTOR", "HEART_CRUSHER"],
   }),
   "TAKE_CHARGE_TENDENCY": () => {
-    return 0;
+    return "0";
   },
   "ON-BALL_STEAL_TENDENCY": toTendencyRNormal({
     attrKeys: ["STEAL"],
