@@ -206,7 +206,10 @@ const tendencyDictionary = {
     attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
     badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
   }),
-  "NO_DRIVING_DRIBBLE_MOVE_TENDENCY": "99",
+  "NO_DRIVING_DRIBBLE_MOVE_TENDENCY": (attributes, badges, hotzones) => 100 - toTendencyRNormal({
+    attrKeys: ["BALL_CONTROL", "HANDS"],
+    badgeKeys: ["ANKLE_BREAKER", "STOP_GO", "SPACE_CREATOR", "TIGHT_HANDLES", "UNPLUCKABLE"],
+  })(attributes, badges, hotzones),
   "ATTACK_STRONG_ON_DRIVE_TENDENCY":  toTendencyRNormal({
     attrKeys: ["DRIVING_LAYUP", "DRIVING_DUNK", "SHOT_IQ"],
     badgeKeys: ["PRO_TOUCH", "GIANT_SLAYER", "CONTACT_FINISHER", "CONSISTENT_FINISHER", "SLITHERY_FINISHER"],
