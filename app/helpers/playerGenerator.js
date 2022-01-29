@@ -287,7 +287,19 @@ const generateTendencies = (attributes, badges, hotzones) => {
       key: parseInt(hotzoneData[key])
     })
   }, {});
-  let newTendencies = {};
+  const newTendencies = Object.keys(tendencyDictionary).reduce((acc, key) => {
+    return ({
+      ...acc,
+      [key]: tendencyDictionary[key](parsedAttributeData, parsedBadgeData, parsedHotzoneData)
+    });
+  }, {})
+  return ({
+    data: {
+      module: "PLAYER",
+      tab: "HOTZONE",
+      data: newTendencies
+    }
+  })
 };
 
 const generateHotzones = () => {
@@ -646,7 +658,8 @@ function generatePlayer(
       ((genWingspan / 100) * 0.2 + 0.94) * genHeight
     );
     const biasedAttributes = positionBias(playerType, attributes);
-    const player = [vitals, biasedAttributes, hotzones, badges];
+    const { data: tendencies } = generateTendencies(biasedAttributes, badges, hotzones);
+    const player = [vitals, biasedAttributes, tendencies, hotzones, badges];
     const randomPosition = chooseOne(playerTypeNames[playerType]);
     (async () => {
       await generatedPlayersSheet.addRow({
