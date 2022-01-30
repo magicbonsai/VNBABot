@@ -1300,5 +1300,8 @@ const boostEvents = () => {
 module.exports = {
   rojEvents,
   injuryEvents,
-  tabMap
+  tabMap,
+  hotzones,
+  attributes,
+  badges,
 };

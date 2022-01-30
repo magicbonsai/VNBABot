@@ -5,6 +5,8 @@ const _ = require("lodash");
 const faker = require("faker");
 faker.setLocale("en");
 const { sheetIds } = require("./sheetHelper");
+const tendencyDictionary = require('./tendencyDictionary');
+const { hotzones: hotzoneKeys } = require('../bots/consts');
 
 // NBA2k attribute formula to be readable by the 2ktools
 // 0 - 222
@@ -251,6 +253,67 @@ const getBadgeTotal = data => {
   );
 };
 
+const generateTendencies = (attributes, badges, hotzones) => {
+  const {
+    data: attributeData
+  } = attributes;
+  const {
+    data: badgeData
+  } = badges;
+  const {
+    data: hotzoneData
+  } = hotzones;
+  const parsedAttributeData = Object.keys(attributeData).reduce((acc, key) => {
+    return ({
+      ...acc,
+      [key]: (parseInt(attributeData[key]) / 3) + 25
+    })
+  }, {});
+  const parsedBadgeData = Object.keys(badgeData).reduce((acc, key) => {
+    return ({
+      ...acc,
+      [key]: parseInt(badgeData[key])
+    })
+  }, {});
+  const parsedHotzoneData = Object.keys(hotzoneData).reduce((acc, key) => {
+    return ({
+      ...acc,
+      [key]: parseInt(hotzoneData[key])
+    })
+  }, {});
+  console.log('red', parsedAttributeData)
+  const newTendencies = Object.keys(tendencyDictionary).reduce((acc, key) => {
+    return ({
+      ...acc,
+      [key]: tendencyDictionary[key](parsedAttributeData, parsedBadgeData, parsedHotzoneData)
+    });
+  }, {});
+  return ({
+    data: {
+      module: "PLAYER",
+      tab: "TENDENCIES",
+      data: newTendencies
+    }
+  })
+};
+
+const generateHotzones = () => {
+  const hotzones = Object.keys(hotzoneKeys).reduce((acc, key) => {
+    return ({
+      ...acc,
+      [key]: `${_.random(0, 2)}`
+    });
+  }, {});
+  console.log('bar', hotzones);
+  return {
+    data: {
+      module: "PLAYER",
+      tab: "HOTZONE",
+      data: hotzones,
+    }
+  };
+};
+
 function generateAttributes() {
   // 58 41
   // 11 numbers from 80 - 100, 9 num from 70 to 100, 7 num from 60 to 100, 5 num from 50 to 100, 4 num from 40 to 90, 3 from 30 to 80
@@ -463,6 +526,7 @@ const updateValues = (values, delta) => {
   const vitalsTab = valuesFromJSON.find(page => page.tab === "VITALS");
   const attributesTab = valuesFromJSON.find(page => page.tab === "ATTRIBUTES");
   const badgesTab = valuesFromJSON.find(page => page.tab === "BADGES");
+  const hotzoneTab = valuesFromJSON.find(page => page.tab === "HOTZONE");
   let newAttributes = attributesTab.data;
   let newBadges = badgesTab.data;
   const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
@@ -486,6 +550,7 @@ const updateValues = (values, delta) => {
   badgeDelta.forEach(({ key, value }) => {
     newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
   });
+  const { data: newTendencies } = generateTendencies({ data: newAttributes}, { data: newBadges }, hotzoneTab);
   const newValues = [
     vitalsTab,
     {
@@ -493,11 +558,13 @@ const updateValues = (values, delta) => {
       tab: "ATTRIBUTES",
       data: newAttributes
     },
+    newTendencies,
+    hotzoneTab,
     {
       module: "PLAYER",
       tab: "BADGES",
       data: newBadges
-    }
+    },
   ];
   return {
     newValues,
@@ -581,6 +648,8 @@ function generatePlayer(
     const playersSheet = sheets[playersId];
     const { data: attributes, attributeTotal } = generateAttributes();
     const { data: badges, badgeTotal } = generateBadges();
+    const { data: hotzones, } = generateHotzones();
+    console.log('hotzones', hotzones);
     const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
     const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(
       playerType
@@ -590,7 +659,8 @@ function generatePlayer(
       ((genWingspan / 100) * 0.2 + 0.94) * genHeight
     );
     const biasedAttributes = positionBias(playerType, attributes);
-    const player = [vitals, biasedAttributes, badges];
+    const { data: tendencies } = generateTendencies(biasedAttributes, badges, hotzones);
+    const player = [vitals, biasedAttributes, tendencies, hotzones, badges];
     const randomPosition = chooseOne(playerTypeNames[playerType]);
     (async () => {
       await generatedPlayersSheet.addRow({
