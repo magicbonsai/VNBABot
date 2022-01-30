@@ -96,7 +96,7 @@ const tendencyDictionary = {
     badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "CLUTCH_SHOOTER", "GREEN_MACHINE", "HOT_ZONE_HUNTER"],
   }),
   "SPOT_UP_SHOT_MID-RANGE_TENDENCY": toTendencyRNormal({
-    attrKeys: ["MID-RANGE_SHOT"],
+    attrKeys: ["MID-RANGE_SHOT", "HANDS"],
     badgeKeys: ["CATCH_SHOOT", "PICK_POPPER", "SLIPPERY_OFF-BALL"],
   }),
   "OFF_SCREEN_SHOT_MID-RANGE_TENDENCY": toTendencyRNormal({
@@ -133,7 +133,7 @@ const tendencyDictionary = {
     badgeKeys: ["FLEXIBLE_RELEASE", "QUICK_DRAW", "RANGE_EXTENDER", "CLUTCH_SHOOTER", "GREEN_MACHINE", "HOT_ZONE_HUNTER"],
   }),
   "SPOT_UP_SHOT_THREE_TENDENCY": toTendencyRNormal({
-    attrKeys: ["3PT_SHOT"],
+    attrKeys: ["3PT_SHOT", "HANDS"],
     badgeKeys: ["CATCH_SHOOT", "PICK_POPPER", "SLIPPERY_OFF-BALL"],
   }),
   "OFF_SCREEN_SHOT_THREE_TENDENCY": toTendencyRNormal({
@@ -207,7 +207,7 @@ const tendencyDictionary = {
   }),
   "USE_GLASS_TENDENCY": () => _.random(1,99),
   "DRIVING_LAYUP_TENDENCY": toTendencyRNormal({
-    attrKeys: ["DRIVING_LAYUP", "DRIVING_DUNK"],
+    attrKeys: ["DRIVING_LAYUP", "DRIVING_DUNK", "DRAW_FOUL"],
     badgeKeys: ["PRO_TOUCH", "CONSISTENT_FINISHER", "RELENTLESS_FINISHER", "GIANT_SLAYER", "SLITHERY_FINISHER"],
   }),
   "STANDING_DUNK_TENDENCY": toTendencyRNormal({
@@ -215,7 +215,7 @@ const tendencyDictionary = {
     badgeKeys: ["CONTACT_FINISHER"]
   }),
   "DRIVING_DUNK_TENDENCY": toTendencyRNormal({
-    attrKeys: ["DRIVING_DUNK", "STRENGTH"],
+    attrKeys: ["DRIVING_DUNK", "STRENGTH", "DRAW_FOUL"],
     badgeKeys: ["CONTACT_FINISHER", "RELENTLESS_FINISHER", "SLITHERY_FINISHER"]
   }),
   "FLASHY_DUNK_TENDENCY": () => _.random(0, 99),
@@ -224,7 +224,7 @@ const tendencyDictionary = {
     badgeKeys: ["LOB_CITY_FINISHER", "SLIPPERY_OFF-BALL", "PICK_ROLLER"]
   }),
   "PUTBACK_TENDENCY": toTendencyRNormal({
-    attrKeys: ["SHOT_CLOSE", "OFFENSIVE_REBOUND", ],
+    attrKeys: ["SHOT_CLOSE", "OFFENSIVE_REBOUND", "STANDING_DUNK"],
     badgeKeys: ["BOX", "WORM", "REBOUND_CHASER", "PUTBACK_BOSS"]
   }),
   "CRASH_TENDENCY": () => _.random(0, 40),
@@ -277,7 +277,7 @@ const tendencyDictionary = {
     badgeKeys: ["QUICK_FIRST_STEP", "TIGHT_HANDLES", "UNPLUCKABLE"],
   }),
   "SPOT_UP_DRIVE_TENDENCY":  toTendencyRNormal({
-    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION"],
+    attrKeys: ["BALL_CONTROL", "SPEED_WITH_BALL", "ACCELERATION", "HANDS"],
     badgeKeys: ["QUICK_FIRST_STEP", "TIGHT_HANDLES", "UNPLUCKABLE"],
   }),
   "OFF_SCREEN_DRIVE_TENDENCY":  toTendencyRNormal({
@@ -331,7 +331,7 @@ const tendencyDictionary = {
   }),
   "FLASHY_PASS_TENDENCY": toTendencyRNormal({
     attrKeys: ["PASSING_IQ", "PASSING_VISION", "PASSING_ACCURACY"],
-    badgeKeys: ["DIMER", "NEEDLE_THREADER", "FLASHY_PASSER"],
+    badgeKeys: ["DIMER", "NEEDLE_THREADER", "FLASHY_PASSER", "SHOWTIME"],
   }),
   "ALLEY-OOP_PASS_TENDENCY": toTendencyRNormal({
     attrKeys: ["PASSING_IQ", "PASSING_VISION", "PASSING_ACCURACY"],
@@ -390,11 +390,11 @@ const tendencyDictionary = {
     badgeKeys: ["DEEP_FADES", "DIFFICULT_SHOTS", "SPACE_CREATOR"],
   }),
   "POST_DRIVE_TENDENCY": toTendencyRNormal({
-    attrKeys: ["STRENGTH"],
+    attrKeys: ["POST_MOVES", "STRENGTH"],
     badgeKeys: ["POST_SPIN_TECHNICIAN"],
   }),
   "POST_SPIN_TENDENCY": toTendencyRNormal({
-    attrKeys: ["ACCELERATION"],
+    attrKeys: ["POST_MOVES", "ACCELERATION"],
     badgeKeys: ["POST_SPIN_TECHNICIAN"],
   }),
   "POST_DROP_STEP_TENDENCY": toTendencyRNormal({
