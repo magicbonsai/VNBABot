@@ -633,6 +633,7 @@ function runBatch(batchNum) {
 
 function generatePlayer(
   playerType = chooseOne(["guard", "wing", "big"]),
+  overall,
   addToSheet
 ) {
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
@@ -671,6 +672,7 @@ function generatePlayer(
         Height: formattedHeight,
         Weight: genWeight,
         Wingspan: formattedWingSpan,
+        TargetOverall: overall,
         WingspanNo: genWingspan,
         Values: JSON.stringify(player),
         Role: playerType,
