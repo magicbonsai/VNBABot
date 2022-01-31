@@ -5,7 +5,7 @@ const _ = require("lodash");
 const faker = require("faker");
 faker.setLocale("en");
 const { sheetIds } = require("./sheetHelper");
-const tendencyDictionary = require('./tendencyDictionary');
+const {tendencyDictionary, toIsoTendencies} = require('./tendencyDictionary');
 const { hotzones: hotzoneKeys } = require('../bots/consts');
 
 // NBA2k attribute formula to be readable by the 2ktools
@@ -288,11 +288,16 @@ const generateTendencies = (attributes, badges, hotzones) => {
       [key]: tendencyDictionary[key](parsedAttributeData, parsedBadgeData, parsedHotzoneData)
     });
   }, {});
+  const isoTendencies = toIsoTendencies();
+  const newTendenciesWithIso = ({
+    ...newTendencies,
+    ...isoTendencies,
+  })
   return ({
     data: {
       module: "PLAYER",
       tab: "TENDENCIES",
-      data: newTendencies
+      data: newTendenciesWithIso
     }
   })
 };
