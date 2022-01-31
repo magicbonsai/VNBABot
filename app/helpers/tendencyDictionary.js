@@ -469,11 +469,11 @@ const tendencyDictionary = {
   "FOUL_TENDENCY": toTendencyRNormalInverse({
     attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "LATERAL_QUICKNESS"],
     badgeKeys: ["INTIMIDATOR", "CLAMPS"],
+    meanScalar: 0.6
   }),
   "HARD_FOUL_TENDENCY": toTendencyRNormalInverse({
     attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "LATERAL_QUICKNESS"],
     badgeKeys: ["INTIMIDATOR", "CLAMPS"],
-    meanScalar: 0.6
   })
 };
 
