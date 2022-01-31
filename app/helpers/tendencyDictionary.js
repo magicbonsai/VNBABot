@@ -473,7 +473,7 @@ const tendencyDictionary = {
   }),
   "CONTEST_SHOT_TENDENCY": toTendencyRNormal({
     attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "LATERAL_QUICKNESS"],
-    badgeKeys: ["INTIMIDATOR", "CLAMPS"],
+    badgeKeys: ["INTIMIDATOR", "CLAMPS", "TIRELESS_DEFENDER"],
     meanDelta: 5
   }),
   "BLOCK_SHOT_TENDENCY": toTendencyRNormal({
@@ -497,7 +497,7 @@ const isoTendenciesOnly = ["ISO_VS._ELITE_DEFENDER_TENDENCY", "ISO_VS._GOOD_DEFE
 const toIsoTendencies = () => {
   const arrayofTendencyValues = [];
   for(i = 0; i < 4; i ++) {
-    arrayofTendencyValues.push(Math.floor(rn({ mean: 50, dev: 15 })));
+    arrayofTendencyValues.push(Math.floor(_.clamp(rn({ mean: 25, dev: 15 }), 0, 100)));
   }
   const sortedValues = _.sortBy(arrayofTendencyValues);
   const result = isoTendenciesOnly.reduce((acc, key, index) => {
