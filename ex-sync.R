@@ -67,7 +67,7 @@ getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, min
   playerStats = setNames(playerStats, str_replace_all(names(playerStats), " ", "_"))
   playerStats = playerStats[3:.N, ]
   playerStats = playerStats[!is.na(Player)]
-  playerStats[, 3:ncol(playerStats)] = sapply(playerStats[, 3:ncol(playerStats)], function(x){as.numeric(unlist(x))})
+  playerStats[, 3:ncol(playerStats)] = lapply(playerStats[, 3:ncol(playerStats)], function(x){as.numeric(unlist(x))})
 
   playerStatsOld = data.table(read_sheet(statsUrlOld, 
                                          "League Leaders", 
@@ -76,7 +76,7 @@ getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, min
   playerStatsOld = setNames(playerStatsOld, str_replace_all(names(playerStatsOld), " ", "_"))
   playerStatsOld = playerStatsOld[3:.N, ]
   playerStatsOld = playerStatsOld[!is.na(Player)]
-  playerStatsOld[, 3:ncol(playerStats)] = sapply(playerStatsOld[, 3:ncol(playerStatsOld)], function(x){as.numeric(unlist(x))})
+  playerStatsOld[, 3:ncol(playerStatsOld)] = lapply(playerStatsOld[, 3:ncol(playerStatsOld)], function(x){as.numeric(unlist(x))})
   
   playerStatsOldOld = data.table(read_sheet(statsUrlOldOld, 
                                          "League Leaders", 
@@ -85,7 +85,7 @@ getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, min
   playerStatsOldOld = setNames(playerStatsOldOld, str_replace_all(names(playerStatsOldOld), " ", "_"))
   playerStatsOldOld = playerStatsOldOld[3:.N, ]
   playerStatsOldOld = playerStatsOldOld[!is.na(Player)]
-  playerStatsOldOld[, 3:ncol(playerStats)] = sapply(playerStatsOldOld[, 3:ncol(playerStatsOldOld)], function(x){as.numeric(unlist(x))})
+  playerStatsOldOld[, 3:ncol(playerStatsOldOld)] = lapply(playerStatsOldOld[, 3:ncol(playerStatsOldOld)], function(x){as.numeric(unlist(x))})
   
   playerStatsFull = merge(playerList[, .(Player, Name, Current_Team = Team, Overall, Position, Height, Weight, Contract_Length, Age, Salary, Type)], 
                           rbindlist(list(playerStats[, Season := "Current"], playerStatsOld[, Season := "Last"], playerStatsOldOld[, Season := "Last_2"])), 
@@ -131,7 +131,7 @@ normalizeStats = function(playerStats, categoryValues, corThreshold = 0.8) {
 # Grab parameters given valuation stats
 getParameters = function(categoryValues, normalizedStats) {
   parameters = merge(data.table(Feature = colnames(normalizedStats)), categoryValues[, .(Feature, Feature_Weight)], by = "Feature")
-  parameters[, Final_Weight := (runif(.N, 0, 2) * Feature_Weight) + runif(.N, -0.5, 0.5)]
+  parameters[, Final_Weight := (runif(.N, 0, 2) * Feature_Weight) + runif(.N, 0, 0.5)]
   return(parameters)
 }
 
