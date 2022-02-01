@@ -129,26 +129,55 @@ function validateName(playerName) {
 }
 
 // iterate through all team rows and find the most similar name; 
-const returnMostCommonKey = (playerName, players) => {
+async function returnMostCommonKey (playerName, players) {
   console.log('name', playerName);
-  const { key } = players.reduce((acc, row) => {
+  if(!playerName) {
+    return ({
+      key: ''
+    })
+  }
+  // const { key } = players.reduce((acc, row) => {
+  //   const {
+  //     highestMeasure,
+  //   } = acc;
+  //   const {
+  //     Name
+  //   } = row;
+  //   const nameKey = nameToPlayerKey(Name)
+  //   const measure = distance.Jaccard(playerName, nameKey);
+  //   console.log('measure', acc, measure);
+  //   if (measure > highestMeasure) {
+  //     return ({
+  //       highestMeasure: measure,
+  //       key: Name
+  //     })
+  //   }
+  //   return acc;
+  // }, {});
+  // console.log('commonKey', key);
+  return players.reduce((acc, row) => {
     const {
-      highestMeasure,
+      highestMeasure = 0,
     } = acc;
     const {
       Name
     } = row;
-    const measure = distance.Jaccard(playerName, Name);
+    const nameKey = nameToPlayerKey(Name)
+    const measure = new distance.Jaccard(playerName.split(''), nameKey.split('')).getCoefficient();
+    console.log('measure', acc, highestMeasure, measure);
     if (measure > highestMeasure) {
+      console.log('here');
       return ({
+        ...acc,
         highestMeasure: measure,
-        key: Name
+        key: nameKey
       })
     }
     return acc;
-  }, {});
-  console.log('commonKey', key);
-  return key;
+  }, {
+    highestMeasure: 0,
+    key: ''
+  });
 };
 
 function updateRawStats(data, gameId) {
@@ -172,9 +201,8 @@ function updateRawStats(data, gameId) {
         playerTable[nameToPlayerKey(player.Name)] = player;
       });
       const scrapedData = {};
-      data.forEach(player => {
-        const mostCommonName = returnMostCommonKey(player.Player, playerRows);
-        const sdKey = intialToPlayerKey(mostCommonName);
+      data.forEach(async function (player) {
+        const { key: sdKey } = await returnMostCommonKey(player.Player, playerRows);
         if (!!playerTable[sdKey]) {
           if (!scrapedData[sdKey]) {
             scrapedData[sdKey] = {};
