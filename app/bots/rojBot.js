@@ -87,6 +87,7 @@ async function updatePlayerObject(playerRow, doc, type, updateKey) {
     // There is an existing row so update the data that already exists
     requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
     requestRowToUpdate["Data"] = newJSON;
+    requestRowToUpdate["Team"] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
     requestRowToUpdate["Description"] = changeListJSON;
     await requestRowToUpdate.save();
   } else {
@@ -94,7 +95,7 @@ async function updatePlayerObject(playerRow, doc, type, updateKey) {
     const newRow = {
       Date: new Date().toLocaleString().split(",")[0],
       Player: playerName,
-      Team,
+      Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
       Description: createChangeListJSON(type, updateKey),
       Data: newJSON,
       "Done?": undefined
@@ -134,7 +135,7 @@ async function addManualTask(playerRow, doc, type, updateKey) {
   await rojUpdatesSheet.addRow({
     Date: new Date().toLocaleString().split(",")[0],
     Player: Name,
-    "Current Team": `=VLOOKUP("${Name}", 'Player List'!$A$1:$P, 6, FALSE)`,
+    "Current Team": `=VLOOKUP("${Name}", 'Player List'!$A$1:$P, 7, FALSE)`,
     Team: Team,
     Event: key,
     Tweet: infoString
