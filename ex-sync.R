@@ -131,7 +131,7 @@ normalizeStats = function(playerStats, categoryValues, corThreshold = 0.8) {
 # Grab parameters given valuation stats
 getParameters = function(categoryValues, normalizedStats) {
   parameters = merge(data.table(Feature = colnames(normalizedStats)), categoryValues[, .(Feature, Feature_Weight)], by = "Feature")
-  parameters[, Final_Weight := (runif(.N, 0, 2) * Feature_Weight) + runif(.N, 0, 0.5)]
+  parameters[, Final_Weight := (runif(.N, 0, 2) * Feature_Weight) + (runif(.N, 0, 0.5) * Feature_Weight)]
   return(parameters)
 }
 
@@ -384,6 +384,6 @@ playerAttributes = getPlayerAttributes(playerList)
 
 teams = c("Knicks", "Spurs", "Warriors", "Raptors", "Wizards", "Celtics", "Mavericks", "Jazz")
 
-knnValues = getPlayerComparisons(assetValues, playerAttributes)
+knnValues = getPlayerComparisons(assetValues, playerAttributes, typeWeight = 1, overallWeight = 1)
 
 list(assetValues, knnValues)
