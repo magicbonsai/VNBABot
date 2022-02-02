@@ -129,42 +129,27 @@ function validateName(playerName) {
 }
 
 // iterate through all team rows and find the most similar name; 
-const emptyResult = {
-  key: ''
-};
-async function returnMostCommonKey (playerName, players) {
+function returnMostCommonKey (playerName, players) {
   console.log('name', playerName);
   if(!playerName) {
-    return emptyResult
+    return ''
   }
-  const result = players.reduce((acc, row) => {
-    const {
-      highestMeasure = 0,
-    } = acc;
+  let highestMeasure = 0;
+  let result = '';
+  for( i = 0; i < players.length; i ++) {
+    const player = players[i];
     const {
       Name
-    } = row;
+    } = player;
     const nameKey = nameToPlayerKey(Name)
     const measure = new distance.Jaccard(playerName.split(''), nameKey.split('')).getCoefficient();
-    if (measure > highestMeasure) {
-      console.log('here', acc, measure, nameKey);
-      return {
-        ...acc,
-        highestMeasure: measure,
-        key: nameKey
-      };
+    if (measure > highestMeasure) { 
+      highestMeasure = measure;
+      result = nameKey;
     }
-    return acc;
-  }, {
-    highestMeasure: 0,
-    key: ''
-  });
-  const {
-    highestMeasure, 
-  } = result;
-  console.log('result', result);
+  }
   if(highestMeasure < 0.5) {
-    return emptyResult
+    return ''
   }
   return result;
 };
@@ -191,8 +176,8 @@ function updateRawStats(data, gameId,  team1, team2) {
       });
       const scrapedData = {};
       const filteredRowsByTeam = playerRows.filter(({ Team } = {}) => [team1, team2].includes(Team));
-      await data.forEach(async function (player) {
-        const { key: sdKey } = await returnMostCommonKey(player.Player, filteredRowsByTeam);
+      data.forEach((player = {}) => {
+        const { key: sdKey } = returnMostCommonKey(player.Player, filteredRowsByTeam);
         console.log('sdKey', sdKey);
         if (!!playerTable[sdKey]) {
           if (!scrapedData[sdKey]) {
