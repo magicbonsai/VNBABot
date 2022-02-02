@@ -95,6 +95,8 @@ getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, min
   playerStatsFull[, Salary := as.numeric(str_extract_all(Salary, "[0-9]+"))]
   playerStatsFull = data.table(unnest(playerStatsFull, cols = names(playerStatsFull)))
   playerStatsFull = playerStatsFull[Minutes >= minThreshold]
+  playerStatsFull = playerStatsFull[Games_Played >= 3]
+  playerStatsFull = playerStatsFull[Games_Played * Minutes >= 50]
   playerStatsFull[, Overall := Overall + (Position == "PG" | Position == "C") * 3 + (Position == "SG") * 2]
   
   return(playerStatsFull)
