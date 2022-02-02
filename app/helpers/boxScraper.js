@@ -136,8 +136,7 @@ function returnMostCommonKey (playerName, players) {
   }
   let highestMeasure = 0;
   let result = '';
-  for( i = 0; i < players.length; i ++) {
-    const player = players[i];
+  players.forEach(player => {
     const {
       Name
     } = player;
@@ -147,7 +146,7 @@ function returnMostCommonKey (playerName, players) {
       highestMeasure = measure;
       result = nameKey;
     }
-  }
+  });
   if(highestMeasure < 0.5) {
     return ''
   }
