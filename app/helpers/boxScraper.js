@@ -129,33 +129,15 @@ function validateName(playerName) {
 }
 
 // iterate through all team rows and find the most similar name; 
+const emptyResult = {
+  key: ''
+};
 async function returnMostCommonKey (playerName, players) {
   console.log('name', playerName);
   if(!playerName) {
-    return ({
-      key: ''
-    })
+    return emptyResult
   }
-  // const { key } = players.reduce((acc, row) => {
-  //   const {
-  //     highestMeasure,
-  //   } = acc;
-  //   const {
-  //     Name
-  //   } = row;
-  //   const nameKey = nameToPlayerKey(Name)
-  //   const measure = distance.Jaccard(playerName, nameKey);
-  //   console.log('measure', acc, measure);
-  //   if (measure > highestMeasure) {
-  //     return ({
-  //       highestMeasure: measure,
-  //       key: Name
-  //     })
-  //   }
-  //   return acc;
-  // }, {});
-  // console.log('commonKey', key);
-  return players.reduce((acc, row) => {
+  const result = players.reduce((acc, row) => {
     const {
       highestMeasure = 0,
     } = acc;
@@ -164,23 +146,30 @@ async function returnMostCommonKey (playerName, players) {
     } = row;
     const nameKey = nameToPlayerKey(Name)
     const measure = new distance.Jaccard(playerName.split(''), nameKey.split('')).getCoefficient();
-    console.log('measure', acc, highestMeasure, measure);
     if (measure > highestMeasure) {
-      console.log('here');
-      return ({
+      console.log('here', acc, measure, nameKey);
+      return {
         ...acc,
         highestMeasure: measure,
         key: nameKey
-      })
+      };
     }
     return acc;
   }, {
     highestMeasure: 0,
     key: ''
   });
+  const {
+    highestMeasure, 
+  } = result;
+  console.log('result', result);
+  if(highestMeasure < 0.5) {
+    return emptyResult
+  }
+  return result;
 };
 
-function updateRawStats(data, gameId) {
+function updateRawStats(data, gameId,  team1, team2) {
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
   (async function main() {
     await doc.useServiceAccountAuth({
@@ -195,19 +184,21 @@ function updateRawStats(data, gameId) {
 
     const statsLength = await rawStats.getRows().then(rows => rows.length);
 
-    players.getRows().then(playerRows => {
+    players.getRows().then(async function (playerRows) {
       const playerTable = {};
       playerRows.forEach(player => {
         playerTable[nameToPlayerKey(player.Name)] = player;
       });
       const scrapedData = {};
-      data.forEach(async function (player) {
-        const { key: sdKey } = await returnMostCommonKey(player.Player, playerRows);
+      const filteredRowsByTeam = playerRows.filter(({ Team } = {}) => [team1, team2].includes(Team));
+      await data.forEach(async function (player) {
+        const { key: sdKey } = await returnMostCommonKey(player.Player, filteredRowsByTeam);
+        console.log('sdKey', sdKey);
         if (!!playerTable[sdKey]) {
           if (!scrapedData[sdKey]) {
             scrapedData[sdKey] = {};
           }
-
+          console.log('got data', sdKey);
           _.mergeWith(scrapedData[sdKey], player, (objValue, srcValue) => {
             return objValue || srcValue;
           });
@@ -220,7 +211,7 @@ function updateRawStats(data, gameId) {
         .filter(playerKey => scrapedData[playerKey].Minutes)
         .forEach(playerKey => {
           const playerVal =
-            playerTable[intialToPlayerKey(scrapedData[playerKey].Player)];
+            playerTable[intialToPlayerKey(scrapedData[playerKey].Player)] || {};
 
           rowsToAdd.push({
             ...scrapedData[playerKey],
@@ -269,7 +260,7 @@ function updateRawStats(data, gameId) {
 
 // scraper functions
 
-function takeScreenshots(video, videoLink) {
+function takeScreenshots(video, videoLink, team1, team2) {
   ffmpeg(video)
     .on("start", () => {
       if (i < 1) {
@@ -281,7 +272,7 @@ function takeScreenshots(video, videoLink) {
       console.log(`taken screenshot: ${i}`);
 
       if (i < count) {
-        takeScreenshots(video, videoLink);
+        takeScreenshots(video, videoLink, team1, team2);
       }
 
       if (i >= count) {
@@ -289,7 +280,7 @@ function takeScreenshots(video, videoLink) {
           if (err) throw err;
           console.log("Video Deleted");
         });
-        processImages(videoLink);
+        processImages(videoLink, team1, team2);
       }
     })
     .screenshots(
@@ -302,7 +293,7 @@ function takeScreenshots(video, videoLink) {
     );
 }
 
-async function processImages(videoLink) {
+async function processImages(videoLink, team1, team2) {
   let counter = 0;
   await fs.readdir("screenshots", (err, files) => {
     files.forEach(file => {
@@ -350,7 +341,7 @@ async function processImages(videoLink) {
             if (counter >= count * 3) {
               console.log("Processing Images...");
               // TODO: this should eventually be removed
-              tessImages(videoLink);
+              tessImages(videoLink, team1, team2);
               return true;
             }
           });
@@ -367,7 +358,7 @@ async function processImages(videoLink) {
   });
 }
 
-async function tessImages(videoLink) {
+async function tessImages(videoLink, team1, team2) {
   fs.readdir("screenshots/processed", (err, files) => {
     return (async () => {
       await worker1.load();
@@ -496,7 +487,7 @@ async function tessImages(videoLink) {
           }))
         )
       );
-      updateRawStats(players, videoLink);
+      updateRawStats(players, videoLink,  team1, team2);
 
       await scheduler.terminate(); // It also terminates all workers.
       await scheduler2.terminate();
@@ -517,7 +508,7 @@ async function scrape(videoLink, team1, team2) {
     youtubeSkipDashManifest: true
   }).then(output => {
     console.log(output);
-    takeScreenshots("myvideo.mp4", videoLink);
+    takeScreenshots("myvideo.mp4", videoLink, team1, team2);
   });
 }
 
