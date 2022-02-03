@@ -32,9 +32,9 @@ pickToCash = function(picks, assetValueParams) {
 }
 
 # Get category values
-getCategoryValues = function(categoryUrl) {
+getCategoryValues = function(categoryUrl, sheetNum) {
   return(data.table(read_sheet(categoryUrl, 
-                                         "bot test sheet", 
+                                         paste("bot test sheet", sheetNum), 
                                          col_names = TRUE)))
 }
 
@@ -132,22 +132,24 @@ normalizeStats = function(playerStats, categoryValues, corThreshold = 0.8) {
 
 # Grab parameters given valuation stats
 getParameters = function(categoryValues, normalizedStats) {
-  parameters = merge(data.table(Feature = colnames(normalizedStats)), categoryValues[, .(Feature, Feature_Weight)], by = "Feature")
-  parameters[, Final_Weight := (runif(.N, 0, 2) * Feature_Weight) + (runif(.N, 0, 0.5) * Feature_Weight)]
+  parameters = merge(data.table(Feature = colnames(normalizedStats), Order = 1:length(colnames(normalizedStats))), categoryValues[, .(Feature, Feature_Weight)], by = "Feature")
+  parameters[, Final_Weight := (runif(.N, 0.5, 2) * Feature_Weight) + (runif(.N, -0.5, 0.5) * Feature_Weight)]
+  parameters = parameters[order(Order)]
+  parameters[, Order := NULL]
   return(parameters)
 }
 
 # Get player stat scores
 getPlayerStatScores  = function(playerStats, normalizedStats, parameters) {
   
-  scores = playerStats[, .(Player, Name, Current_Team, Team, Type, Position, Overall, Season, Score = as.vector(as.matrix(normalizedStats) %*% parameters$Final_Weight))]
+  scores = playerStats[, .(Player, Name, Current_Team, Team, Type, Position, Overall, Games_Played, Season, Score = as.vector(as.matrix(normalizedStats) %*% parameters$Final_Weight))]
   scores = scores[, .(Name = first(Name), 
                     Team = paste0(unique(Team), collapse = ", "), 
                     Position = first(Position),
                     Type = first(Type),
                     Current_Team = first(Current_Team),
                     Overall = first(Overall), 
-                    Score = mean(Score) + abs(min(scores$Score)) + 1),
+                    Score = weighted.mean(Score, Games_Played * ifelse(Season == "Last_2", 0.6, ifelse(Season == "Last", 0.8, 1))) + abs(min(scores$Score)) + 1),
                 by = "Player"]
   return(scores)
 }
@@ -198,6 +200,7 @@ getAssetStatValues  = function(categoryValues, playerScores, teamAssets, assetVa
       })][Frozen == FALSE][order(Win_Perc)]
     pickPositions[, Pick_Position := rank(Win_Perc)]
     pickPositions = rbindlist(list(copy(pickPositions)[, Pick := 1], pickPositions[, Pick := 2]))
+    pickPositions[, Pick_Position := ifelse(Pick == 2, Pick_Position + nrow(teamAssets[Frozen == FALSE]), Pick_Position)]
     draftAssets = merge(draftAssets, pickPositions[, .(Pick_Team = Team, Pick = as.character(Pick), Pick_Position)], by = c("Pick_Team", "Pick"))
   }
   
@@ -315,7 +318,7 @@ getPlayerAttributes = function(playerList) {
 }
 
 # Get player comps
-getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, overallWeight = 3) {
+getPlayerComparisons = function(assetValues, playerAttributes, categoryValues) {
   
   data = merge(playerAttributes, assetValues[, .(Name, Score = Weighted_Value)], by = "Name", all.x = TRUE)
   data[, Overall := Overall + (Position == "PG" | Position == "C") * 3 + (Position == "SG")]
@@ -324,29 +327,23 @@ getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, o
   cols = colnames(data)[5:(ncol(data)-1)]
   data[, (cols) := lapply(.SD, function(x) as.vector(scale(as.numeric(x)))), .SDcols = cols, by = "Type"]
   data[, (cols) := lapply(.SD, as.numeric), .SDcols = cols]
-  data[, Team := NULL]
   data[, Position := NULL]
 
   # Higher Weighting
-  data[, Type := Type * typeWeight]
-  data[, Overall := Overall * overallWeight]
-  data[, HEIGHT_CM := HEIGHT_CM * 1.5]
-  data[, WINGSPAN_CM := WINGSPAN_CM * 1.5]
-  data[, `3PT_SHOT` := `3PT_SHOT` * 1.5]
-  data[, SPEED := SPEED * 1.5]
-  data[, SPEED_WITH_BALL := SPEED_WITH_BALL * 1.5]
-  data[, BALL_CONTROL := BALL_CONTROL * 1.5]
-  data[, PASSING_IQ := PASSING_IQ * 1.5]
-  data[, PASSING_ACCURACY := PASSING_ACCURACY * 1.5]
-  data[, PASSING_VISION := PASSING_VISION * 1.5]
-  data[, DEFENSIVE_REBOUND := DEFENSIVE_REBOUND* 1.5]
-  data[, OFFENSIVE_REBOUND := OFFENSIVE_REBOUND* 1.5]
-  data[, PERIMETER_DEFENSE := PERIMETER_DEFENSE * 1.5]
-  data[, INTERIOR_DEFENSE := INTERIOR_DEFENSE * 1.5]
-  data[, ACCELERATION := ACCELERATION * 1.5]
+  dataValues = data[, categoryValues$Attribute, with = FALSE]
+  weightings = merge(data.table(Attribute = colnames(dataValues), Order = 1:length(colnames(dataValues))), categoryValues[, .(Attribute, Attribute_Weight)], by = "Attribute", all.x = TRUE)
+  weightings = weightings[order(Order)]
+  weightings[is.na(Attribute_Weight), Attribute_Weight := 0]
+  weightings = diag(weightings$Attribute_Weight)
+  dataNames = names(dataValues)
+  dataValues = as.data.table(as.matrix(dataValues) %*% weightings)
+  names(dataValues) = dataNames
+  data = cbind(data[, names(data)[!(names(data) %in% names(dataValues))], with = FALSE], dataValues)     
   
   train = copy(data)[!is.na(Score)]
-  test = copy(data)[is.na(Score)]
+  test = copy(data)[is.na(Score) & Team == 'Rookie']
+  train[, Team := NULL]
+  test[, Team := NULL]
   test[, Score := NULL]
   testNames = test$Name
   test[, Name := NULL]
@@ -354,7 +351,7 @@ getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, o
   fit = 
     knn(train_set = train,
       test_set = test,
-      k = 8,
+      k = 6,
       continuous_target = "Score",
       comparison_measure = "squared_euclidean",
       return_ranked_neighbors = 4,
@@ -366,7 +363,10 @@ getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, o
   return(result)
 }
 
-categoryValues = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
+categoryValues1 = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 1)
+categoryValues2 = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 2)
+categoryValues3 = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 3)
+
 teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
 
 playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
@@ -374,18 +374,38 @@ playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/1INS-TKERe2
                              "https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=1550230054",
                              "https://docs.google.com/spreadsheets/d/1Vp5vPPRHi5m5it3leQLGgYBy9Br7xBL_18QKN9E-9yw/edit#gid=1367256051",
                              playerList)
-
-normalizedStats = normalizeStats(playerStats, categoryValues)
-parameters = getParameters(categoryValues, normalizedStats)
-playerScores = getPlayerStatScores(playerStats, normalizedStats, parameters)
-
-assetValueParams = getAssetValueParam(playerScores, playerList)
-assetValues = getAssetStatValues(categoryValues, playerScores, teamAssets, assetValueParams)
-
+                          
 playerAttributes = getPlayerAttributes(playerList)
+
+# Bot 1                          
+normalizedStats1 = normalizeStats(playerStats, categoryValues1)
+parameters1 = getParameters(categoryValues1, normalizedStats1)
+playerScores1 = getPlayerStatScores(playerStats, normalizedStats1, parameters1)
+
+assetValueParams1 = getAssetValueParam(playerScores1, playerList)
+assetValues1 = getAssetStatValues(categoryValues1, playerScores1, teamAssets, assetValueParams1)
+                          
+# Bot 2
+normalizedStats2 = normalizeStats(playerStats, categoryValues2)
+parameters2 = getParameters(categoryValues2, normalizedStats2)
+playerScores2 = getPlayerStatScores(playerStats, normalizedStats2, parameters2)
+
+assetValueParams2 = getAssetValueParam(playerScores2, playerList)
+assetValues2 = getAssetStatValues(categoryValues2, playerScores2, teamAssets, assetValueParams2)                         
+                          
+# Bot 3                          
+normalizedStats3 = normalizeStats(playerStats, categoryValues3)
+parameters3 = getParameters(categoryValues3, normalizedStats3)
+playerScores3 = getPlayerStatScores(playerStats, normalizedStats3, parameters3)
+
+assetValueParams3 = getAssetValueParam(playerScores3, playerList)
+assetValues3 = getAssetStatValues(categoryValues3, playerScores3, teamAssets, assetValueParams3)
 
 teams = c("Knicks", "Spurs", "Warriors", "Raptors", "Wizards", "Celtics", "Mavericks", "Jazz")
 
-knnValues = getPlayerComparisons(assetValues, playerAttributes, typeWeight = 1, overallWeight = 1)
+knnValues1 = getPlayerComparisons(assetValues1, playerAttributes, categoryValues1)
+knnValues2 = getPlayerComparisons(assetValues2, playerAttributes, categoryValues2)
+knnValues3 = getPlayerComparisons(assetValues2, playerAttributes, categoryValues3)
 
-list(assetValues, knnValues)
+
+list(assetValues1, knnValues1, assetValues2, knnValues2, assetValues3, knnValues3)
