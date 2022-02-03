@@ -132,8 +132,10 @@ normalizeStats = function(playerStats, categoryValues, corThreshold = 0.8) {
 
 # Grab parameters given valuation stats
 getParameters = function(categoryValues, normalizedStats) {
-  parameters = merge(data.table(Feature = colnames(normalizedStats)), categoryValues[, .(Feature, Feature_Weight)], by = "Feature")
-  parameters[, Final_Weight := (runif(.N, 1, 1) * Feature_Weight) + (runif(.N, 0, 0.25) * Feature_Weight)]
+  parameters = merge(data.table(Feature = colnames(normalizedStats), Order = 1:length(colnames(normalizedStats))), categoryValues[, .(Feature, Feature_Weight)], by = "Feature")
+  parameters[, Final_Weight := (runif(.N, 0.5, 2) * Feature_Weight) + (runif(.N, -0.5, 0.5) * Feature_Weight)]
+  parameters = parameters[order(Order)]
+  parameters[, Order := NULL]
   return(parameters)
 }
 
@@ -198,6 +200,7 @@ getAssetStatValues  = function(categoryValues, playerScores, teamAssets, assetVa
       })][Frozen == FALSE][order(Win_Perc)]
     pickPositions[, Pick_Position := rank(Win_Perc)]
     pickPositions = rbindlist(list(copy(pickPositions)[, Pick := 1], pickPositions[, Pick := 2]))
+    pickPositions[, Pick_Position := ifelse(Pick == 2, Pick_Position + nrow(teamAssets[Frozen == FALSE]), Pick_Position)]
     draftAssets = merge(draftAssets, pickPositions[, .(Pick_Team = Team, Pick = as.character(Pick), Pick_Position)], by = c("Pick_Team", "Pick"))
   }
   
@@ -315,9 +318,9 @@ getPlayerAttributes = function(playerList) {
 }
 
 # Get player comps
-getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, overallWeight = 3) {
+getPlayerComparisons = function(assetValues, playerAttributes, categoryValues) {
   
-  data = merge(playerAttributes, assetValues[, .(Name, Score = Weighted_Value)], by = "Name", all.x = TRUE)
+  data = merge(playerAttributes, assetValues[, .(Name, Team, Score = Weighted_Value)], by = "Name", all.x = TRUE)
   data[, Overall := Overall + (Position == "PG" | Position == "C") * 3 + (Position == "SG")]
   data[, Type := as.numeric(factor(Type, levels = c("G", "W", "B"), ordered = TRUE))]
   data[, Position := as.numeric(factor(Position, levels = c("PG", "SG", "SF", "PF", "C"), ordered = TRUE))]
@@ -327,22 +330,15 @@ getPlayerComparisons = function(assetValues, playerAttributes, typeWeight = 4, o
   data[, Position := NULL]
 
   # Higher Weighting
-  data[, Type := Type * typeWeight]
-  data[, Overall := Overall * overallWeight]
-  data[, HEIGHT_CM := HEIGHT_CM * 1.5]
-  data[, WINGSPAN_CM := WINGSPAN_CM * 1.5]
-  data[, `3PT_SHOT` := `3PT_SHOT` * 1.5]
-  data[, SPEED := SPEED * 1.5]
-  data[, SPEED_WITH_BALL := SPEED_WITH_BALL * 1.5]
-  data[, BALL_CONTROL := BALL_CONTROL * 1.5]
-  data[, PASSING_IQ := PASSING_IQ * 1.5]
-  data[, PASSING_ACCURACY := PASSING_ACCURACY * 1.5]
-  data[, PASSING_VISION := PASSING_VISION * 1.5]
-  data[, DEFENSIVE_REBOUND := DEFENSIVE_REBOUND* 1.5]
-  data[, OFFENSIVE_REBOUND := OFFENSIVE_REBOUND* 1.5]
-  data[, PERIMETER_DEFENSE := PERIMETER_DEFENSE * 1.5]
-  data[, INTERIOR_DEFENSE := INTERIOR_DEFENSE * 1.5]
-  data[, ACCELERATION := ACCELERATION * 1.5]
+  dataValues = data[, categoryValues$Attribute, with = FALSE]
+  weightings = merge(data.table(Attribute = colnames(dataValues), Order = 1:length(colnames(dataValues))), categoryValues[, .(Attribute, Attribute_Weight)], by = "Attribute", all.x = TRUE)
+  weightings = weightings[order(Order)]
+  weightings[is.na(Attribute_Weight), Attribute_Weight := 0]
+  weightings = diag(weightings$Attribute_Weight)
+  dataNames = names(dataValues)
+  dataValues = as.data.table(as.matrix(dataValues) %*% weightings)
+  names(dataValues) = dataNames
+  data = cbind(data[, names(data)[!(names(data) %in% names(dataValues))], with = FALSE], dataValues)     
   
   train = copy(data)[!is.na(Score)]
   test = copy(data)[is.na(Score) & Team == 'Rookie']
@@ -407,9 +403,9 @@ assetValues3 = getAssetStatValues(categoryValues3, playerScores3, teamAssets, as
 
 teams = c("Knicks", "Spurs", "Warriors", "Raptors", "Wizards", "Celtics", "Mavericks", "Jazz")
 
-knnValues1 = getPlayerComparisons(assetValues1, playerAttributes)
-knnValues2 = getPlayerComparisons(assetValues2, playerAttributes, typeWeight = 0, overallWeight = 0)
-knnValues3 = getPlayerComparisons(assetValues2, playerAttributes, typeWeight = 3, overallWeight = 1)
+knnValues1 = getPlayerComparisons(assetValues1, playerAttributes, categoryValues1)
+knnValues2 = getPlayerComparisons(assetValues2, playerAttributes, categoryValues2)
+knnValues3 = getPlayerComparisons(assetValues2, playerAttributes, categoryValues3)
 
 
 list(assetValues1, knnValues1, assetValues2, knnValues2, assetValues3, knnValues3)
