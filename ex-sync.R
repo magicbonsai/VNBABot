@@ -320,7 +320,7 @@ getPlayerAttributes = function(playerList) {
 # Get player comps
 getPlayerComparisons = function(assetValues, playerAttributes, categoryValues) {
   
-  data = merge(playerAttributes, assetValues[, .(Name, Team, Score = Weighted_Value)], by = "Name", all.x = TRUE)
+  data = merge(playerAttributes, assetValues[, .(Name, Score = Weighted_Value)], by = "Name", all.x = TRUE)
   data[, Overall := Overall + (Position == "PG" | Position == "C") * 3 + (Position == "SG")]
   data[, Type := as.numeric(factor(Type, levels = c("G", "W", "B"), ordered = TRUE))]
   data[, Position := as.numeric(factor(Position, levels = c("PG", "SG", "SF", "PF", "C"), ordered = TRUE))]
