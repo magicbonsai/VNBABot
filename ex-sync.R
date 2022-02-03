@@ -140,14 +140,14 @@ getParameters = function(categoryValues, normalizedStats) {
 # Get player stat scores
 getPlayerStatScores  = function(playerStats, normalizedStats, parameters) {
   
-  scores = playerStats[, .(Player, Name, Current_Team, Team, Type, Position, Overall, Season, Score = as.vector(as.matrix(normalizedStats) %*% parameters$Final_Weight))]
+  scores = playerStats[, .(Player, Name, Current_Team, Team, Type, Position, Overall, Games_Played, Season, Score = as.vector(as.matrix(normalizedStats) %*% parameters$Final_Weight))]
   scores = scores[, .(Name = first(Name), 
                     Team = paste0(unique(Team), collapse = ", "), 
                     Position = first(Position),
                     Type = first(Type),
                     Current_Team = first(Current_Team),
                     Overall = first(Overall), 
-                    Score = mean(Score) + abs(min(scores$Score)) + 1),
+                    Score = weighted.mean(Score, Games_Played * ifelse(Season == "Last_2", 0.6, ifelse(Season == "Last", 0.8, 1))) + abs(min(scores$Score)) + 1),
                 by = "Player"]
   return(scores)
 }
