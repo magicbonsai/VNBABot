@@ -176,7 +176,7 @@ function updateRawStats(data, gameId,  team1, team2) {
       const scrapedData = {};
       const filteredRowsByTeam = playerRows.filter(({ Team } = {}) => [team1, team2].includes(Team));
       data.forEach((player = {}) => {
-        const { key: sdKey } = returnMostCommonKey(player.Player, filteredRowsByTeam);
+        const sdKey = returnMostCommonKey(player.Player, filteredRowsByTeam);
         console.log('sdKey', sdKey);
         if (!!playerTable[sdKey]) {
           if (!scrapedData[sdKey]) {
