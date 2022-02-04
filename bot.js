@@ -5,6 +5,7 @@ const _ = require("lodash");
 const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
+const { generateCoach } = require("./app/helpers/coachGenerator");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const express = require("express");
 const cors = require("cors");
@@ -52,79 +53,12 @@ const dedueCommand = (prompt, msg) => {
 
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
-
-    case "report": 
+    case "report":
       runReport(parseInt(words[1]));
       break;
 
     case "r-s":
-      R("ex-sync.R")
-        .data({})
-        .call({ warn: -1 }, (err, d) => {
-          console.log(err);
-          (async function main() {
-            const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-            await doc.useServiceAccountAuth({
-              client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-              private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-            });
-
-            await doc.loadInfo();
-
-            const sheets = doc.sheetsByTitle;
-            const players = sheets["Player List"];
-            const teamAssets = sheets["Team Assets"];
-
-            const teamAssetsRows = await teamAssets.getRows();
-            const playerListRows = await players.getRows();
-
-            const cashValues = {};
-            const knnCashValues = {};
-
-            for (let i = 0; i < d[0].length; i++) {
-              cashValues[d[0][i].Name] = d[0][i];
-            }
-
-            for (let i = 0; i < d[1].length; i++) {
-              knnCashValues[d[1][i].Player] = d[1][i];
-            }
-
-            await players.loadCells();
-            await teamAssets.loadCells();
-
-            playerListRows.forEach(row => {
-              players.getCell(row.rowNumber - 1, 23).value =
-                cashValues[row.Name] && cashValues[row.Name].Cash_Value > 0
-                  ? cashValues[row.Name].Cash_Value
-                  : 0;
-            });
-
-            teamAssetsRows.forEach(row => {
-              const picks = row["Draft Picks"]
-                .split(", ")
-                .map(str => str.replace(/\s+/g, ""));
-
-              const miscPicks = row["Misc Draft Picks"]
-                .split(", ")
-                .map(str => str.replace(/\s+/g, ""));
-
-              teamAssets.getCell(row.rowNumber - 1, 6).value = picks
-                .map(pick => {
-                  return cashValues[pick] ? cashValues[pick].Cash_Value : 0;
-                })
-                .join(", ");
-
-              teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
-                .map(pick => {
-                  return cashValues[pick] ? cashValues[pick].Cash_Value : 0;
-                })
-                .join(", ");
-            });
-
-            await players.saveUpdatedCells();
-            await teamAssets.saveUpdatedCells();
-          })();
-        });
+      triKovAnalysis();
       break;
     case "smithy":
       if (msg.channel.type == "dm") {
@@ -186,6 +120,15 @@ const dedueCommand = (prompt, msg) => {
       }
       break;
 
+    case "generatecoach":
+      generateCoach();
+      if (process.env.environment === "PRODUCTION") {
+        msg.author.send("Generating a new coach.");
+      } else {
+        console.log("Generating a new coach");
+      }
+      break;
+
     case "runbatch":
       runBatch(words[1]);
       if (process.env.environment === "PRODUCTION") {
@@ -221,7 +164,6 @@ client.on("message", msg => {
 
 client.login(process.env.BOT_TOKEN);
 
-
 /**
  * TODO: Augment this cronjob for the bot to do more daily tasks like:
  * - decrease the duration of an injury on a player
@@ -235,15 +177,11 @@ const preJob = new CronJob("0 14 * * *", function () {
   //     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
   //     private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
   //   });
-  
   //   await doc.loadInfo();
-  
   //   const sheets = doc.sheetsByTitle;
   //   const teamAssets = sheets["Team Assets"];
-  
   //   const teamAssetsRows = await teamAssets.getRows();
   //   console.log('am I here')
-
   // })();
 });
 
@@ -251,7 +189,7 @@ const WednesdayJob = new CronJob("0 16 * * 3", function () {
   runReport(3);
 });
 
-const WednesdayJob2 =new CronJob("30 16 * * 3", function () {
+const WednesdayJob2 = new CronJob("30 16 * * 3", function () {
   runReport(3);
 });
 
@@ -263,17 +201,25 @@ const SaturdayJob2 = new CronJob("30 16 * * 6", function () {
   runReport(3);
 });
 
-const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {
-
-});
+const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {});
 
 //some sort of trade request tracker
 
 const trikovJob = new CronJob("0 13 * * *", function () {
+  triKovAnalysis();
+});
+
+preJob.start();
+trikovJob.start();
+WednesdayJob.start();
+WednesdayJob2.start();
+SaturdayJob.start();
+SaturdayJob2.start();
+
+const triKovAnalysis = () => {
   R("ex-sync.R")
     .data({})
     .call({ warn: -1 }, (err, d) => {
-      console.log(err);
       (async function main() {
         const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
         await doc.useServiceAccountAuth({
@@ -294,11 +240,11 @@ const trikovJob = new CronJob("0 13 * * *", function () {
         const knnCashValues = {};
 
         for (let i = 0; i < d[0].length; i++) {
-          cashValues[d[0][i].Name] = d[0][i];
+          cashValues[d[0][i].Name] = [d[0][i], d[2][i], d[4][i]];
         }
 
         for (let i = 0; i < d[1].length; i++) {
-          knnCashValues[d[1][i].Player] = d[1][i];
+          knnCashValues[d[1][i].Player] = [d[1][i], d[3][i], d[5][i]];
         }
 
         await players.loadCells();
@@ -306,7 +252,27 @@ const trikovJob = new CronJob("0 13 * * *", function () {
 
         playerListRows.forEach(row => {
           players.getCell(row.rowNumber - 1, 23).value = cashValues[row.Name]
-            ? cashValues[row.Name].Cash_Value
+            ? _.mean(cashValues[row.Name].map(cr => cr.Cash_Value))
+            : knnCashValues[row.Name]
+            ? _.mean(knnCashValues[row.Name].map(knn => knn.continuous_target))
+            : 0;
+
+          players.getCell(row.rowNumber - 1, 27).value = cashValues[row.Name]
+            ? cashValues[row.Name][0].Cash_Value
+            : knnCashValues[row.Name]
+            ? knnCashValues[row.Name][0].continuous_target
+            : 0;
+
+          players.getCell(row.rowNumber - 1, 28).value = cashValues[row.Name]
+            ? cashValues[row.Name][1].Cash_Value
+            : knnCashValues[row.Name]
+            ? knnCashValues[row.Name][1].continuous_target
+            : 0;
+
+          players.getCell(row.rowNumber - 1, 29).value = cashValues[row.Name]
+            ? cashValues[row.Name][2].Cash_Value
+            : knnCashValues[row.Name]
+            ? knnCashValues[row.Name][2].continuous_target
             : 0;
         });
 
@@ -336,12 +302,4 @@ const trikovJob = new CronJob("0 13 * * *", function () {
         await teamAssets.saveUpdatedCells();
       })();
     });
-});
-
-preJob.start();
-trikovJob.start();
-WednesdayJob.start();
-WednesdayJob2.start();
-SaturdayJob.start();
-SaturdayJob2.start();
-
+};
