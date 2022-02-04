@@ -5,6 +5,7 @@ const sheetIds = {
   rawStats: "1840998490",
   rosterCheckIn: "319174534",
   generatedPlayers: "526907503",
+  availableCoaches: "916390755",
   trainingRegime: "33721000",
   retiredPlayers: "242746550",
   teamAssets: "395261312",

@@ -5,6 +5,7 @@ const _ = require("lodash");
 const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
+const { generateCoach } = require("./app/helpers/coachGenerator");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const express = require("express");
 const cors = require("cors");
@@ -52,8 +53,7 @@ const dedueCommand = (prompt, msg) => {
 
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
-
-    case "report": 
+    case "report":
       runReport(parseInt(words[1]));
       break;
 
@@ -186,6 +186,15 @@ const dedueCommand = (prompt, msg) => {
       }
       break;
 
+    case "generatecoach":
+      generateCoach();
+      if (process.env.environment === "PRODUCTION") {
+        msg.author.send("Generating a new coach.");
+      } else {
+        console.log("Generating a new coach");
+      }
+      break;
+
     case "runbatch":
       runBatch(words[1]);
       if (process.env.environment === "PRODUCTION") {
@@ -221,7 +230,6 @@ client.on("message", msg => {
 
 client.login(process.env.BOT_TOKEN);
 
-
 /**
  * TODO: Augment this cronjob for the bot to do more daily tasks like:
  * - decrease the duration of an injury on a player
@@ -235,15 +243,11 @@ const preJob = new CronJob("0 14 * * *", function () {
   //     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
   //     private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
   //   });
-  
   //   await doc.loadInfo();
-  
   //   const sheets = doc.sheetsByTitle;
   //   const teamAssets = sheets["Team Assets"];
-  
   //   const teamAssetsRows = await teamAssets.getRows();
   //   console.log('am I here')
-
   // })();
 });
 
@@ -251,7 +255,7 @@ const WednesdayJob = new CronJob("0 16 * * 3", function () {
   runReport(3);
 });
 
-const WednesdayJob2 =new CronJob("30 16 * * 3", function () {
+const WednesdayJob2 = new CronJob("30 16 * * 3", function () {
   runReport(3);
 });
 
@@ -263,9 +267,7 @@ const SaturdayJob2 = new CronJob("30 16 * * 6", function () {
   runReport(3);
 });
 
-const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {
-
-});
+const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {});
 
 //some sort of trade request tracker
 
@@ -344,4 +346,3 @@ WednesdayJob.start();
 WednesdayJob2.start();
 SaturdayJob.start();
 SaturdayJob2.start();
-
