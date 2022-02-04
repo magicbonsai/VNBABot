@@ -274,6 +274,14 @@ const triKovAnalysis = () => {
             : knnCashValues[row.Name]
             ? knnCashValues[row.Name][2].continuous_target
             : 0;
+
+          players.getCell(row.rowNumber - 1, 30).value = knnCashValues[row.Name]
+            ? _.uniq([
+                knnCashValues[row.Name][0]["neighbor1"],
+                knnCashValues[row.Name][1]["neighbor1"],
+                knnCashValues[row.Name][2]["neighbor1"]
+              ]).join(", ")
+            : 0;
         });
 
         teamAssetsRows.forEach(row => {
