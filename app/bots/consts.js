@@ -3,6 +3,7 @@ const fetch = require("node-fetch");
 const rwc = require("random-weighted-choice");
 const _ = require("lodash");
 const { parse } = require("dotenv");
+const { keys } = require("lodash");
 require("dotenv").config();
 
 const playerTypes = ["guard", "wing", "big"];
@@ -1114,10 +1115,19 @@ const hotzones = {
   }
 };
 
+const reducedAttrKeys = Object.Keys(attributes).reduce((acc, key) => {
+  const attrKeys = Object.Keys(attributes[key]);
+  return [...acc, ...attrKeys];
+}, [])
+
+const reducedBadgeKeys = Object.Keys(attributes).reduce((acc, key) => {
+  const attrKeys = Object.Keys(attributes[key]);
+  return [...acc, ...attrKeys];
+}, [])
+
 const randomAttribute = (keysToFilter = []) => {
-  const categoryKey = _.sample(Object.keys(attributes));
-  const filteredAttributeKeys = Object.keys(attributes[categoryKey]).filter(key => !keysToFilter.includes(key));
-  const attributeKey = _.sample(filteredAttributeKeys);
+  const filteredKeys = reducedAttrKeys.filter(key => !keysToFilter.includes(key));
+  const attributeKey = _.sample(filteredKeys);
   return {
     key: attributeKey,
     data: attributes[categoryKey][attributeKey]
@@ -1134,9 +1144,8 @@ const randomAttributeWithoutFilter = () => {
 };
 
 const randomBadge = (keysToFilter = []) => {
-  const categoryKey = _.sample(Object.keys(badges));
-  const filteredBadgeKeys = Object.keys(badges[categoryKey]).filter(key => !keysToFilter.includes(key));
-  const badgeKey = _.sample(filteredBadgeKeys);
+  const filteredKeys = reducedBadgeKeys.filter(key => !keysToFilter.includes(key));
+  const badgeKey = _.sample(filteredKeys);
   return {
     key: badgeKey,
     data: badges[categoryKey][badgeKey]
