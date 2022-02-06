@@ -295,13 +295,13 @@ const triKovAnalysis = () => {
 
           teamAssets.getCell(row.rowNumber - 1, 6).value = picks
             .map(pick => {
-              return cashValues[pick] ? cashValues[pick].Cash_Value : 0;
+              return cashValues[pick] ? _.mean(cashValues[pick].map(cr => cr.Cash_Value)) : 0;
             })
             .join(", ");
 
           teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
             .map(pick => {
-              return cashValues[pick] ? cashValues[pick].Cash_Value : 0;
+              return cashValues[pick] ? _.mean(cashValues[pick].map(cr => cr.Cash_Value)) : 0;
             })
             .join(", ");
         });
