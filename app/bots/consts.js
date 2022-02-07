@@ -110,9 +110,9 @@ const rojEvents = {
   boost: {
     valid: true,
     fn: function (player) {
-      // const keysToFilter = toKeysWithCappedValues(player, 'ATTRIBUTES');
-      // const datem = randomAttribute(keysToFilter);
-      const datem = randomAttributeWithoutFilter();
+      const keysToFilter = toKeysWithCappedValues(player, 'ATTRIBUTES');
+      const datem = randomAttribute(keysToFilter);
+      // const datem = randomAttributeWithoutFilter();
       const { key, data: { name, value } = {} } = datem;
       const messageString = `**${
         player.Name
@@ -132,9 +132,9 @@ const rojEvents = {
   badge: {
     valid: true,
     fn: function (player) {
-      // const keysToFilter = toKeysWithCappedValues(player, 'BADGES');
-      // const datem = randomBadge(keysToFilter);
-      const datem = randomBadgeWithoutFilter();
+      const keysToFilter = toKeysWithCappedValues(player, 'BADGES');
+      const datem = randomBadge(keysToFilter);
+      // const datem = randomBadgeWithoutFilter();
       const { key, data: { name, value } = {} } = datem;
       const messageString = `**${player.Name}** ${boostEvents()} (${name} +1).`;
       return {
@@ -152,9 +152,9 @@ const rojEvents = {
   hotzone: {
     valid: true,
     fn: function (player) {
-      // const keysToFilter = toKeysWithCappedValues(player, 'HOTZONE');
-      // const datem = randomHotZone(keysToFilter);
-      const datem = randomHotZoneWithoutFilter();
+      const keysToFilter = toKeysWithCappedValues(player, 'HOTZONE');
+      const datem = randomHotZone(keysToFilter);
+      // const datem = randomHotZoneWithoutFilter();
       const { key, data: { name, value } = {} } = datem;
       const messageString = `**${player.Name}** has been shooting hot under this zone: ${name}`;
       return {
@@ -1115,19 +1115,25 @@ const hotzones = {
   }
 };
 
-const reducedAttrKeys = Object.Keys(attributes).reduce((acc, key) => {
-  const attrKeys = Object.Keys(attributes[key]);
+const reducedAttrKeys = Object.keys(attributes).reduce((acc, key) => {
+  const attrKeys = Object.keys(attributes[key]);
   return [...acc, ...attrKeys];
 }, [])
 
-const reducedBadgeKeys = Object.Keys(attributes).reduce((acc, key) => {
-  const attrKeys = Object.Keys(attributes[key]);
-  return [...acc, ...attrKeys];
+const reducedBadgeKeys = Object.keys(badges).reduce((acc, key) => {
+  const badgeKeys = Object.keys(badges[key]);
+  return [...acc, ...badgeKeys];
 }, [])
 
 const randomAttribute = (keysToFilter = []) => {
   const filteredKeys = reducedAttrKeys.filter(key => !keysToFilter.includes(key));
   const attributeKey = _.sample(filteredKeys);
+  const categoryKey = Object.keys(attributes).find(key => {
+    const attrKeys = Object.keys(attributes[key]);
+    if (attrKeys.includes(attributeKey)) {
+      return true;
+    }
+  })
   return {
     key: attributeKey,
     data: attributes[categoryKey][attributeKey]
@@ -1146,6 +1152,12 @@ const randomAttributeWithoutFilter = () => {
 const randomBadge = (keysToFilter = []) => {
   const filteredKeys = reducedBadgeKeys.filter(key => !keysToFilter.includes(key));
   const badgeKey = _.sample(filteredKeys);
+  const categoryKey = Object.keys(badges).find(key => {
+    const badgeKeys = Object.keys(badges[key]);
+    if (badgeKeys.includes(badgeKey)) {
+      return true;
+    }
+  })
   return {
     key: badgeKey,
     data: badges[categoryKey][badgeKey]
@@ -1300,7 +1312,14 @@ const boostEvents = () => {
     "learned about the true meaning of friendship.",
     "had to get back to the past to defeat a great evil.",
     "visited the city of Townsville.",
-    "learned about the most efficient way to kill a vampire."
+    "learned about the most efficient way to kill a vampire.",
+    "crushed an arch-nemesis w/ a steamroller.",
+    "had too much all-you-can-eat sushi.",
+    "Added 'Decorative Fruit Bouquet Making' to his resume.",
+    "was as swift as a coursing river in practice.",
+    "ate an orange to avoid scurvy.",
+    "missed every shot in shoot-around.",
+    "juggled chainsaws and didn't lose a finger.",
   ];
 
   return chooseOne(bEvents);
