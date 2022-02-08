@@ -53,6 +53,17 @@ const dedueCommand = (prompt, msg) => {
 
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
+
+    case "testing":
+      msg.react(`✉`);
+      if (process.env.environment === "DEVELOPMENT") {
+        msg.reply("just checking if this is dev");
+      } else {
+        msg.reply("I hope im not breaking anything")
+      }
+      break;
+
+
     case "report":
       runReport(parseInt(words[1]));
       break;
