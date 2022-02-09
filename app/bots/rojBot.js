@@ -157,7 +157,7 @@ async function runEvent(playerRowsToUse, weights, doc) {
   const { fn, selectionFn = _.sample } = rojEvents[eventId] || {};
   const playerRowToUse = selectionFn(playerRowsToUse);
   const { type, updateKey, messageString } = fn(playerRowToUse);
-  console.log("result", type, updateKey);
+  console.log("result", type, updateKey, playerRowToUse.Name);
   const updateFunction = updateFunctionMap[type];
   await updateFunction(playerRowToUse, doc, type, updateKey);
   return {
@@ -238,7 +238,7 @@ const runReportWith =
           const playerRowsToUse = playerRows.filter(
             player => player.Team === currentValue
           );
-
+          console.log('Team', currentValue);
           let arrayOfResults = [];
           for (i = 0; i < numberOfEvents; i++) {
             const {
