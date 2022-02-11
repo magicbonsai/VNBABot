@@ -13,4 +13,13 @@ const sheetIds = {
   reportArchive: "832018399"
 };
 
-module.exports = { sheetIds };
+//TODO Fill this out in the future if needed
+const colIdx = {
+  "ASSETS":{
+    "Frozen":1,
+    "Cash": 2,
+    "Cash Next Season": 3,
+  }
+};
+
+module.exports = { sheetIds, colIdx };
