@@ -115,10 +115,10 @@ async function updateAssets(playerRow, doc, type, updateKey) {
 
   //sheets header takes up one row so we increment index by one
   const rowIdxToUpdate = teamAssetsRows.findIndex(row => row.Team == Team) + 1;
-  const ColIdxToUpdate = colIdx[type][key];
+  const colIdxToUpdate = colIdx[type][key];
 
   await teamAssetsSheet.loadCells();
-  const cellToUpdate = teamAssetsSheet.getCell(rowIdxToUpdate, ColIdxToUpdate);
+  const cellToUpdate = teamAssetsSheet.getCell(rowIdxToUpdate, colIdxToUpdate);
   const oldValue = parseInt(cellToUpdate.value);
   const newValue = oldValue + value;
 
