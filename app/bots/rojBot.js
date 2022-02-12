@@ -1,5 +1,5 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
-const { sheetIds } = require("../helpers/sheetHelper");
+const { sheetIds , colIdx} = require("../helpers/sheetHelper");
 const { CHANNEL_IDS } = require("../../consts");
 const { rojEvents, tabMap } = require("./consts");
 const _ = require("lodash");
@@ -113,13 +113,18 @@ async function updateAssets(playerRow, doc, type, updateKey) {
   const teamAssetsSheet = sheets[sheetIds.teamAssets];
   const teamAssetsRows = await teamAssetsSheet.getRows();
 
-  let rowToUpdate = teamAssetsRows.find(row => row.Team === Team);
-  const oldValue = parseInt(rowToUpdate[key]);
+  //sheets header takes up one row so we increment index by one
+  const rowIdxToUpdate = teamAssetsRows.findIndex(row => row.Team == Team) + 1;
+  const colIdxToUpdate = colIdx[type][key];
+
+  await teamAssetsSheet.loadCells();
+  const cellToUpdate = teamAssetsSheet.getCell(rowIdxToUpdate, colIdxToUpdate);
+  const oldValue = parseInt(cellToUpdate.value);
   const newValue = oldValue + value;
 
-  rowToUpdate[key] = newValue;
-  console.log("cashRow", rowToUpdate.Team, oldValue, newValue);
-  await rowToUpdate.save();
+  cellToUpdate.value = newValue;
+  console.log(key, Team, oldValue, newValue);
+  await teamAssetsSheet.saveUpdatedCells(); 
   return;
 }
 
