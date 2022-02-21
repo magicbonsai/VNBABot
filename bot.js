@@ -139,7 +139,7 @@ const dedueCommand = (prompt, msg) => {
       break;
     // TODO: Figure out a DRY solution for this prod/dev stuff
     case "retirement":
-      retirementCheck();
+      retirementCheck(client);
       break;
 
     default:
