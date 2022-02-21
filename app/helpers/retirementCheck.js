@@ -71,7 +71,8 @@ const retirementCalculator = (discordClient) => {
             }
         });
         const retirementMessage = `These players will be retiring before the start of the next VNBA season: ${retiredPlayers.map(({ Name }) => Name).join(', ')}.  We hope the best of these players in their retirements.`
-        discordClient.channels.get(CHANNEL_IDS.updates).send(retirementMessage);
+        console.log('retirementMessage', retirementMessage);
+        discordClient.channels.get(CHANNEL_IDS.announcements).send(retirementMessage);
         // WIP get row updating to work
         // const rowsToUpdate = retiredPlayers.forEach(row => {
         //   row.Team = "RETIRED"
