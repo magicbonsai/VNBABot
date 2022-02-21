@@ -2,7 +2,7 @@ const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const rwc = require('random-weighted-choice');
 const { sheetIds } = require("./sheetHelper");
-const { postRojTweet } = require("./tweetHelper")
+const { CHANNEL_IDS } = require("../../consts");
 
 const weightsFive = [
     {
@@ -38,7 +38,7 @@ const weightsSeven = [
 ];
 
 
-function retirementCalculator() {
+const retirementCalculator = (discordClient) => {
     const doc = new GoogleSpreadsheet(
       process.env.GOOGLE_SHEETS_KEY
     );
@@ -70,11 +70,7 @@ function retirementCalculator() {
                     return rwc(weightsSeven) == "yes"
             }
         });
-        const retirementTweet = `These players will be retiring before the start of the next VNBA season: ${retiredPlayers.map(({ Name }) => Name).join(', ')}.  We hope the best of these players in their retirements.`
-        if(process.env.ENVIRONMENT === "PRODUCTION") {
-            postRojTweet(retirementTweet)
-        }
-        console.log(retirementTweet);
+        discordClient.channels.get(CHANNEL_IDS.announcements).send(retirementMessage);
         // WIP get row updating to work
         // const rowsToUpdate = retiredPlayers.forEach(row => {
         //   row.Team = "RETIRED"
