@@ -1,0 +1,121 @@
+const { sheetIds } = require("./sheetHelper");
+const { CHANNEL_IDS } = require("../../consts");
+const _ = require("lodash");
+require("dotenv").config();
+
+const { GoogleSpreadsheet } = require("google-spreadsheet");
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+
+const toContractLength = (cash) => {
+  if(cash < 15) return 1;
+  if(cash < 40) return 2;
+  return 3;
+};
+
+const signFAs = discordClient => (numOfSignings = 10) => {
+  (async function main () {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+
+    const sheets = doc.sheetsById;
+    const playerSheet = sheets[sheetIds.players];
+
+    const signedRows = await playerSheet.getRows().then(
+      rows => {
+        const filteredRows = rows.filter(row => {
+          const {
+            Team,
+            ["Contract Offer"]: contractOffer  
+          } = row;
+          const fullOffer = JSON.parse(contractOffer);
+          return Team == "FA" && !!fullOffer
+        });
+        return _.sampleSize(filteredRows, numOfSignings);
+      }
+    );
+    //get all FA rows w/ contracts: filter by contract row and team row
+    //randomly select 10 or numOfSignings w/ lodash.sampleSize
+
+    //Change Team name to winning contract offer
+
+    const allSignings = await signedRows.reduce(
+      async (memo, currentValue = {}) => {
+        const acc = await memo;
+        await doc.loadInfo();
+        const sheets = doc.sheetsById;
+        const playerSheet = sheets[sheetIds.players];
+        const archive = sheets[sheetIds.reportArchive];
+        const playerRows = await playerSheet.getRows();
+
+        const {
+          Name: playerName,
+          ["Contract Offer"]: contractOffer,
+        } = currentValue;
+
+        const contractJson = JSON.parse(contractOffer);
+
+        const {
+          Team: newTeam,
+          Cash,
+          Minutes,
+        } = contractJson;
+
+        let playerRowToUpdate =  playerRows.find(row => row.Name === playerName);
+
+        playerRowToUpdate["Team"] = newTeam;
+        playerRowToUpdate["Contract Length"] = toContractLength(parseInt(Cash));
+        playerRowToUpdate["Loyalty"] = _.random(1, 10);
+        await playerRowToUpdate.save();
+
+        const requestRowToUpdate = requestQueueRows.find(
+          row => row.Player === playerName && !row["Done?"]
+        );
+        if (requestRowToUpdate) {
+          const { Description: existingJSON } = requestRowToUpdate;
+          const changeListJSON = createChangeListJSON("TEAM", newTeam, existingJSON);
+          // There is an existing row so update the data that already exists
+          requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
+          requestRowToUpdate["Team"] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
+          requestRowToUpdate["Description"] = changeListJSON;
+          await requestRowToUpdate.save();
+        } else {
+          // push up a new Row
+          const newRow = {
+            Date: new Date().toLocaleString().split(",")[0],
+            Player: playerName,
+            Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
+            Description: createChangeListJSON("TEAM", newTeam),
+            "Done?": undefined
+          };
+          await requestQueue.addRow(newRow);
+        }
+        return {
+          player: playerName,
+          team: newTeam,
+          cash: Cash,
+          minutes: Minutes,
+          contractLength: toContractLength(parseInt(Cash))
+        }; 
+      },
+      []
+    );
+
+    const fullDiscordMessageMap = allSignings.map(({ player, team, cash, minutes, contractLength }) => {
+      return `The ${team} have signed ${player} to a ${contractLength} season contract worth ${cash} Cash and ${minutes} minutes.\n`
+    });
+
+    // send a discord msg to the channel
+    fullDiscordMessageMap.forEach(message => discordClient.channels.get(CHANNEL_IDS.transactions).send(message));
+
+    await archive.addRow({
+      Date: new Date().toLocaleString().split(",")[0],
+      Content: fullDiscordMessageMap.join(""),
+    })
+    
+  })();
+};
+
+module.exports = { signFAs };
