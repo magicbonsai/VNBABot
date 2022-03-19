@@ -12,6 +12,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const router = express.Router();
 const { postToChannelWith, postToTeamWith } = require("./app/router/services");
+const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 require("dotenv").config();
 const client = new Client({
   intents: ["GUILDS", "GUILD_MEMBERS"],
@@ -26,6 +27,7 @@ const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const runReport = runReportWith(client);
+const signFAs = signFAsWith(client);
 
 // Router + Express Setup
 
@@ -56,7 +58,9 @@ const dedueCommand = (prompt, msg) => {
     case "report":
       runReport(parseInt(words[1]));
       break;
-
+    case "signfa": 
+      signFAs(parseInt(words[1]));
+      break;
     case "r-s":
       triKovAnalysis();
       break;
