@@ -1,4 +1,4 @@
-const { sheetIds } = require("./sheetHelper");
+const { sheetIds, colIdx } = require("./sheetHelper");
 const { CHANNEL_IDS } = require("../../consts");
 const _ = require("lodash");
 require("dotenv").config();
@@ -22,6 +22,7 @@ const signFAs = discordClient => (numOfSignings = 10) => {
 
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
+    const archive = sheets[sheetIds.reportArchive];
 
     const signedRows = await playerSheet.getRows().then(
       rows => {
@@ -36,6 +37,12 @@ const signFAs = discordClient => (numOfSignings = 10) => {
         return _.sampleSize(filteredRows, numOfSignings);
       }
     );
+
+    // If there are no signed rows, then no one put down offers during this round
+   
+    if (!signedRows.length) {
+      return discordClient.channels.get(CHANNEL_IDS.transactions).send("Apparently, no one was given an offer on this round of Free Agency."); 
+    }
     //get all FA rows w/ contracts: filter by contract row and team row
     //randomly select 10 or numOfSignings w/ lodash.sampleSize
 
@@ -47,7 +54,8 @@ const signFAs = discordClient => (numOfSignings = 10) => {
         await doc.loadInfo();
         const sheets = doc.sheetsById;
         const playerSheet = sheets[sheetIds.players];
-        const archive = sheets[sheetIds.reportArchive];
+        const teamAssetsSheet = sheets[sheetIds.teamAssets];
+        const teamAssetsRows = await teamAssetsSheet.getRows();      
         const playerRows = await playerSheet.getRows();
 
         const {
@@ -63,12 +71,16 @@ const signFAs = discordClient => (numOfSignings = 10) => {
           Minutes,
         } = contractJson;
 
+        // Update the player Row with the new team + contract length
+
         let playerRowToUpdate =  playerRows.find(row => row.Name === playerName);
 
         playerRowToUpdate["Team"] = newTeam;
         playerRowToUpdate["Contract Length"] = toContractLength(parseInt(Cash));
         playerRowToUpdate["Loyalty"] = _.random(1, 10);
         await playerRowToUpdate.save();
+
+        // Update the request rows so the player is in the correct tab for Streamers
 
         const requestRowToUpdate = requestQueueRows.find(
           row => row.Player === playerName && !row["Done?"]
@@ -92,13 +104,31 @@ const signFAs = discordClient => (numOfSignings = 10) => {
           };
           await requestQueue.addRow(newRow);
         }
-        return {
-          player: playerName,
-          team: newTeam,
-          cash: Cash,
-          minutes: Minutes,
-          contractLength: toContractLength(parseInt(Cash))
-        }; 
+
+        // update team Assets cash 
+        const rowIdxToUpdate = teamAssetsRows.findIndex(row => row.Team == newTeam) + 1;
+        const colIdxToUpdate = colIdx["ASSETS"]["Cash"];
+
+        await teamAssetsSheet.loadCells();
+        const cellToUpdate = teamAssetsSheet.getCell(rowIdxToUpdate, colIdxToUpdate);
+        const oldValue = parseInt(cellToUpdate.value);
+        const newValue = oldValue - parseInt(Cash);
+
+        cellToUpdate.value = newValue;
+
+        await teamAssetsSheet.saveUpdatedCells(); 
+
+        // return relevant info to parse into a discord message
+        return [
+          ...acc,
+          {
+            player: playerName,
+            team: newTeam,
+            cash: Cash,
+            minutes: Minutes,
+            contractLength: toContractLength(parseInt(Cash))
+          }
+        ]; 
       },
       []
     );
