@@ -12,7 +12,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const router = express.Router();
 const { postToChannelWith, postToTeamWith } = require("./app/router/services");
-const { signFAs } = requre("./app/helpers/freeAgencySigner");
+const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 require("dotenv").config();
 const client = new Client({
   intents: ["GUILDS", "GUILD_MEMBERS"],
@@ -27,6 +27,7 @@ const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const runReport = runReportWith(client);
+const signFAs = signFAsWith(client);
 
 // Router + Express Setup
 

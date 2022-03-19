@@ -5,6 +5,7 @@ require("dotenv").config();
 
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+const { createChangeListJSON } = require('../bots/rojBot');
 
 const toContractLength = (cash) => {
   if(cash < 15) return 1;
@@ -12,14 +13,14 @@ const toContractLength = (cash) => {
   return 3;
 };
 
-const signFAs = discordClient => (numOfSignings = 10) => {
+const signFAsWith = discordClient => (numOfSignings = 10) => {
   (async function main () {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
     });
     await doc.loadInfo();
-
+    console.log('numSignings', numOfSignings);
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
     const archive = sheets[sheetIds.reportArchive];
@@ -31,6 +32,8 @@ const signFAs = discordClient => (numOfSignings = 10) => {
             Team,
             ["Contract Offer"]: contractOffer  
           } = row;
+          // don't look at any row w/o a contractOffer json
+          if (!contractOffer) return false;
           const fullOffer = JSON.parse(contractOffer);
           return Team == "FA" && !!fullOffer
         });
@@ -39,7 +42,7 @@ const signFAs = discordClient => (numOfSignings = 10) => {
     );
 
     // If there are no signed rows, then no one put down offers during this round
-   
+
     if (!signedRows.length) {
       return discordClient.channels.get(CHANNEL_IDS.transactions).send("Apparently, no one was given an offer on this round of Free Agency."); 
     }
@@ -57,6 +60,8 @@ const signFAs = discordClient => (numOfSignings = 10) => {
         const teamAssetsSheet = sheets[sheetIds.teamAssets];
         const teamAssetsRows = await teamAssetsSheet.getRows();      
         const playerRows = await playerSheet.getRows();
+        const requestQueue = sheets[sheetIds.requestQueue];
+        const requestQueueRows = await requestQueue.getRows();
 
         const {
           Name: playerName,
@@ -78,6 +83,7 @@ const signFAs = discordClient => (numOfSignings = 10) => {
         playerRowToUpdate["Team"] = newTeam;
         playerRowToUpdate["Contract Length"] = toContractLength(parseInt(Cash));
         playerRowToUpdate["Loyalty"] = _.random(1, 10);
+        console.log('newRow', playerName, newTeam);
         await playerRowToUpdate.save();
 
         // Update the request rows so the player is in the correct tab for Streamers
@@ -115,7 +121,7 @@ const signFAs = discordClient => (numOfSignings = 10) => {
         const newValue = oldValue - parseInt(Cash);
 
         cellToUpdate.value = newValue;
-
+        console.log('newTeamCash', newTeam, oldValue, newValue);
         await teamAssetsSheet.saveUpdatedCells(); 
 
         // return relevant info to parse into a discord message
@@ -134,12 +140,14 @@ const signFAs = discordClient => (numOfSignings = 10) => {
     );
 
     const fullDiscordMessageMap = allSignings.map(({ player, team, cash, minutes, contractLength }) => {
-      return `The ${team} have signed ${player} to a ${contractLength} season contract worth ${cash} Cash and ${minutes} minutes.\n`
+      return `\nThe **${team}** have signed **${player}** to a ${contractLength} season contract worth ${cash} Cash and ${minutes} minutes. \n`
     });
 
     // send a discord msg to the channel
     fullDiscordMessageMap.forEach(message => discordClient.channels.get(CHANNEL_IDS.transactions).send(message));
 
+    // for safety purposes, save a row to the archive
+    
     await archive.addRow({
       Date: new Date().toLocaleString().split(",")[0],
       Content: fullDiscordMessageMap.join(""),
@@ -148,4 +156,4 @@ const signFAs = discordClient => (numOfSignings = 10) => {
   })();
 };
 
-module.exports = { signFAs };
+module.exports = { signFAsWith };
