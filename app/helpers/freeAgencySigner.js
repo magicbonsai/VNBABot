@@ -79,6 +79,9 @@ const signFAsWith = discordClient => (numOfSignings = 10) => {
         // Update the player Row with the new team + contract length
 
         let playerRowToUpdate =  playerRows.find(row => row.Name === playerName);
+        const {
+          Data
+        } = playerRowToUpdate;
 
         playerRowToUpdate["Team"] = newTeam;
         playerRowToUpdate["Salary"] = Cash;
@@ -106,6 +109,7 @@ const signFAsWith = discordClient => (numOfSignings = 10) => {
             Date: new Date().toLocaleString().split(",")[0],
             Player: playerName,
             Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
+            Data: Data,
             Description: createChangeListJSON("TEAM", newTeam),
             "Done?": undefined
           };
