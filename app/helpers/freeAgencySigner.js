@@ -81,6 +81,7 @@ const signFAsWith = discordClient => (numOfSignings = 10) => {
         let playerRowToUpdate =  playerRows.find(row => row.Name === playerName);
 
         playerRowToUpdate["Team"] = newTeam;
+        playerRowToUpdate["Salary"] = Cash;
         playerRowToUpdate["Contract Length"] = toContractLength(parseInt(Cash));
         playerRowToUpdate["Loyalty"] = _.random(1, 10);
         console.log('newRow', playerName, newTeam);
