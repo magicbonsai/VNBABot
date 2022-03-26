@@ -1,5 +1,11 @@
 const { CHANNEL_IDS } = require('../../consts');
 require("dotenv").config();
+const { sheetIds, colIdx } = require("../helpers/sheetHelper");
+const _ = require("lodash");
+
+const { GoogleSpreadsheet } = require("google-spreadsheet");
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+const { createChangeListJSON } = require('../bots/rojBot');
 //GET requests
 
 //POST requests
@@ -96,7 +102,42 @@ const updatePlayers = (req, res) => {
       message: 'value is required'
     });
   } 
-
+  const { 
+    body: {
+      value: updateObjects,
+    } = {}
+  } = req;
+  (async () => {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+    console.log('numSignings', numOfSignings);
+    const sheets = doc.sheetsById;
+    const playerSheet = sheets[sheetIds.players];
+    const playerRows = await playerSheet.getRows();
+    await updateObjects.reduce(
+      async (memo, currentValue) => {
+        const acc = await memo;
+        await doc.loadInfo();
+        const sheets = doc.sheetsById;
+        const playerSheet = sheets[sheetIds.players];
+        const teamAssetsSheet = sheets[sheetIds.teamAssets];
+        const teamAssetsRows = await teamAssetsSheet.getRows();      
+        const playerRows = await playerSheet.getRows();
+        const requestQueue = sheets[sheetIds.requestQueue];
+        const requestQueueRows = await requestQueue.getRows();
+        const {
+          Name,
+          Attributes,
+          Tendencies,
+          Badges,
+        } = currentValue;
+      },
+      {}
+    )
+  })();
 };
 
 module.exports = { postToChannelWith, postToTeamWith, updatePlayers };
