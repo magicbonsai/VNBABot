@@ -145,5 +145,60 @@ const removeInjuries = () => {
       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
     });
     await doc.loadInfo();
+    const sheets = doc.sheetsById;
+    const playerSheet = sheets[sheetIds.players];
+    const dateToCompare = new Date().toLocaleDateString()[0];
+    const filteredRows = await playerSheet.getRows().then(rows => {
+      return rows.filter(row => row.Status == dateToCompare)
+    });
+    await filteredRows.reduce(
+      async (memo, currentValue = {}) => {
+        const acc = await memo;
+        await doc.loadInfo();
+        const sheets = doc.sheetsById;
+        const playerSheet = sheets[sheetIds.players];
+        const playerRows = await playerSheet.getRows();
+        const requestQueue = sheets[sheetIds.requestQueue];
+        const requestQueueRows = await requestQueue.getRows();
+
+        let playerRowToUpdate =  playerRows.find(row => row.Name === playerName);
+        const {
+          Data: oldData
+        } = playerRowToUpdate;
+        const newJSON = updateVitals(oldData, id);
+
+        playerRowToUpdate["Status"] = undefined;
+        playerRowToUpdate["Data"] = newJSON;
+        await playerRowToUpdate.save();
+
+        // Update the request rows so the player is in the correct tab for Streamers
+
+        const requestRowToUpdate = requestQueueRows.find(
+          row => row.Player === playerName && !row["Done?"]
+        );
+        if (requestRowToUpdate) {
+          const { Description: existingJSON } = requestRowToUpdate;
+          const changeListJSON = createChangeListJSON("INJURY", 'Healthy', existingJSON);
+          // There is an existing row so update the data that already exists
+          requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
+          requestRowToUpdate["Team"] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
+          requestRowToUpdate["Description"] = changeListJSON;
+          await requestRowToUpdate.save();
+        } else {
+          // push up a new Row
+          const newRow = {
+            Date: new Date().toLocaleString().split(",")[0],
+            Player: playerName,
+            Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
+            Data: Data,
+            Description: createChangeListJSON("INJURY", 'Healthy'),
+            "Done?": undefined
+          };
+          await requestQueue.addRow(newRow);
+        }
+
+      },
+      {}
+    )
   })
 };
