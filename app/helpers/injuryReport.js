@@ -1,5 +1,7 @@
 const { sheetIds, colIdx } = require("./sheetHelper");
 const { CHANNEL_IDS } = require("../../consts");
+const { INJURIES } = require("./consts");
+const rwc = require('random-weighted-choice');
 const _ = require("lodash");
 require("dotenv").config();
 
@@ -13,6 +15,36 @@ const generateFutureDate = (days) => {
   return newDate.toLocaleString().split(",")[0];
 };
 
+// I hate this
+const updateVitals = (data, id) => {
+  const valuesFromJSON = JSON.parse(data);
+  const selectedTab = valuesFromJSON.find(page => page.tab === "VITALS");
+  const selectedIndex = valuesFromJSON.findIndex(page => page.tab === "VITALS");
+  let newData = selectedTab.data;
+  newData["INJURY1TYPE"] = id;
+
+  return JSON.stringify([
+    ...valuesFromJSON.slice(0, selectedIndex),
+    {
+      module: "PLAYER",
+      tab: tabKey,
+      data: newData
+    },
+    ...valuesFromJSON.slice(selectedIndex + 1)
+  ]);
+};
+
+const weights = [
+  {
+    id: 'y',
+    weight: 0.1,
+  },
+  {
+    id: 'n',
+    weight: 0.9
+  }
+];
+
 // use rowUpdates here
 
 const generateInjuries = discordClient => (params) => {
@@ -22,10 +54,89 @@ const generateInjuries = discordClient => (params) => {
       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
     });
     await doc.loadInfo();
+    const sheets = doc.sheetsById;
+    const playerSheet = sheets[sheetIds.players];
+    const requestQueueSheet = sheets[sheetIds.requestQueue];
+    const teamAssetsSheet = sheets[sheetIds.teamAssets];
+    const archive = sheets[sheetIds.reportArchive];
+    if(rwc(weights) == 'n') {
+      return;
+    }
+    const requestQueueRows = await requestQueueSheet.getRows();
+
+    const validTeams = await teamAssetsSheet.getRows().then(rows => {
+      return rows
+        .filter(row => row.Frozen === "FALSE")
+        .map(row => {
+          return row.Team;
+        });
+    });
+    const playerRowToUpdate = await playerSheet.getRows().then(rows => {
+      return _.sample(rows.filter(row => !row.Status && validTeams.includes(row.Team)));
+    });
+    const injury = _.sample(INJURIES);
+    const {
+      id,
+      Name: injuryName,
+      DurationMin,
+      DurationMax,
+      AffectedLow,
+      AffectedHigh,
+      DNP,
+    } = injury;
+
+    const injuryDuration = _.random(DurationMin, DurationMax);
+    const newInjuryDate = generateFutureDate(injuryDuration);
+
+    const {
+      Name,
+      Data: oldData
+    } = playerRowToUpdate || {};
+    const newJSON = updateVitals(oldData, id);
+    playerRowToUpdate["Data"] = newJSON;
+    playerRowToUpdate["Status"] = newInjuryDate;
+    await playerRowToUpdate.save();
+    //updating the request queue
+    const requestRowToUpdate = requestQueueRows.find(
+      row => row.Player === playerName && !row["Done?"]
+    );
+    if (requestRowToUpdate) {
+      const { Description: existingJSON } = requestRowToUpdate;
+      const changeListJSON = createChangeListJSON("INJURY", {injuryName, id}, existingJSON);
+      // There is an existing row so update the data that already exists
+      requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
+      requestRowToUpdate["Data"] = newJSON;
+      requestRowToUpdate["Team"] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
+      requestRowToUpdate["Description"] = changeListJSON;
+      await requestRowToUpdate.save();
+    } else {
+      // push up a new Row
+      const newRow = {
+        Date: new Date().toLocaleString().split(",")[0],
+        Player: playerName,
+        Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
+        Description: createChangeListJSON("INJURY", {injuryName, id}),
+        Data: newJSON,
+        "Done?": undefined
+      };
+      await requestQueue.addRow(newRow);
+    } 
+
+    const dnpMessage = `His ${AffectedHigh} are severely affected.  It is recommended to bench this player until they recover.`
+    const message = `${Name} has suffered an injury: ${injuryName} for ${injuryDuration} days.  He will recover on ${newInjuryDate}. 
+      \n The injury minorly affects his ${AffectedLow}.  ${DNP ? dnpMessage : ''}`;
+     
+
+    discordClient.channels.get(CHANNEL_IDS.updates).send(message)
+
+    await archive.addRow({
+      Date: new Date().toLocaleString().split(",")[0],
+      Content: message,
+    })
   })();
 }; 
 
-// use Cell Updates to batch clear all injuries
+// use Cell Updates to batch clear all injuries?
 
 const removeInjuries = () => {
   (async () => {

@@ -40,7 +40,8 @@ const INJURIES = [
     DurationMin: 3,
     DurationMax: 6,
     AffectedLow: "Shooting",
-    AffectedHigh: "Athleticism"
+    AffectedHigh: "Athleticism",
+    DNP: true,
   },
   {
     id: "70",
@@ -141,5 +142,8 @@ const INJURIES = [
     DurationMax: 6,
     AffectedLow: "Finishing, Shooting, Post Game, Stocks, Rebounding",
     AffectedHigh: "Athleticism",
+    DNP: true,
   },
 ];
+
+module.exports = { INJURIES }
