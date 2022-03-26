@@ -160,6 +160,9 @@ const removeInjuries = () => {
         const playerRows = await playerSheet.getRows();
         const requestQueue = sheets[sheetIds.requestQueue];
         const requestQueueRows = await requestQueue.getRows();
+        const {
+          Name: playerName
+        } = currentValue;
 
         let playerRowToUpdate =  playerRows.find(row => row.Name === playerName);
         const {
