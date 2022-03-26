@@ -75,4 +75,28 @@ const postToTeamWith = discordClient => (req, res) => {
   })
 };
 
-module.exports = { postToChannelWith, postToTeamWith };
+// Take in an array of objects, of which the object is such:
+// 
+// {
+//   Name: string,
+//   Attributes: array [ { key: value }, etc],
+//   Badges: array [ { key: value }, etc],
+//   Tendencies: array [ { key: value }, etc]
+// }
+// and updates each player
+// API:
+// {
+//   value: [ objects ]
+// }
+
+const updatePlayers = (req, res) => {
+  if (!req.body.value) {
+    return res.status(400).send({
+      success: 'false',
+      message: 'value is required'
+    });
+  } 
+
+};
+
+module.exports = { postToChannelWith, postToTeamWith, updatePlayers };

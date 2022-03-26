@@ -11,7 +11,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const router = express.Router();
-const { postToChannelWith, postToTeamWith } = require("./app/router/services");
+const { postToChannelWith, postToTeamWith, updatePlayers } = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 require("dotenv").config();
 const client = new Client({
@@ -38,6 +38,7 @@ app.use(bodyParser.json());
 
 router.post("/roj/post/toChannel", postToChannelWith(client));
 router.post("/roj/post/toTeam", postToTeamWith(client));
+router.post("roj/post/updatePlayers", updatePlayers);
 
 const PORT = process.env.PORT || 8081;
 
