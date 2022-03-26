@@ -165,7 +165,7 @@ const removeInjuries = () => {
         const {
           Data: oldData
         } = playerRowToUpdate;
-        const newJSON = updateVitals(oldData, id);
+        const newJSON = updateVitals(oldData, "0");
 
         playerRowToUpdate["Status"] = undefined;
         playerRowToUpdate["Data"] = newJSON;
