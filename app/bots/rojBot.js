@@ -302,4 +302,4 @@ const runReportWith =
     })();
   };
 
-module.exports = { runReportWith, createChangeListJSON };
+module.exports = { runReportWith, createChangeListJSON, updateJSON };
