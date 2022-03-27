@@ -38,7 +38,7 @@ app.use(bodyParser.json());
 
 router.post("/roj/post/toChannel", postToChannelWith(client));
 router.post("/roj/post/toTeam", postToTeamWith(client));
-router.post("roj/post/updatePlayers", updatePlayers);
+router.post("/roj/post/updatePlayers", updatePlayers);
 
 const PORT = process.env.PORT || 8081;
 

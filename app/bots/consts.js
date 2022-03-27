@@ -26,6 +26,10 @@ const tabMap = {
   HOTZONE: {
     multiplier: 1,
     upperBound: 2
+  },
+  TENDENCIES: {
+    multiplier: 1,
+    upperBound: 100
   }
 };
 
