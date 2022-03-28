@@ -214,7 +214,13 @@ const SaturdayJob2 = new CronJob("15 16 * * 6", function () {
   runReport(3);
 });
 
-const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {});
+const dailyInjuryReportJob = new CronJob("0 14 * * *", function () {
+  generateInjuries();
+});
+
+const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function() {
+  removeInjuries();
+})
 
 //some sort of trade request tracker
 
@@ -228,6 +234,8 @@ WednesdayJob.start();
 WednesdayJob2.start();
 SaturdayJob.start();
 SaturdayJob2.start();
+dailyInjuryReportJob.start();
+dailyRemoveInjuryJob.start();
 
 const triKovAnalysis = () => {
   R("ex-sync.R")

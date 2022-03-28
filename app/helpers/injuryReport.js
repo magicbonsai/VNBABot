@@ -10,9 +10,10 @@ const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
 const { createChangeListJSON } = require('../bots/rojBot');
 
 const generateFutureDate = (days) => {
-  const d = new Date();
-  const newDate = d.setDate(d.getDate() + days);
-  return newDate.toLocaleString().split(",")[0];
+  let d = new Date();
+  d.setDate(d.getDate() + days);
+  console.log('newDate', d, days, d.toLocaleString());
+  return d.toLocaleString().split(",")[0];
 };
 
 // I hate this
@@ -27,7 +28,7 @@ const updateVitals = (data, id) => {
     ...valuesFromJSON.slice(0, selectedIndex),
     {
       module: "PLAYER",
-      tab: tabKey,
+      tab: "VITALS",
       data: newData
     },
     ...valuesFromJSON.slice(selectedIndex + 1)
@@ -90,7 +91,7 @@ const generateInjuriesWith = discordClient => (forceInjury) => {
     const newInjuryDate = generateFutureDate(injuryDuration);
 
     const {
-      Name,
+      Name: playerName,
       Data: oldData
     } = playerRowToUpdate || {};
     const newJSON = updateVitals(oldData, id);
@@ -120,11 +121,11 @@ const generateInjuriesWith = discordClient => (forceInjury) => {
         Data: newJSON,
         "Done?": undefined
       };
-      await requestQueue.addRow(newRow);
+      await requestQueueSheet.addRow(newRow);
     } 
 
-    const dnpMessage = `His ${AffectedHigh} are severely affected.  It is recommended to bench this player until they recover.`
-    const message = `${Name} has suffered an injury: ${injuryName} for ${injuryDuration} days.  He will recover on ${newInjuryDate}. 
+    const dnpMessage = `What's severely affect is his ${AffectedHigh}.  It is recommended to bench this player until they recover.`
+    const message = `${playerName} has suffered an injury: ${injuryName} for ${injuryDuration} days.  He will recover on ${newInjuryDate}. 
       \n The injury minorly affects his ${AffectedLow}.  ${DNP ? dnpMessage : ''}`;
      
 
@@ -148,7 +149,7 @@ const removeInjuries = () => {
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
-    const dateToCompare = new Date().toLocaleDateString()[0];
+    const dateToCompare = new Date().toLocaleDateString().split(",")[0];
     const filteredRows = await playerSheet.getRows().then(rows => {
       return rows.filter(row => row.Status == dateToCompare)
     });
@@ -171,7 +172,7 @@ const removeInjuries = () => {
         } = playerRowToUpdate;
         const newJSON = updateVitals(oldData, "0");
 
-        playerRowToUpdate["Status"] = undefined;
+        playerRowToUpdate["Status"] = "";
         playerRowToUpdate["Data"] = newJSON;
         await playerRowToUpdate.save();
 
@@ -204,7 +205,7 @@ const removeInjuries = () => {
       },
       {}
     )
-  })
+  })();
 };
 
-modele.exports = {generateInjuriesWith, removeInjuries}
+module.exports = {generateInjuriesWith, removeInjuries}
