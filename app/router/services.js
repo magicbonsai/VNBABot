@@ -1,5 +1,12 @@
 const { CHANNEL_IDS } = require('../../consts');
 require("dotenv").config();
+const { sheetIds, colIdx } = require("../helpers/sheetHelper");
+const _ = require("lodash");
+
+const { GoogleSpreadsheet } = require("google-spreadsheet");
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+const { createChangeListJSON } = require('../bots/rojBot');
+const { bulkUpdateJSON } = require('./utils');
 //GET requests
 
 //POST requests
@@ -75,4 +82,94 @@ const postToTeamWith = discordClient => (req, res) => {
   })
 };
 
-module.exports = { postToChannelWith, postToTeamWith };
+// Take in an array of objects, of which the object is such:
+// 
+// {
+//   Name: string,
+//   Attributes: array [ { key: string, value: num }, etc],
+//   Badges: array [ { key: string, value: num }, etc],
+//   Tendencies: array [ { key: string, value: num }, etc]
+// }
+//  value in each key should be the delta, not the complete updated value, i.e. 3PT_SHOT: 5, means increase 3pt by 5
+//
+// and updates each player
+// API:
+// {
+//   value: [ objects ]
+// }
+
+const updatePlayers = (req, res) => {
+  if (!req.body.value) {
+    return res.status(400).send({
+      success: 'false',
+      message: 'value is required'
+    });
+  } 
+  const { 
+    body: {
+      value: updateObjects,
+    } = {}
+  } = req;
+  (async () => {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+    await updateObjects.reduce(
+      async (memo, currentValue) => {
+        const acc = await memo;
+        await doc.loadInfo();
+        const sheets = doc.sheetsById;
+        const playerSheet = sheets[sheetIds.players];
+        const playerRows = await playerSheet.getRows();
+        const requestQueue = sheets[sheetIds.requestQueue];
+        const requestQueueRows = await requestQueue.getRows();
+        const {
+          Name: playerName,
+          Attributes,
+          Tendencies,
+          Badges,
+        } = currentValue;
+        let playerRowToUpdate = playerRows.find(row => row.Name === playerName);
+        const { Data: oldData } = playerRowToUpdate || {};
+        const newJSON = bulkUpdateJSON(oldData, Attributes, Tendencies, Badges);
+        playerRowToUpdate["Data"] = newJSON;
+        await playerRowToUpdate.save();
+      
+        //updating the request queue
+        const requestRowToUpdate = requestQueueRows.find(
+          row => row.Player === playerName && !row["Done?"]
+        );
+        if (requestRowToUpdate) {
+          const { Description: existingJSON } = requestRowToUpdate;
+          const changeListJSON = createChangeListJSON("TRAINING", {Attributes, Tendencies, Badges}, existingJSON);
+          // There is an existing row so update the data that already exists
+          requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
+          requestRowToUpdate["Data"] = newJSON;
+          requestRowToUpdate["Team"] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
+          requestRowToUpdate["Description"] = changeListJSON;
+          await requestRowToUpdate.save();
+        } else {
+          // push up a new Row
+          const newRow = {
+            Date: new Date().toLocaleString().split(",")[0],
+            Player: playerName,
+            Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
+            Description: createChangeListJSON("TRAINING", {Attributes, Tendencies, Badges}),
+            Data: newJSON,
+            "Done?": undefined
+          };
+          await requestQueue.addRow(newRow);
+        }
+      },
+      {}
+    );
+    return res.status(201).send({
+      success: 'true',
+      message: `Bulk update successful.`,
+    })
+  })();
+};
+
+module.exports = { postToChannelWith, postToTeamWith, updatePlayers };

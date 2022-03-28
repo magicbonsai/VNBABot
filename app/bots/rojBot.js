@@ -12,6 +12,9 @@ const faker = require("faker");
 faker.setLocale("en");
 
 const updateJSON = (tabKey, data, updateKey = {}) => {
+  if (_.isEmpty(updateKey)) {
+    return data;
+  };
   const { key, value } = updateKey;
   const { multiplier = 1, upperBound } = tabMap[tabKey] || {};
   const valuesFromJSON = JSON.parse(data);
@@ -302,4 +305,4 @@ const runReportWith =
     })();
   };
 
-module.exports = { runReportWith, createChangeListJSON };
+module.exports = { runReportWith, createChangeListJSON, updateJSON };
