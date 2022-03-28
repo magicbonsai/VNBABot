@@ -47,7 +47,7 @@ const weights = [
 
 // use rowUpdates here
 
-const generateInjuries = discordClient => (params) => {
+const generateInjuriesWith = discordClient => (forceInjury) => {
   (async () => {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -59,7 +59,7 @@ const generateInjuries = discordClient => (params) => {
     const requestQueueSheet = sheets[sheetIds.requestQueue];
     const teamAssetsSheet = sheets[sheetIds.teamAssets];
     const archive = sheets[sheetIds.reportArchive];
-    if(rwc(weights) == 'n') {
+    if(rwc(weights) == 'n' && !forceInjury) {
       return;
     }
     const requestQueueRows = await requestQueueSheet.getRows();
@@ -75,6 +75,7 @@ const generateInjuries = discordClient => (params) => {
       return _.sample(rows.filter(row => !row.Status && validTeams.includes(row.Team)));
     });
     const injury = _.sample(INJURIES);
+    console.log('this player got injured: ', playerRowToUpdate.Name, injury.Name, injury.id);
     const {
       id,
       Name: injuryName,
@@ -205,3 +206,5 @@ const removeInjuries = () => {
     )
   })
 };
+
+modele.exports = {generateInjuriesWith, removeInjuries}

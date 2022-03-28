@@ -6,6 +6,7 @@ const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
+const { generateInjuriesWith, removeInjuries } = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const express = require("express");
 const cors = require("cors");
@@ -28,6 +29,7 @@ const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const runReport = runReportWith(client);
 const signFAs = signFAsWith(client);
+const generateInjuries = generateInjuriesWith(client);
 
 // Router + Express Setup
 
@@ -61,6 +63,12 @@ const dedueCommand = (prompt, msg) => {
       break;
     case "signfa": 
       signFAs(parseInt(words[1]));
+      break;
+    case "forceinjury":
+      generateInjuries("banana");
+      break;
+    case "removeinjury":
+      removeInjuries();
       break;
     case "r-s":
       triKovAnalysis();
