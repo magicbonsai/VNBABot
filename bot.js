@@ -6,6 +6,7 @@ const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
+const { generateInjuriesWith, removeInjuries } = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const express = require("express");
 const cors = require("cors");
@@ -13,6 +14,7 @@ const bodyParser = require("body-parser");
 const router = express.Router();
 const { postToChannelWith, postToTeamWith, updatePlayers } = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
+const { sheetIds } = require("./app/helpers/sheetHelper");
 require("dotenv").config();
 const client = new Client({
   intents: ["GUILDS", "GUILD_MEMBERS"],
@@ -28,6 +30,7 @@ const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const runReport = runReportWith(client);
 const signFAs = signFAsWith(client);
+const generateInjuries = generateInjuriesWith(client);
 
 // Router + Express Setup
 
@@ -61,6 +64,12 @@ const dedueCommand = (prompt, msg) => {
       break;
     case "signfa": 
       signFAs(parseInt(words[1]));
+      break;
+    case "forceinjury":
+      generateInjuries("banana");
+      break;
+    case "removeinjury":
+      removeInjuries();
       break;
     case "r-s":
       triKovAnalysis();
@@ -206,7 +215,31 @@ const SaturdayJob2 = new CronJob("15 16 * * 6", function () {
   runReport(3);
 });
 
-const dailyInjuryReportJob = new CronJob("0 16 * * *", function () {});
+const dailyInjuryReportJob = new CronJob("0 14 * * *", function () {
+  (async () => {
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+
+    await doc.loadInfo();
+    const sheets = doc.sheetsById;
+    const globalsSheet = sheets[sheetIds.globalVars];
+
+    const doInjuriesVar = await globalsSheet.getRows().then(
+      rows => rows.find(row => row.Global == "doInjuries")
+    );
+    if (doInjuriesVar.Status == "FALSE") {
+      return;
+    }
+    generateInjuries();
+  })();
+});
+
+const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function() {
+  removeInjuries();
+})
 
 //some sort of trade request tracker
 
@@ -220,6 +253,8 @@ WednesdayJob.start();
 WednesdayJob2.start();
 SaturdayJob.start();
 SaturdayJob2.start();
+dailyInjuryReportJob.start();
+dailyRemoveInjuryJob.start();
 
 const triKovAnalysis = () => {
   R("ex-sync.R")
