@@ -10,7 +10,8 @@ const sheetIds = {
   retiredPlayers: "242746550",
   teamAssets: "395261312",
   requestQueue: "770847722",
-  reportArchive: "832018399"
+  reportArchive: "832018399",
+  globalVars: "1159560836"
 };
 
 //TODO Fill this out in the future if needed
