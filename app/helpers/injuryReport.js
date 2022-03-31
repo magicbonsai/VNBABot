@@ -49,6 +49,7 @@ const weights = [
 // use rowUpdates here
 
 const generateInjuriesWith = discordClient => (forceInjury) => {
+  console.log('injury report fired');
   (async () => {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -134,13 +135,16 @@ const generateInjuriesWith = discordClient => (forceInjury) => {
     await archive.addRow({
       Date: new Date().toLocaleString().split(",")[0],
       Content: message,
-    })
+    });
+
+    console.log('injury report finished');
   })();
 }; 
 
 // use Cell Updates to batch clear all injuries?
 
 const removeInjuries = () => {
+  console.log('remove injury fired');
   (async () => {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -204,7 +208,8 @@ const removeInjuries = () => {
 
       },
       {}
-    )
+    );
+    console.log('remove injury finished');
   })();
 };
 

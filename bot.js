@@ -230,6 +230,7 @@ const dailyInjuryReportJob = new CronJob("0 14 * * *", function () {
     const doInjuriesVar = await globalsSheet.getRows().then(
       rows => rows.find(row => row.Global == "doInjuries")
     );
+    console.log('daily injury job', doInjuriesVar);
     if (doInjuriesVar.Status == "FALSE") {
       return;
     }
@@ -238,6 +239,7 @@ const dailyInjuryReportJob = new CronJob("0 14 * * *", function () {
 });
 
 const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function() {
+  console.log('daily remove injury job');
   removeInjuries();
 })
 
