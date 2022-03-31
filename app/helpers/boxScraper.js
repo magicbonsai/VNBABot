@@ -140,7 +140,7 @@ function updateRawStats(data, gameId) {
     const players = sheets[sheetIds.players];
     await rawStats.loadHeaderRow();
 
-    const statslength = await rawStats.getRows().then(rows => rows.length);
+    const statsLength = await rawStats.getRows().then(rows => rows.length);
 
     players.getRows().then(playerRows => {
       const playerTable = {};
@@ -176,15 +176,15 @@ function updateRawStats(data, gameId) {
             "Game Id": gameId
           });
         });
-      
+
       let orderedRowsToAdd =  _.sortBy(rowsToAdd, x => x.Team);
       orderedRowsToAdd.forEach((item, index) => {
-        const rowNum = statsLength + index + 1;
-        item["Valid Number of points"] = `=IF(($J${rowNum} - $L${rowNum}) * 2 + ($L${rowNum} * 3) + $N${rowNum} = $D${rowNum}, "YES", "NO" )`;
-        item["Valid Stat line"] = `=AND($J${rowNum} <=$K${rowNum}, $L${rowNum} <= $M${rowNum}, $N${rowNum} <= $O${rowNum})`;
-        item["Valid PRF"] = `=($D${rowNum} + 2*$F${rowNum}) <= $S${rowNum}`;
-        item["Valid Rebounds"] = `=$P${rowNum} <= $E${rowNum}`;
-        item["Valid Minutes"] = `=$C${rowNum} <= 48`;
+        const rowNum = statsLength + index + 2;
+        item["Valid Number of points"] = `=IF(($J$${rowNum} - $L$${rowNum}) * 2 + ($L$${rowNum} * 3) + $N$${rowNum} = $D$${rowNum}, "YES", "NO" )`;
+        item["Valid Stat line"] = `=AND($J$${rowNum} <=$K$${rowNum}, $L$${rowNum} <= $M$${rowNum}, $N$${rowNum} <= $O$${rowNum})`;
+        item["Valid PRF"] = `=($D$${rowNum} + 2*$F$${rowNum}) <= $S$${rowNum}`;
+        item["Valid Rebounds"] = `=$P$${rowNum} <= $E$${rowNum}`;
+        item["Valid Minutes"] = `=$C$${rowNum} <= 48`;
       });
       
       (async () => {
