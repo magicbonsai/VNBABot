@@ -268,9 +268,9 @@ const triKovAnalysis = () => {
           client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
           private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
         });
-
+        
         await doc.loadInfo();
-
+        console.log('trikovOutput', d);
         const sheets = doc.sheetsByTitle;
         const players = sheets["Player List"];
         const teamAssets = sheets["Team Assets"];
