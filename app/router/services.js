@@ -130,10 +130,11 @@ const updatePlayers = (req, res) => {
           Attributes,
           Tendencies,
           Badges,
+          Vitals  
         } = currentValue;
         let playerRowToUpdate = playerRows.find(row => row.Name === playerName);
         const { Data: oldData } = playerRowToUpdate || {};
-        const newJSON = bulkUpdateJSON(oldData, Attributes, Tendencies, Badges);
+        const newJSON = bulkUpdateJSON(oldData, Attributes, Tendencies, Badges, Vitals);
         playerRowToUpdate["Data"] = newJSON;
         await playerRowToUpdate.save();
       
