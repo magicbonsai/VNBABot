@@ -144,7 +144,7 @@ const updatePlayers = (req, res) => {
         );
         if (requestRowToUpdate) {
           const { Description: existingJSON } = requestRowToUpdate;
-          const changeListJSON = createChangeListJSON("TRAINING", {Attributes, Tendencies, Badges}, existingJSON);
+          const changeListJSON = createChangeListJSON("TRAINING", {Attributes, Tendencies, Badges, Vitals}, existingJSON);
           // There is an existing row so update the data that already exists
           requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
           requestRowToUpdate["Data"] = newJSON;
@@ -157,7 +157,7 @@ const updatePlayers = (req, res) => {
             Date: new Date().toLocaleString().split(",")[0],
             Player: playerName,
             Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
-            Description: createChangeListJSON("TRAINING", {Attributes, Tendencies, Badges}),
+            Description: createChangeListJSON("TRAINING", {Attributes, Tendencies, Badges, Vitals}),
             Data: newJSON,
             "Done?": undefined
           };

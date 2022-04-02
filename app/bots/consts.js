@@ -30,6 +30,10 @@ const tabMap = {
   TENDENCIES: {
     multiplier: 1,
     upperBound: 100
+  },
+  VITALS: {
+    multipler: 1,
+    upperBound: 350
   }
 };
 
