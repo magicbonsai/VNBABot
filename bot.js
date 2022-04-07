@@ -66,7 +66,7 @@ const dedueCommand = (prompt, msg) => {
       signFAs(parseInt(words[1]));
       break;
     case "forceinjury":
-      generateInjuries("banana");
+      generateInjuries(words[1]);
       break;
     case "removeinjury":
       removeInjuries();
