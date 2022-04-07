@@ -49,7 +49,7 @@ const weights = [
 // use rowUpdates here
 
 const generateInjuriesWith = discordClient => (forceInjury) => {
-  console.log('injury report fired');
+  console.log('injury report fired', forceInjury);
   (async () => {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -62,8 +62,10 @@ const generateInjuriesWith = discordClient => (forceInjury) => {
     const teamAssetsSheet = sheets[sheetIds.teamAssets];
     const archive = sheets[sheetIds.reportArchive];
     if(rwc(weights) == 'n' && !forceInjury) {
+      console.log('no injury today', weights);
       return;
     }
+    console.log('injury today');
     const requestQueueRows = await requestQueueSheet.getRows();
 
     const validTeams = await teamAssetsSheet.getRows().then(rows => {
