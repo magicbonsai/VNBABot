@@ -98,8 +98,16 @@ const generateInjuriesWith = discordClient => (forceInjury) => {
       Data: oldData
     } = playerRowToUpdate || {};
     const newJSON = updateVitals(oldData, id);
+    const statusObj = {
+      Name: injuryName,
+      Duration: newInjuryDate,
+      AffectedLow,
+      AffectedHigh,
+      DNP,
+    };
+    // JSON.stringify
     playerRowToUpdate["Data"] = newJSON;
-    playerRowToUpdate["Status"] = newInjuryDate;
+    playerRowToUpdate["Status"] = JSON.stringify(statusObj);
     await playerRowToUpdate.save();
     //updating the request queue
     const requestRowToUpdate = requestQueueRows.find(
@@ -127,7 +135,7 @@ const generateInjuriesWith = discordClient => (forceInjury) => {
       await requestQueueSheet.addRow(newRow);
     } 
 
-    const dnpMessage = `What's severely affect is his ${AffectedHigh}.  It is recommended to bench this player until they recover.`
+    const dnpMessage = `What's severely affected is his ${AffectedHigh}.  It is recommended to bench this player until they recover.`
     const message = `${playerName} has suffered an injury: ${injuryName} for ${injuryDuration} days.  He will recover on ${newInjuryDate}. 
       \n The injury minorly affects his ${AffectedLow}.  ${DNP ? dnpMessage : ''}`;
      
@@ -157,7 +165,16 @@ const removeInjuries = () => {
     const playerSheet = sheets[sheetIds.players];
     const dateToCompare = new Date().toLocaleDateString().split(",")[0];
     const filteredRows = await playerSheet.getRows().then(rows => {
-      return rows.filter(row => row.Status == dateToCompare)
+      return rows.filter(row => {
+        const {
+          Status 
+        } = row;
+        if (!Status) return;
+        const {
+          Duration,
+        } = JSON.parse(Status);
+        return Duration == dateToCompare;
+      });
     });
     await filteredRows.reduce(
       async (memo, currentValue = {}) => {
