@@ -149,7 +149,7 @@ getPlayerStatScores  = function(playerStats, normalizedStats, parameters) {
                     Type = first(Type),
                     Current_Team = first(Current_Team),
                     Overall = first(Overall), 
-                    Score = weighted.mean(Score, Games_Played * ifelse(Season == "Last_2", 0.6, ifelse(Season == "Last", 0.8, 1))) + abs(min(scores$Score)) + 1),
+                    Score = weighted.mean(Score, Games_Played * ifelse(Season == "Last_2", 0.4, ifelse(Season == "Last", 0.6, 1))) + abs(min(scores$Score)) + 1),
                 by = "Player"]
   return(scores)
 }
