@@ -10,6 +10,7 @@ const { createWorker, createScheduler } = require("tesseract.js");
 const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
+const { memoryUsage } = require("process");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -250,6 +251,7 @@ function takeScreenshots(video, videoLink) {
 
 async function processImages(videoLink) {
   let counter = 0;
+  console.log(memoryUsage());
   await fs.readdir("screenshots", (err, files) => {
     files.forEach(file => {
       jimp.read(`screenshots/${file}`, (err, image) => {
@@ -287,6 +289,7 @@ async function processImages(videoLink) {
         const images = [imgOne, imgTwo, imgThree];
 
         images.forEach((img, index) => {
+          console.log(memoryUsage());
           if (img.getPixelColor(350, 50) === 255) {
             img.invert();
           }
@@ -367,6 +370,7 @@ async function tessImages(videoLink) {
 
       const results = await Promise.all(
         files.map(file => {
+          console.log(memoryUsage());
           return Promise.all(
             rectangles.map(rect => {
               const { key } = rect;
