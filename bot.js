@@ -6,13 +6,20 @@ const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
-const { generateInjuriesWith, removeInjuries } = require("./app/helpers/injuryReport");
+const {
+  generateInjuriesWith,
+  removeInjuries
+} = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const router = express.Router();
-const { postToChannelWith, postToTeamWith, updatePlayers } = require("./app/router/services");
+const {
+  postToChannelWith,
+  postToTeamWith,
+  updatePlayers
+} = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 const { sheetIds } = require("./app/helpers/sheetHelper");
 require("dotenv").config();
@@ -62,7 +69,7 @@ const dedueCommand = (prompt, msg) => {
     case "report":
       runReport(parseInt(words[1]));
       break;
-    case "signfa": 
+    case "signfa":
       signFAs(parseInt(words[1]));
       break;
     case "forceinjury":
@@ -92,10 +99,10 @@ const dedueCommand = (prompt, msg) => {
 
     case "scrape":
       // Temporarily turning off scraping in prod
-      if (process.env.environment === "DEVELOPMENT") {
-        scrape(words[1]);
-      }
-      // scrape(words[1]);
+      // if (process.env.environment === "DEVELOPMENT") {
+      //   scrape(words[1]);
+      // }
+      scrape(words[1]);
       break;
 
     case "help":
@@ -227,10 +234,10 @@ const dailyInjuryReportJob = new CronJob("0 14 * * *", function () {
     const sheets = doc.sheetsById;
     const globalsSheet = sheets[sheetIds.globalVars];
 
-    const doInjuriesVar = await globalsSheet.getRows().then(
-      rows => rows.find(row => row.Global == "doInjuries")
-    );
-    console.log('daily injury job', doInjuriesVar);
+    const doInjuriesVar = await globalsSheet
+      .getRows()
+      .then(rows => rows.find(row => row.Global == "doInjuries"));
+    console.log("daily injury job", doInjuriesVar);
     if (doInjuriesVar.Status == "FALSE") {
       return;
     }
@@ -238,10 +245,10 @@ const dailyInjuryReportJob = new CronJob("0 14 * * *", function () {
   })();
 });
 
-const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function() {
-  console.log('daily remove injury job');
+const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function () {
+  console.log("daily remove injury job");
   removeInjuries();
-})
+});
 
 //some sort of trade request tracker
 
@@ -335,13 +342,17 @@ const triKovAnalysis = () => {
 
           teamAssets.getCell(row.rowNumber - 1, 6).value = picks
             .map(pick => {
-              return cashValues[pick] ? _.mean(cashValues[pick].map(cr => cr.Cash_Value)) : 0;
+              return cashValues[pick]
+                ? _.mean(cashValues[pick].map(cr => cr.Cash_Value))
+                : 0;
             })
             .join(", ");
 
           teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
             .map(pick => {
-              return cashValues[pick] ? _.mean(cashValues[pick].map(cr => cr.Cash_Value)) : 0;
+              return cashValues[pick]
+                ? _.mean(cashValues[pick].map(cr => cr.Cash_Value))
+                : 0;
             })
             .join(", ");
         });

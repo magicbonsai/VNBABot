@@ -10,7 +10,6 @@ const { createWorker, createScheduler } = require("tesseract.js");
 const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const { getAverageColor } = require("fast-average-color-node");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
