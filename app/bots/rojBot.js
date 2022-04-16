@@ -1,5 +1,5 @@
 const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
-const { sheetIds , colIdx} = require("../helpers/sheetHelper");
+const { sheetIds, colIdx } = require("../helpers/sheetHelper");
 const { CHANNEL_IDS } = require("../../consts");
 const { rojEvents, tabMap } = require("./consts");
 const _ = require("lodash");
@@ -14,7 +14,7 @@ faker.setLocale("en");
 const updateJSON = (tabKey, data, updateKey = {}) => {
   if (_.isEmpty(updateKey)) {
     return data;
-  };
+  }
   const { key, value } = updateKey;
   const { multiplier = 1, upperBound } = tabMap[tabKey] || {};
   const valuesFromJSON = JSON.parse(data);
@@ -90,7 +90,9 @@ async function updatePlayerObject(playerRow, doc, type, updateKey) {
     // There is an existing row so update the data that already exists
     requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
     requestRowToUpdate["Data"] = newJSON;
-    requestRowToUpdate["Team"] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
+    requestRowToUpdate[
+      "Team"
+    ] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
     requestRowToUpdate["Description"] = changeListJSON;
     await requestRowToUpdate.save();
   } else {
@@ -127,7 +129,7 @@ async function updateAssets(playerRow, doc, type, updateKey) {
 
   cellToUpdate.value = newValue;
   console.log(key, Team, oldValue, newValue);
-  await teamAssetsSheet.saveUpdatedCells(); 
+  await teamAssetsSheet.saveUpdatedCells();
   return;
 }
 
@@ -203,7 +205,7 @@ const runReportWith =
       const playerRows = await players.getRows();
       const validTeams = await assets.getRows().then(rows => {
         return rows
-          .filter(row => row.Frozen === "FALSE")
+          .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
           .map(row => {
             return row.Team;
           });
@@ -239,50 +241,44 @@ const runReportWith =
       const shuffledTeams = _.shuffle(validTeams);
       const allTeams = [...shuffledTeams, "FA"];
 
-      const allUpdates = await allTeams.reduce(
-        async (memo, currentValue) => {
-          const acc = await memo;
-          // we need to refresh the local copy of the doc after every iteration of the loop.
-          const playerRowsToUse = playerRows.filter(
-            player => player.Team === currentValue
-          );
-          console.log('Team', currentValue);
-          let arrayOfResults = [];
-          for (i = 0; i < numberOfEvents; i++) {
-            const {
-              messageString
-              // pass the doc all the way up to the updateFunction
-            } = await runEvent(
-              playerRowsToUse,
-              weightsByTeam(currentValue),
-              doc
-            );
-            // the updateFunction will use the relevant function
-            // and also update the relevant sheets (hopefully)
-            arrayOfResults = [...arrayOfResults, `${messageString}\n`];
+      const allUpdates = await allTeams.reduce(async (memo, currentValue) => {
+        const acc = await memo;
+        // we need to refresh the local copy of the doc after every iteration of the loop.
+        const playerRowsToUse = playerRows.filter(
+          player => player.Team === currentValue
+        );
+        console.log("Team", currentValue);
+        let arrayOfResults = [];
+        for (i = 0; i < numberOfEvents; i++) {
+          const {
+            messageString
+            // pass the doc all the way up to the updateFunction
+          } = await runEvent(playerRowsToUse, weightsByTeam(currentValue), doc);
+          // the updateFunction will use the relevant function
+          // and also update the relevant sheets (hopefully)
+          arrayOfResults = [...arrayOfResults, `${messageString}\n`];
+        }
+        return [
+          ...acc,
+          {
+            team: currentValue,
+            messages: arrayOfResults
           }
-          return [
-            ...acc,
-            {
-              team: currentValue,
-              messages: arrayOfResults
-            }
-          ];
-        },
-        []
-      );
+        ];
+      }, []);
 
       console.log("allUpdates", allUpdates);
 
       const fullDiscordMessageMap = [
-        `Here is the Twice-Weekly report for ${new Date().toLocaleString().split(",")[0]}:\n\n`,
-        ...allUpdates
-        .map(value => {
+        `Here is the Twice-Weekly report for ${
+          new Date().toLocaleString().split(",")[0]
+        }:\n\n`,
+        ...allUpdates.map(value => {
           const { team, messages } = value;
-          const allMessages = messages.join('');
+          const allMessages = messages.join("");
           return `\nReport for the **${team}**:\n${allMessages}\n\n`;
         })
-      ]
+      ];
 
       const payload = allUpdates
         .map(value => {
@@ -296,7 +292,9 @@ const runReportWith =
         new Date().toLocaleString().split(",")[0]
       }:\n\n`.concat(payload);
 
-      fullDiscordMessageMap.forEach(message => discordClient.channels.get(CHANNEL_IDS.updates).send(message));
+      fullDiscordMessageMap.forEach(message =>
+        discordClient.channels.get(CHANNEL_IDS.updates).send(message)
+      );
 
       await archive.addRow({
         Date: new Date().toLocaleString().split(",")[0],
