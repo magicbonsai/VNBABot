@@ -1,6 +1,6 @@
 # VNBABot
 
-VNBAbot is a discord bot.  It handles box score generation from clips of NBA2k20 box scores, automated tweet generation for a twitter bot, and other minor tasks.
+VNBAbot is a discord bot. It handles box score generation from clips of NBA2k20 box scores, automated tweet generation for a twitter bot, and other minor tasks.
 
 Currently it is also set up to be a minor backend to allow some communciation between the discord bot and the official VNBA website.
 
