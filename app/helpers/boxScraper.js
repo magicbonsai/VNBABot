@@ -10,8 +10,7 @@ const { createWorker, createScheduler } = require("tesseract.js");
 const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const { getAverageColor } = require("fast-average-color-node");
-const distance = require('set-distance');
+const distance = require("set-distance");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -75,6 +74,14 @@ function intialToPlayerKey(fullname) {
   return _.concat(initial, ".", lastName).join("");
 }
 
+function playerKeyToInitial(key) {
+  const splitKey = key.split(".");
+  const initial = splitKey[0];
+  const lastName = splitKey[1];
+
+  return _.concat(initial, ". ", lastName).join("");
+}
+
 function nameToInitial(fullname) {
   const splitname = fullname.split(" ");
   splitname[0] = splitname[0].charAt(0) + ".";
@@ -129,32 +136,32 @@ function validateName(playerName) {
 }
 
 // This isn't working synchronously
-// iterate through all team rows and find the most similar name; 
-function returnMostCommonKey (playerName, players) {
-  console.log('name', playerName);
-  if(!playerName) {
-    return ''
+// iterate through all team rows and find the most similar name;
+function returnMostCommonKey(playerName, players) {
+  if (!playerName) {
+    return "";
   }
   let highestMeasure = 0;
-  let result = '';
-  players.forEach(player => {
-    const {
-      Name
-    } = player;
-    const nameKey = nameToPlayerKey(Name)
-    const measure = new distance.Jaccard(playerName.split(''), nameKey.split('')).getCoefficient();
-    if (measure > highestMeasure) { 
+  let result = "";
+  for (const player of players) {
+    const { Name } = player;
+    const nameKey = nameToPlayerKey(Name);
+    const measure = new distance.Jaccard(
+      playerName.split(""),
+      nameKey.split("")
+    ).getCoefficient();
+    if (measure > highestMeasure) {
       highestMeasure = measure;
       result = nameKey;
     }
-  });
-  if(highestMeasure < 0.5) {
-    return ''
+  }
+  if (highestMeasure < 0.5) {
+    return "";
   }
   return result;
-};
+}
 
-function updateRawStats(data, gameId,  team1, team2) {
+function updateRawStats(data, gameId, team1, team2) {
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
   (async function main() {
     await doc.useServiceAccountAuth({
@@ -168,22 +175,21 @@ function updateRawStats(data, gameId,  team1, team2) {
     await rawStats.loadHeaderRow();
 
     const statsLength = await rawStats.getRows().then(rows => rows.length);
-
     players.getRows().then(async function (playerRows) {
       const playerTable = {};
       playerRows.forEach(player => {
         playerTable[nameToPlayerKey(player.Name)] = player;
       });
       const scrapedData = {};
-      const filteredRowsByTeam = playerRows.filter(({ Team } = {}) => [team1, team2].includes(Team));
+      const filteredRowsByTeam = playerRows.filter(pr =>
+        [team1, team2].includes(pr.Team)
+      );
       data.forEach((player = {}) => {
         const sdKey = returnMostCommonKey(player.Player, filteredRowsByTeam);
-        console.log('sdKey', sdKey);
         if (!!playerTable[sdKey]) {
           if (!scrapedData[sdKey]) {
             scrapedData[sdKey] = {};
           }
-          console.log('got data', sdKey);
           _.mergeWith(scrapedData[sdKey], player, (objValue, srcValue) => {
             return objValue || srcValue;
           });
@@ -195,12 +201,10 @@ function updateRawStats(data, gameId,  team1, team2) {
       _.keys(scrapedData)
         .filter(playerKey => scrapedData[playerKey].Minutes)
         .forEach(playerKey => {
-          const playerVal =
-            playerTable[intialToPlayerKey(scrapedData[playerKey].Player)] || {};
-
+          const playerVal = playerTable[playerKey] || {};
           rowsToAdd.push({
             ...scrapedData[playerKey],
-            Player: nameToInitial(playerVal.Name),
+            Player: playerKeyToInitial(playerKey),
             Team:
               playerVal.Role === "13" ||
               playerVal.Team === "FA" ||
@@ -472,7 +476,7 @@ async function tessImages(videoLink, team1, team2) {
           }))
         )
       );
-      updateRawStats(players, videoLink,  team1, team2);
+      updateRawStats(players, videoLink, team1, team2);
 
       await scheduler.terminate(); // It also terminates all workers.
       await scheduler2.terminate();
