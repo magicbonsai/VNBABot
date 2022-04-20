@@ -128,6 +128,7 @@ function validateName(playerName) {
   return newName.join("");
 }
 
+// This isn't working synchronously
 // iterate through all team rows and find the most similar name; 
 function returnMostCommonKey (playerName, players) {
   console.log('name', playerName);
