@@ -323,25 +323,25 @@ async function processImages(videoLink, team1, team2) {
       const images = [imgOne, imgTwo, imgThree];
 
       images.forEach((img, index) => {
-        img
-          .clone()
-          .raw()
-          .toBuffer({ resolveWithObject: true })
-          .then(({ data, info }) => {
-            const pixelArray = new Uint8ClampedArray(data);
-            const { width, height, channels } = info;
-            const offset = channels * (width * 100 + 700);
-            const red = pixelArray[offset];
-            const green = pixelArray[offset + 1];
-            const blue = pixelArray[offset + 2];
-            console.log(red);
-            if (red > 200) {
-              img.negate();
-            }
+        // img
+        //   .clone()
+        //   .raw()
+        //   .toBuffer({ resolveWithObject: true })
+        //   .then(({ data, info }) => {
+        //     const pixelArray = new Uint8ClampedArray(data);
+        //     const { width, height, channels } = info;
+        //     const offset = channels * (width * 100 + 700);
+        //     const red = pixelArray[offset];
+        //     const green = pixelArray[offset + 1];
+        //     const blue = pixelArray[offset + 2];
+        //     console.log(red);
+        //     if (red > 200) {
+        //       img.negate();
+        //     }
 
-            // data is a Buffer of length (width * height * channels)
-            // containing 8-bit RGB(A) pixel data.
-          });
+        //     // data is a Buffer of length (width * height * channels)
+        //     // containing 8-bit RGB(A) pixel data.
+        //   });
 
         img.toFile(
           `screenshots/processed/${index + 1}-${file}`,
