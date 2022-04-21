@@ -42,7 +42,7 @@
     "youtube-dl-exec": "^1.2.4"
   },
   "engines": {
-    "node": ">=15.x",
+    "node": "16.14.2",
     "npm": "6.11.3"
   }
 }
