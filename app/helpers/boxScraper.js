@@ -15,6 +15,8 @@ const distance = require("set-distance");
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
+sharp.cache(false);
+
 const count = 50;
 const timestamps = [];
 const startPositionPercent = 1;
