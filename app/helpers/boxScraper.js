@@ -5,7 +5,7 @@ const youtubedl = require("youtube-dl-exec");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 const ffmpeg = require("fluent-ffmpeg");
-const jimp = require("jimp");
+const sharp = require("sharp");
 const { createWorker, createScheduler } = require("tesseract.js");
 const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
@@ -285,47 +285,65 @@ function takeScreenshots(video, videoLink, team1, team2) {
 async function processImages(videoLink, team1, team2) {
   let counter = 0;
   await fs.readdir("screenshots", (err, files) => {
+    if (!fs.existsSync("screenshots/processed")) {
+      fs.mkdirSync("screenshots/processed");
+    }
     files.forEach(file => {
-      jimp.read(`screenshots/${file}`, (err, image) => {
-        const imgOne = image.clone();
-        const imgTwo = image.clone();
-        const imgThree = image.clone();
+      const image = sharp(`screenshots/${file}`);
+      const imgOne = image.clone();
+      const imgTwo = image.clone();
+      const imgThree = image.clone();
 
-        imgOne
-          .resize(1920, 1080)
-          .crop(115, 750, 1450, 75)
-          .scale(2)
-          .normalize()
-          .greyscale()
-          .contrast(0.8)
-          .invert();
+      imgOne
+        .resize({ width: 3840, height: 2160 })
+        .extract({ left: 230, top: 1630, width: 2900, height: 150 })
+        .normalize()
+        .greyscale()
+        .negate()
+        .linear(1.5, -(128 * 1.5) + 128);
 
-        imgTwo
-          .resize(1920, 1080)
-          .crop(115, 815, 1450, 75)
-          .scale(2)
-          .normalize()
-          .greyscale()
-          .contrast(0.8)
-          .invert();
+      imgTwo
+        .resize({ width: 3840, height: 2160 })
+        .extract({ left: 230, top: 1630, width: 2900, height: 150 })
+        .normalize()
+        .greyscale()
+        .negate()
+        .linear(1.5, -(128 * 1.5) + 128);
 
-        imgThree
-          .resize(1920, 1080)
-          .crop(115, 880, 1450, 75)
-          .scale(2)
-          .normalize()
-          .greyscale()
-          .contrast(0.8)
-          .invert();
+      imgThree
+        .resize({ width: 3840, height: 2160 })
+        .extract({ left: 230, top: 1630, width: 2900, height: 150 })
+        .normalize()
+        .greyscale()
+        .negate()
+        .linear(1.5, -(128 * 1.5) + 128);
 
-        const images = [imgOne, imgTwo, imgThree];
+      const images = [imgOne, imgTwo, imgThree];
 
-        images.forEach((img, index) => {
-          if (img.getPixelColor(350, 50) === 255) {
-            img.invert();
-          }
+      images.forEach((img, index) => {
+        img
+          .clone()
+          .raw()
+          .toBuffer({ resolveWithObject: true })
+          .then(({ data, info }) => {
+            const pixelArray = new Uint8ClampedArray(data);
+            const { width, height, channels } = info;
+            const offset = channels * (width * 100 + 700);
+            const red = pixelArray[offset];
+            const green = pixelArray[offset + 1];
+            const blue = pixelArray[offset + 2];
+            console.log(red);
+            if (red > 200) {
+              img.negate();
+            }
 
-          img.write(`screenshots/processed/${index + 1}-${file}`, () => {
+            // data is a Buffer of length (width * height * channels)
+            // containing 8-bit RGB(A) pixel data.
+          });
+
+        img.toFile(
+          `screenshots/processed/${index + 1}-${file}`,
+          (err, info) => {
             counter++;
             if (counter >= count * 3) {
               console.log("Processing Images...");
@@ -333,8 +351,8 @@ async function processImages(videoLink, team1, team2) {
               tessImages(videoLink, team1, team2);
               return true;
             }
-          });
-        });
+          }
+        );
       });
       // TODO See if screenshots can be deleted w/o timing issue after processing (AZ)
       // fs.unlinkSync(`screenshots/${file}`, err => {

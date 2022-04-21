@@ -35,6 +35,7 @@
     "roundrobin": "^1.0.3",
     "sentence-generator": "^1.0.1",
     "set-distance": "1.0.1",
+    "sharp": "^0.30.4",
     "tesseract.js": "https://github.com/Balearica/tesseract.js.git",
     "twit": "^2.2.11",
     "twitter-lite": "^0.14.0",
