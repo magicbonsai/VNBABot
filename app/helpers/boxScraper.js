@@ -25,12 +25,25 @@ const addPercent = (endPositionPercent - startPositionPercent) / (count - 1);
 let i = 0;
 const scheduler = createScheduler();
 const scheduler2 = createScheduler();
-const worker1 = createWorker();
-const worker2 = createWorker();
-// const worker3 = createWorker();
-// const worker4 = createWorker();
-const worker5 = createWorker();
-const worker6 = createWorker();
+const worker1 = createWorker({
+  langPath: path.join(__dirname, "../..", "lang-data"),
+  logger: m => console.log(m)
+});
+const worker2 = createWorker({
+  langPath: path.join(__dirname, "../..", "lang-data")
+});
+const worker3 = createWorker({
+  langPath: path.join(__dirname, "../..", "lang-data")
+});
+const worker4 = createWorker({
+  langPath: path.join(__dirname, "../..", "lang-data")
+});
+const worker5 = createWorker({
+  langPath: path.join(__dirname, "../..", "lang-data")
+});
+const worker6 = createWorker({
+  langPath: path.join(__dirname, "../..", "lang-data")
+});
 const rectangles = [
   { key: "NAME", left: 0, top: 0, width: 400, height: 125 }, // name
   { left: 500, top: 0, width: 125, height: 125 }, // min
@@ -383,18 +396,18 @@ async function tessImages(videoLink, team1, team2) {
         tessedit_char_whitelist: "DNP0123456789.-"
       });
 
-      // await worker3.load();
-      // await worker4.load();
-      // await worker3.loadLanguage("eng");
-      // await worker4.loadLanguage("eng");
-      // await worker3.initialize("eng");
-      // await worker4.initialize("eng");
-      // await worker3.setParameters({
-      //   tessedit_char_whitelist: "DNP0123456789.-"
-      // });
-      // await worker4.setParameters({
-      //   tessedit_char_whitelist: "DNP0123456789.-"
-      // });
+      await worker3.load();
+      await worker4.load();
+      await worker3.loadLanguage("eng");
+      await worker4.loadLanguage("eng");
+      await worker3.initialize("eng");
+      await worker4.initialize("eng");
+      await worker3.setParameters({
+        tessedit_char_whitelist: "DNP0123456789.-"
+      });
+      await worker4.setParameters({
+        tessedit_char_whitelist: "DNP0123456789.-"
+      });
 
       await worker5.load();
       await worker6.load();
@@ -413,8 +426,8 @@ async function tessImages(videoLink, team1, team2) {
 
       scheduler.addWorker(worker1);
       scheduler.addWorker(worker2);
-      // scheduler.addWorker(worker3);
-      // scheduler.addWorker(worker4);
+      scheduler.addWorker(worker3);
+      scheduler.addWorker(worker4);
 
       scheduler2.addWorker(worker5);
       scheduler2.addWorker(worker6);
