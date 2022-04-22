@@ -97,7 +97,7 @@ const dedueCommand = (prompt, msg) => {
       }
       break;
 
-    case "scrape":
+    case "scrapo":
       // Temporarily turning off scraping in prod
       // if (process.env.environment === "DEVELOPMENT") {
       //   scrape(words[1], words[2], words[3]);
