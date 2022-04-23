@@ -1,1 +1,1 @@
-web: node --inspect=8080 bot.js
+web: npm start
