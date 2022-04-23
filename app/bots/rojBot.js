@@ -204,6 +204,7 @@ const runReportWith =
 
       const playerRows = await players.getRows();
       const validTeams = await assets.getRows().then(rows => {
+        console.log(row.Real);
         return rows
           .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
           .map(row => {
