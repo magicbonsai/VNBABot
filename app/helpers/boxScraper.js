@@ -386,54 +386,54 @@ async function tessImages(videoLink, team1, team2) {
     const used = process.memoryUsage();
     printMem();
     return (async () => {
-      await worker1.load();
-      await worker2.load();
-      await worker1.loadLanguage("eng");
-      await worker2.loadLanguage("eng");
-      await worker1.initialize("eng");
-      await worker2.initialize("eng");
-      await worker1.setParameters({
-        tessedit_char_whitelist: "DNP0123456789.-"
-      });
-      await worker2.setParameters({
-        tessedit_char_whitelist: "DNP0123456789.-"
-      });
+      // await worker1.load();
+      // await worker2.load();
+      // await worker1.loadLanguage("eng");
+      // await worker2.loadLanguage("eng");
+      // await worker1.initialize("eng");
+      // await worker2.initialize("eng");
+      // await worker1.setParameters({
+      //   tessedit_char_whitelist: "DNP0123456789.-"
+      // });
+      // await worker2.setParameters({
+      //   tessedit_char_whitelist: "DNP0123456789.-"
+      // });
 
-      await worker3.load();
-      await worker4.load();
-      await worker3.loadLanguage("eng");
-      await worker4.loadLanguage("eng");
-      await worker3.initialize("eng");
-      await worker4.initialize("eng");
-      await worker3.setParameters({
-        tessedit_char_whitelist: "DNP0123456789.-"
-      });
-      await worker4.setParameters({
-        tessedit_char_whitelist: "DNP0123456789.-"
-      });
+      // await worker3.load();
+      // await worker4.load();
+      // await worker3.loadLanguage("eng");
+      // await worker4.loadLanguage("eng");
+      // await worker3.initialize("eng");
+      // await worker4.initialize("eng");
+      // await worker3.setParameters({
+      //   tessedit_char_whitelist: "DNP0123456789.-"
+      // });
+      // await worker4.setParameters({
+      //   tessedit_char_whitelist: "DNP0123456789.-"
+      // });
 
-      await worker5.load();
-      await worker6.load();
-      await worker5.loadLanguage("eng");
-      await worker6.loadLanguage("eng");
-      await worker5.initialize("eng");
-      await worker6.initialize("eng");
-      await worker5.setParameters({
-        tessedit_char_whitelist:
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
-      });
-      await worker6.setParameters({
-        tessedit_char_whitelist:
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
-      });
+      // await worker5.load();
+      // await worker6.load();
+      // await worker5.loadLanguage("eng");
+      // await worker6.loadLanguage("eng");
+      // await worker5.initialize("eng");
+      // await worker6.initialize("eng");
+      // await worker5.setParameters({
+      //   tessedit_char_whitelist:
+      //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
+      // });
+      // await worker6.setParameters({
+      //   tessedit_char_whitelist:
+      //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
+      // });
 
-      scheduler.addWorker(worker1);
+      // scheduler.addWorker(worker1);
       // scheduler.addWorker(worker2);
       // scheduler.addWorker(worker3);
       // scheduler.addWorker(worker4);
 
       // scheduler2.addWorker(worker5);
-      scheduler2.addWorker(worker6);
+      // scheduler2.addWorker(worker6);
 
       printMem();
 
