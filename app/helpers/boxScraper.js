@@ -24,7 +24,12 @@ const addPercent = (endPositionPercent - startPositionPercent) / (count - 1);
 let i = 0;
 const scheduler = createScheduler();
 const scheduler2 = createScheduler();
-const worker1 = createWorker();
+const worker1 = createWorker({
+  logger: m => {
+    console.log(m);
+    printMem();
+  }
+});
 const worker2 = createWorker();
 const worker3 = createWorker();
 const worker4 = createWorker();
@@ -282,7 +287,7 @@ function takeScreenshots(video, videoLink, team1, team2) {
       path.join(path.dirname(video), `screenshots`)
     );
 }
-const counterasync = 0;
+let counterasync = 0;
 async function processImages(videoLink, team1, team2) {
   let counter = 0;
   await fs.readdir("screenshots", (err, files) => {
@@ -366,9 +371,20 @@ async function processImages(videoLink, team1, team2) {
   });
 }
 
+function printMem() {
+  const used = process.memoryUsage();
+  for (let key in used) {
+    console.log(
+      `${key} ${Math.round((used[key] / 1024 / 1024) * 100) / 100} MB`
+    );
+  }
+}
+
 async function tessImages(videoLink, team1, team2) {
   counterasync = counterasync + 1;
   fs.readdir("screenshots/processed", (err, files) => {
+    const used = process.memoryUsage();
+    printMem();
     return (async () => {
       await worker1.load();
       await worker2.load();
@@ -418,6 +434,8 @@ async function tessImages(videoLink, team1, team2) {
 
       // scheduler2.addWorker(worker5);
       scheduler2.addWorker(worker6);
+
+      printMem();
 
       const results = await Promise.all(
         files.map(file => {
