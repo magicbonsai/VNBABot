@@ -437,33 +437,33 @@ async function tessImages(videoLink, team1, team2) {
 
       printMem();
 
-      const results = await Promise.all(
-        files.map(file => {
-          return Promise.all(
-            rectangles.map(rect => {
-              const { key } = rect;
-              if (key === "NAME") {
-                return scheduler2.addJob(
-                  "recognize",
-                  `screenshots/processed/${file}`,
-                  {
-                    rectangle: rect
-                  }
-                );
-              } else {
-                return scheduler.addJob(
-                  "recognize",
-                  `screenshots/processed/${file}`,
-                  {
-                    rectangle: rect
-                  }
-                );
-              }
-            })
-          );
-        })
-      );
-
+      // const results = await Promise.all(
+      //   files.map(file => {
+      //     return Promise.all(
+      //       rectangles.map(rect => {
+      //         const { key } = rect;
+      //         if (key === "NAME") {
+      //           return scheduler2.addJob(
+      //             "recognize",
+      //             `screenshots/processed/${file}`,
+      //             {
+      //               rectangle: rect
+      //             }
+      //           );
+      //         } else {
+      //           return scheduler.addJob(
+      //             "recognize",
+      //             `screenshots/processed/${file}`,
+      //             {
+      //               rectangle: rect
+      //             }
+      //           );
+      //         }
+      //       })
+      //     );
+      //   })
+      // );
+      const results = [];
       const data = results.map(fileResult =>
         fileResult.map(res => res.data.text)
       );
