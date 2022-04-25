@@ -30,11 +30,11 @@ const worker1 = createWorker({
     printMem();
   }
 });
-const worker2 = createWorker();
-const worker3 = createWorker();
-const worker4 = createWorker();
-const worker5 = createWorker();
-const worker6 = createWorker();
+// const worker2 = createWorker();
+// const worker3 = createWorker();
+// const worker4 = createWorker();
+// const worker5 = createWorker();
+// const worker6 = createWorker();
 const rectangles = [
   { key: "NAME", left: 0, top: 0, width: 400, height: 125 }, // name
   { left: 500, top: 0, width: 125, height: 125 }, // min
@@ -388,9 +388,9 @@ async function tessImages(videoLink, team1, team2) {
     return (async () => {
       await worker1.load();
       // await worker2.load();
-      // await worker1.loadLanguage("eng");
+      await worker1.loadLanguage("eng");
       // await worker2.loadLanguage("eng");
-      // await worker1.initialize("eng");
+      await worker1.initialize("eng");
       // await worker2.initialize("eng");
       await worker1.setParameters({
         tessedit_char_whitelist: "DNP0123456789.-"
