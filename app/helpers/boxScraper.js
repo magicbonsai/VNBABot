@@ -386,15 +386,15 @@ async function tessImages(videoLink, team1, team2) {
     const used = process.memoryUsage();
     printMem();
     return (async () => {
-      // await worker1.load();
+      await worker1.load();
       // await worker2.load();
       // await worker1.loadLanguage("eng");
       // await worker2.loadLanguage("eng");
       // await worker1.initialize("eng");
       // await worker2.initialize("eng");
-      // await worker1.setParameters({
-      //   tessedit_char_whitelist: "DNP0123456789.-"
-      // });
+      await worker1.setParameters({
+        tessedit_char_whitelist: "DNP0123456789.-"
+      });
       // await worker2.setParameters({
       //   tessedit_char_whitelist: "DNP0123456789.-"
       // });
@@ -427,7 +427,7 @@ async function tessImages(videoLink, team1, team2) {
       //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
       // });
 
-      // scheduler.addWorker(worker1);
+      scheduler.addWorker(worker1);
       // scheduler.addWorker(worker2);
       // scheduler.addWorker(worker3);
       // scheduler.addWorker(worker4);
