@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-// const youtubedl = require("youtube-dl");
 const youtubedl = require("youtube-dl-exec");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffprobePath = require("@ffprobe-installer/ffprobe").path;
@@ -25,31 +24,12 @@ const addPercent = (endPositionPercent - startPositionPercent) / (count - 1);
 let i = 0;
 const scheduler = createScheduler();
 const scheduler2 = createScheduler();
-const worker1 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data"),
-  workerPath: "../../worker.min.js",
-  logger: m => console.log(m)
-});
-const worker2 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data"),
-  workerPath: "../../worker.min.js"
-});
-const worker3 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data"),
-  workerPath: "../../worker.min.js"
-});
-const worker4 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data"),
-  workerPath: "../../worker.min.js"
-});
-const worker5 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data"),
-  workerPath: "../../worker.min.js"
-});
-const worker6 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data"),
-  workerPath: "../../worker.min.js"
-});
+const worker1 = createWorker();
+const worker2 = createWorker();
+const worker3 = createWorker();
+const worker4 = createWorker();
+const worker5 = createWorker();
+const worker6 = createWorker();
 const rectangles = [
   { key: "NAME", left: 0, top: 0, width: 400, height: 125 }, // name
   { left: 500, top: 0, width: 125, height: 125 }, // min
