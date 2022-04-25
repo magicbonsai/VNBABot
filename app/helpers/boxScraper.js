@@ -282,7 +282,7 @@ function takeScreenshots(video, videoLink, team1, team2) {
       path.join(path.dirname(video), `screenshots`)
     );
 }
-
+const counterasync = 0;
 async function processImages(videoLink, team1, team2) {
   let counter = 0;
   await fs.readdir("screenshots", (err, files) => {
@@ -367,6 +367,7 @@ async function processImages(videoLink, team1, team2) {
 }
 
 async function tessImages(videoLink, team1, team2) {
+  counterasync = counterasync + 1;
   fs.readdir("screenshots/processed", (err, files) => {
     return (async () => {
       await worker1.load();
@@ -411,11 +412,11 @@ async function tessImages(videoLink, team1, team2) {
       });
 
       scheduler.addWorker(worker1);
-      scheduler.addWorker(worker2);
-      scheduler.addWorker(worker3);
-      scheduler.addWorker(worker4);
+      // scheduler.addWorker(worker2);
+      // scheduler.addWorker(worker3);
+      // scheduler.addWorker(worker4);
 
-      scheduler2.addWorker(worker5);
+      // scheduler2.addWorker(worker5);
       scheduler2.addWorker(worker6);
 
       const results = await Promise.all(
