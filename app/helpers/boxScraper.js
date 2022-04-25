@@ -27,22 +27,28 @@ const scheduler = createScheduler();
 const scheduler2 = createScheduler();
 const worker1 = createWorker({
   langPath: path.join(__dirname, "../..", "lang-data"),
+  workerPath: "../../worker.min.js",
   logger: m => console.log(m)
 });
 const worker2 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data")
+  langPath: path.join(__dirname, "../..", "lang-data"),
+  workerPath: "../../worker.min.js"
 });
 const worker3 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data")
+  langPath: path.join(__dirname, "../..", "lang-data"),
+  workerPath: "../../worker.min.js"
 });
 const worker4 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data")
+  langPath: path.join(__dirname, "../..", "lang-data"),
+  workerPath: "../../worker.min.js"
 });
 const worker5 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data")
+  langPath: path.join(__dirname, "../..", "lang-data"),
+  workerPath: "../../worker.min.js"
 });
 const worker6 = createWorker({
-  langPath: path.join(__dirname, "../..", "lang-data")
+  langPath: path.join(__dirname, "../..", "lang-data"),
+  workerPath: "../../worker.min.js"
 });
 const rectangles = [
   { key: "NAME", left: 0, top: 0, width: 400, height: 125 }, // name
