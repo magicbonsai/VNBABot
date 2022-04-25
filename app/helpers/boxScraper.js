@@ -460,11 +460,11 @@ async function tessImages(videoLink, team1, team2) {
               // );
               // }
               if (key === "NAME") {
-                return worker.recognize(`screenshots/processed/${file}`, {
+                return worker1.recognize(`screenshots/processed/${file}`, {
                   rectangle: rect
                 });
               } else {
-                return worker.recognize(`screenshots/processed/${file}`, {
+                return worker1.recognize(`screenshots/processed/${file}`, {
                   rectangle: rect
                 });
               }
