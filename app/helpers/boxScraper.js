@@ -18,10 +18,10 @@ ffmpeg.setFfprobePath(ffprobePath);
 
 sharp.cache(false);
 
-const count = 50;
+const count = 10;
 const timestamps = [];
 const startPositionPercent = 1;
-const endPositionPercent = 99;
+const endPositionPercent = 95;
 const addPercent = (endPositionPercent - startPositionPercent) / (count - 1);
 let i = 0;
 
@@ -475,7 +475,7 @@ async function tessImages(videoLink, team1, team2) {
             psm: 6,
             lang: "eng"
           });
-          console.log(rTwo);
+          printMem();
           return rTwo;
           // }
           // })
