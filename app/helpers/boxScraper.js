@@ -475,6 +475,7 @@ async function tessImages(videoLink, team1, team2) {
             psm: 6,
             lang: "eng"
           });
+          console.log(rTwo);
           return rTwo;
           // }
           // })
