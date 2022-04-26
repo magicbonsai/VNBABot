@@ -5,11 +5,13 @@ const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 const ffmpeg = require("fluent-ffmpeg");
 const sharp = require("sharp");
-const { createWorker, createScheduler } = require("tesseract.js");
+// const { createWorker, createScheduler } = require("tesseract.js");
+const tesseract = require("node-tesseract-ocr");
 const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const distance = require("set-distance");
+const cliProgress = require("cli-progress");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -253,7 +255,6 @@ function takeScreenshots(video, videoLink, team1, team2) {
       path.join(path.dirname(video), `screenshots`)
     );
 }
-let counterasync = 0;
 async function processImages(videoLink, team1, team2) {
   let counter = 0;
   await fs.readdir("screenshots", (err, files) => {
@@ -272,7 +273,8 @@ async function processImages(videoLink, team1, team2) {
         .normalize()
         .greyscale()
         .negate()
-        .linear(1.5, -(128 * 1.5) + 128);
+        .linear(3, -(128 * 3) + 128)
+        .sharpen();
 
       imgTwo
         .resize({ width: 3840, height: 2160 })
@@ -280,7 +282,8 @@ async function processImages(videoLink, team1, team2) {
         .normalize()
         .greyscale()
         .negate()
-        .linear(1.5, -(128 * 1.5) + 128);
+        .linear(3, -(128 * 3) + 128)
+        .sharpen();
 
       imgThree
         .resize({ width: 3840, height: 2160 })
@@ -288,7 +291,8 @@ async function processImages(videoLink, team1, team2) {
         .normalize()
         .greyscale()
         .negate()
-        .linear(1.5, -(128 * 1.5) + 128);
+        .linear(3, -(128 * 3) + 128)
+        .sharpen();
 
       const images = [imgOne, imgTwo, imgThree];
 
@@ -347,16 +351,15 @@ function printMem() {
 }
 
 async function tessImages(videoLink, team1, team2) {
-  counterasync = counterasync + 1;
   fs.readdir("screenshots/processed", (err, files) => {
-    const scheduler = createScheduler();
-    const scheduler2 = createScheduler();
-    const worker1 = createWorker({
-      logger: m => {
-        console.log(m);
-        printMem();
-      }
-    });
+    // const scheduler = createScheduler();
+    // const scheduler2 = createScheduler();
+    // const worker1 = createWorker({
+    //   logger: m => {
+    //     console.log(m);
+    //     printMem();
+    //   }
+    // });
     // const worker2 = createWorker();
     // const worker3 = createWorker();
     // const worker4 = createWorker();
@@ -385,48 +388,48 @@ async function tessImages(videoLink, team1, team2) {
     ];
     printMem();
     return (async () => {
-      await worker1.load();
-      // await worker2.load();
-      await worker1.loadLanguage("eng");
-      // await worker2.loadLanguage("eng");
-      await worker1.initialize("eng");
-      // await worker2.initialize("eng");
-      await worker1.setParameters({
-        tessedit_char_whitelist: "DNP0123456789.-"
-      });
-      // await worker2.setParameters({
+      // await worker1.load();
+      // // await worker2.load();
+      // await worker1.loadLanguage("eng");
+      // // await worker2.loadLanguage("eng");
+      // await worker1.initialize("eng");
+      // // await worker2.initialize("eng");
+      // await worker1.setParameters({
       //   tessedit_char_whitelist: "DNP0123456789.-"
       // });
+      // // await worker2.setParameters({
+      // //   tessedit_char_whitelist: "DNP0123456789.-"
+      // // });
 
-      // await worker3.load();
-      // await worker4.load();
-      // await worker3.loadLanguage("eng");
-      // await worker4.loadLanguage("eng");
-      // await worker3.initialize("eng");
-      // await worker4.initialize("eng");
-      // await worker3.setParameters({
-      //   tessedit_char_whitelist: "DNP0123456789.-"
-      // });
-      // await worker4.setParameters({
-      //   tessedit_char_whitelist: "DNP0123456789.-"
-      // });
+      // // await worker3.load();
+      // // await worker4.load();
+      // // await worker3.loadLanguage("eng");
+      // // await worker4.loadLanguage("eng");
+      // // await worker3.initialize("eng");
+      // // await worker4.initialize("eng");
+      // // await worker3.setParameters({
+      // //   tessedit_char_whitelist: "DNP0123456789.-"
+      // // });
+      // // await worker4.setParameters({
+      // //   tessedit_char_whitelist: "DNP0123456789.-"
+      // // });
 
-      // await worker5.load();
-      // await worker6.load();
-      // await worker5.loadLanguage("eng");
-      // await worker6.loadLanguage("eng");
-      // await worker5.initialize("eng");
-      // await worker6.initialize("eng");
-      // await worker5.setParameters({
-      //   tessedit_char_whitelist:
-      //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
-      // });
-      // await worker6.setParameters({
-      //   tessedit_char_whitelist:
-      //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
-      // });
+      // // await worker5.load();
+      // // await worker6.load();
+      // // await worker5.loadLanguage("eng");
+      // // await worker6.loadLanguage("eng");
+      // // await worker5.initialize("eng");
+      // // await worker6.initialize("eng");
+      // // await worker5.setParameters({
+      // //   tessedit_char_whitelist:
+      // //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
+      // // });
+      // // await worker6.setParameters({
+      // //   tessedit_char_whitelist:
+      // //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
+      // // });
 
-      scheduler.addWorker(worker1);
+      // scheduler.addWorker(worker1);
       // scheduler.addWorker(worker2);
       // scheduler.addWorker(worker3);
       // scheduler.addWorker(worker4);
@@ -435,97 +438,104 @@ async function tessImages(videoLink, team1, team2) {
       // scheduler2.addWorker(worker6);
 
       printMem();
-
+      const bar1 = new cliProgress.SingleBar(
+        {},
+        cliProgress.Presets.shades_classic
+      );
+      bar1.start(150, 0);
       const results = await Promise.all(
-        files.map(file => {
-          return Promise.all(
-            rectangles.map(rect => {
-              const { key } = rect;
-              // if (key === "NAME") {
-              //   return scheduler2.addJob(
-              //     "recognize",
-              //     `screenshots/processed/${file}`,
-              //     {
-              //       rectangle: rect
-              //     }
-              //   );
-              // } else {
-              // return scheduler.addJob(
-              //   "recognize",
-              //   `screenshots/processed/${file}`,
-              //   {
-              //     rectangle: rect
-              //   }
-              // );
-              // }
-              if (key === "NAME") {
-                return worker1.recognize(`screenshots/processed/${file}`, {
-                  rectangle: rect
-                });
-              } else {
-                return worker1.recognize(`screenshots/processed/${file}`, {
-                  rectangle: rect
-                });
-              }
-            })
-          );
+        files.map((file, index) => {
+          bar1.update(index);
+          // return Promise.all(
+          // rectangles.map(rect => {
+          //   const { key } = rect;
+          // if (key === "NAME") {
+          //   return scheduler2.addJob(
+          //     "recognize",
+          //     `screenshots/processed/${file}`,
+          //     {
+          //       rectangle: rect
+          //     }
+          //   );
+          // } else {
+          // return scheduler.addJob(
+          //   "recognize",
+          //   `screenshots/processed/${file}`,
+          //   {
+          //     rectangle: rect
+          //   }
+          // );
+          // }
+          // if (key === "NAME") {
+          // } else {
+          const rTwo = tesseract.recognize(`screenshots/processed/${file}`, {
+            // rectangle: rect,
+            dpi: 96,
+            oem: 3,
+            psm: 6,
+            lang: "eng"
+          });
+          console.log(rTwo);
+          return rTwo;
+          // }
+          // })
+          // );
         })
       );
       // const results = [];
-      const data = results.map(fileResult =>
-        fileResult.map(res => res.data.text)
-      );
+      console.log(results);
+      // const data = results.map(fileResult => fileResult.map(res => res));
 
-      const splitData = data.map(file =>
-        file.map(column => {
-          return column.split("\n");
-        })
-      );
+      // const splitData = data.map(file =>
+      //   file.map(column => {
+      //     return column.split("\n");
+      //   })
+      // );
 
-      const transposed = splitData.map(file => {
-        return file[0].map((_, colIndex) => {
-          return file.map(row => {
-            return row[colIndex];
-          });
-        });
-      });
+      // const transposed = splitData.map(file => {
+      //   return file[0].map((_, colIndex) => {
+      //     return file.map(row => {
+      //       return row[colIndex];
+      //     });
+      //   });
+      // });
 
-      const headers = [
-        "Player",
-        "Minutes",
-        "Points",
-        "Rebounds",
-        "Assists",
-        "Steals",
-        "Blocks",
-        "Turnovers",
-        "FG Made",
-        "FG Taken",
-        "3PT Made",
-        "3PT Taken",
-        "FT Made",
-        "FT Taken",
-        "Offensive Rebounds",
-        "Fouls",
-        "+/-",
-        "Points Responsible For",
-        "Dunks"
-      ];
+      // const headers = [
+      //   "Player",
+      //   "Minutes",
+      //   "Points",
+      //   "Rebounds",
+      //   "Assists",
+      //   "Steals",
+      //   "Blocks",
+      //   "Turnovers",
+      //   "FG Made",
+      //   "FG Taken",
+      //   "3PT Made",
+      //   "3PT Taken",
+      //   "FT Made",
+      //   "FT Taken",
+      //   "Offensive Rebounds",
+      //   "Fouls",
+      //   "+/-",
+      //   "Points Responsible For",
+      //   "Dunks"
+      // ];
 
-      const players = [].concat.apply([], transposed).map(player =>
-        Object.assign(
-          ...headers.map((k, i) => ({
-            [k]:
-              i === 0
-                ? validateName(player[i])
-                : validateNumber(player[i], i !== 16)
-          }))
-        )
-      );
-      updateRawStats(players, videoLink, team1, team2);
+      // const players = [].concat.apply([], transposed).map(player =>
+      //   Object.assign(
+      //     ...headers.map((k, i) => ({
+      //       [k]:
+      //         i === 0
+      //           ? validateName(player[i])
+      //           : validateNumber(player[i], i !== 16)
+      //     }))
+      //   )
+      // );
+      // updateRawStats(players, videoLink, team1, team2);
 
-      await scheduler.terminate(); // It also terminates all workers.
-      await scheduler2.terminate();
+      // await scheduler.terminate(); // It also terminates all workers.
+      // await scheduler2.terminate();
     })();
   });
 }
