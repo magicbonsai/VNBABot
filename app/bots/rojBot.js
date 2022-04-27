@@ -293,7 +293,7 @@ const runReportWith =
       }:\n\n`.concat(payload);
 
       fullDiscordMessageMap.forEach(message =>
-        discordClient.channels.get(CHANNEL_IDS.updates).send(message)
+        discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message)
       );
 
       await archive.addRow({

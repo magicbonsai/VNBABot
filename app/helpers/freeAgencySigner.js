@@ -44,7 +44,7 @@ const signFAsWith = discordClient => (numOfSignings = 10) => {
     // If there are no signed rows, then no one put down offers during this round
 
     if (!signedRows.length) {
-      return discordClient.channels.get(CHANNEL_IDS.transactions).send("Apparently, no one was given an offer on this round of Free Agency."); 
+      return discordClient.channels.cache.get(CHANNEL_IDS.transactions).send("Apparently, no one was given an offer on this round of Free Agency."); 
     }
     //get all FA rows w/ contracts: filter by contract row and team row
     //randomly select 10 or numOfSignings w/ lodash.sampleSize

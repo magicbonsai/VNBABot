@@ -31,7 +31,7 @@ const postToChannelWith = discordClient => (req, res) => {
       message: 'value is required'
     });
   }
-  discordClient.channels.get(CHANNEL_IDS[req.body.channelTitle]).send(req.body.value);
+  discordClient.channels.cache.get(CHANNEL_IDS[req.body.channelTitle]).send(req.body.value);
   return res.status(201).send({
     success: 'true',
     message: `Message posted successfully to ${req.body.channelTitle}`,
