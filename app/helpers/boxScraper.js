@@ -20,7 +20,7 @@ ffmpeg.setFfprobePath(ffprobePath);
 
 sharp.cache(false);
 
-const count = 10;
+const count = 2;
 const timestamps = [];
 const startPositionPercent = 1;
 const endPositionPercent = 95;
@@ -260,6 +260,7 @@ function takeScreenshots(video, videoLink, team1, team2) {
 
       if (i < count) {
         takeScreenshots(video, videoLink, team1, team2);
+        printMem();
       }
 
       if (i >= count) {
@@ -280,6 +281,7 @@ function takeScreenshots(video, videoLink, team1, team2) {
     );
 }
 async function processImages(videoLink, team1, team2) {
+  printMem();
   let counter = 0;
   await fs.readdir("screenshots", (err, files) => {
     if (!fs.existsSync("screenshots/processed")) {
@@ -554,6 +556,8 @@ async function scrape(videoLink, team1, team2) {
   if (fs.existsSync("screenshots")) {
     fs.rmdirSync("screenshots", { recursive: true });
   }
+
+  printMem();
 
   youtubedl(videoLink, {
     output: "myvideo.mp4",
