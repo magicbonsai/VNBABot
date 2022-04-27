@@ -368,7 +368,7 @@ async function processImages(videoLink, team1, team2) {
 function printMem() {
   // const used = process.memoryUsage();
   const used = process.memoryUsage().heapUsed / 1024 / 1024;
-  console.log(`The script uses approximately ${used} MB`);
+  console.log(`The script uses approximately ${used} Mb`);
   const usedMemory = os.totalmem() - os.freemem(),
     totalMemory = os.totalmem();
   console.log("Memory used in MB", (usedMemory / Math.pow(1024, 2)).toFixed(2));
