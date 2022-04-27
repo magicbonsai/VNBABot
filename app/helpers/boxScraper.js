@@ -514,7 +514,7 @@ function updateRawGameStats(data, gameId) {
           playerRows,
           pr => nameToInitial(pr.Name) === fdPlayer.Player
         );
-        console.log(playerVal);
+
         rowsToAdd.push({
           ...fdPlayer,
           Team:
@@ -542,9 +542,8 @@ function updateRawGameStats(data, gameId) {
       });
 
       (async () => {
-        if (process.env.environment === "DEVELOPMENT") {
-          await console.log("rojRowsToAdd", orderedRowsToAdd);
-        }
+        await console.log("rojRowsToAdd", orderedRowsToAdd);
+
         await rawStats.addRows(orderedRowsToAdd, { insert: true });
       })();
     });
