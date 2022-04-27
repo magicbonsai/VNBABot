@@ -13,6 +13,7 @@ const { GoogleSpreadsheet } = require("google-spreadsheet");
 const distance = require("set-distance");
 const cliProgress = require("cli-progress");
 const heapdump = require("heapdump");
+const os = require("os");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -320,6 +321,7 @@ async function processImages(videoLink, team1, team2) {
       const images = [imgOne, imgTwo, imgThree];
 
       images.forEach((img, index) => {
+        printMem();
         // img
         //   .clone()
         //   .raw()
@@ -368,6 +370,9 @@ function printMem() {
   // const used = process.memoryUsage();
   const used = process.memoryUsage().heapUsed / 1024 / 1024;
   console.log(`The script uses approximately ${used} MB`);
+  const usedMemory = os.totalmem() - os.freemem(),
+    totalMemory = os.totalmem();
+  console.log("Memory used in MB", (usedMemory / Math.pow(1024, 2)).toFixed(2));
 }
 
 async function tessImages(videoLink, team1, team2) {
