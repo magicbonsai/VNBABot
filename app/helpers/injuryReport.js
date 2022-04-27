@@ -151,7 +151,7 @@ const generateInjuriesWith = discordClient => forceInjury => {
       DNP ? dnpMessage : ""
     }`;
 
-    discordClient.channels.get(CHANNEL_IDS.updates).send(message);
+    discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message);
 
     await archive.addRow({
       Date: new Date().toLocaleString().split(",")[0],
