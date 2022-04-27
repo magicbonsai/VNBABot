@@ -321,7 +321,6 @@ async function processImages(videoLink, team1, team2) {
       const images = [imgOne, imgTwo, imgThree];
 
       images.forEach((img, index) => {
-        printMem();
         // img
         //   .clone()
         //   .raw()
