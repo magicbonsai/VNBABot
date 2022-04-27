@@ -20,7 +20,7 @@ ffmpeg.setFfprobePath(ffprobePath);
 
 sharp.cache(false);
 
-const count = 2;
+const count = 10;
 const timestamps = [];
 const startPositionPercent = 1;
 const endPositionPercent = 95;
