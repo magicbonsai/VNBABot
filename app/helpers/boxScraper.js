@@ -450,7 +450,7 @@ async function tessImages(videoLink, team1, team2) {
       );
       bar1.start(150, 0);
       const results = await Promise.all(
-        files.map((file, index) => {
+        files.map(async (file, index) => {
           bar1.update(index);
           // return Promise.all(
           // rectangles.map(rect => {
@@ -474,13 +474,16 @@ async function tessImages(videoLink, team1, team2) {
           // }
           // if (key === "NAME") {
           // } else {
-          const rTwo = tesseract.recognize(`screenshots/processed/${file}`, {
-            // rectangle: rect,
-            dpi: 96,
-            oem: 3,
-            psm: 6,
-            lang: "eng"
-          });
+          const rTwo = await tesseract.recognize(
+            `screenshots/processed/${file}`,
+            {
+              // rectangle: rect,
+              dpi: 96,
+              oem: 3,
+              psm: 6,
+              lang: "eng"
+            }
+          );
           printMem();
           return rTwo;
           // }
@@ -549,7 +552,7 @@ async function tessImages(videoLink, team1, team2) {
 // main function
 async function scrape(videoLink, team1, team2) {
   // hook in discord bot for messages
-
+  printMem();
   if (fs.existsSync("screenshots")) {
     fs.rmdirSync("screenshots", { recursive: true });
   }
