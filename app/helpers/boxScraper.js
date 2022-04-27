@@ -474,16 +474,16 @@ async function tessImages(videoLink, team1, team2) {
           // }
           // if (key === "NAME") {
           // } else {
-          const rTwo = await tesseract.recognize(
-            `screenshots/processed/${file}`,
-            {
-              // rectangle: rect,
-              dpi: 96,
-              oem: 3,
-              psm: 6,
-              lang: "eng"
-            }
-          );
+          // const rTwo = await tesseract.recognize(
+          //   `screenshots/processed/${file}`,
+          //   {
+          //     // rectangle: rect,
+          //     dpi: 96,
+          //     oem: 3,
+          //     psm: 6,
+          //     lang: "eng"
+          //   }
+          // );
           printMem();
           return rTwo;
           // }
