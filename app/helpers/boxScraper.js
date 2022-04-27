@@ -484,8 +484,9 @@ async function tessImages(videoLink, team1, team2) {
           //     lang: "eng"
           //   }
           // );
+          console.log(file);
           printMem();
-          return rTwo;
+          return true;
           // }
           // })
           // );
