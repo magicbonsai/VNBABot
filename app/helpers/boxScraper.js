@@ -449,49 +449,56 @@ async function tessImages(videoLink, team1, team2) {
         cliProgress.Presets.shades_classic
       );
       bar1.start(150, 0);
-      const results = await Promise.all(
-        files.map(async (file, index) => {
-          bar1.update(index);
-          // return Promise.all(
-          // rectangles.map(rect => {
-          //   const { key } = rect;
-          // if (key === "NAME") {
-          //   return scheduler2.addJob(
-          //     "recognize",
-          //     `screenshots/processed/${file}`,
-          //     {
-          //       rectangle: rect
-          //     }
-          //   );
-          // } else {
-          // return scheduler.addJob(
-          //   "recognize",
-          //   `screenshots/processed/${file}`,
-          //   {
-          //     rectangle: rect
-          //   }
-          // );
-          // }
-          // if (key === "NAME") {
-          // } else {
-          const rTwo = await tesseract.recognize(
-            `screenshots/processed/${file}`,
-            {
-              // rectangle: rect,
-              dpi: 96,
-              oem: 3,
-              psm: 6,
-              lang: "eng"
-            }
-          );
-          console.log(file);
-          printMem();
-          return rTwo;
-          // }
-          // })
-          // );
-        })
-      );
+      // const results = await Promise.all(
+      //   files.map(async (file, index) => {
+      //     bar1.update(index);
+      //     // return Promise.all(
+      //     // rectangles.map(rect => {
+      //     //   const { key } = rect;
+      //     // if (key === "NAME") {
+      //     //   return scheduler2.addJob(
+      //     //     "recognize",
+      //     //     `screenshots/processed/${file}`,
+      //     //     {
+      //     //       rectangle: rect
+      //     //     }
+      //     //   );
+      //     // } else {
+      //     // return scheduler.addJob(
+      //     //   "recognize",
+      //     //   `screenshots/processed/${file}`,
+      //     //   {
+      //     //     rectangle: rect
+      //     //   }
+      //     // );
+      //     // }
+      //     // if (key === "NAME") {
+      //     // } else {
+      //     const rTwo = await tesseract.recognize(
+      //       `screenshots/processed/${file}`,
+      //       {
+      //         // rectangle: rect,
+      //         dpi: 96,
+      //         oem: 3,
+      //         psm: 6,
+      //         lang: "eng"
+      //       }
+      //     );
+      filesDir = files.map(file => `screenshots/processed/${file}`);
+      const results = await tesseract.recognize(filesDir, {
+        // rectangle: rect,
+        dpi: 96,
+        oem: 3,
+        psm: 6,
+        lang: "eng"
+      });
+
+      printMem();
+
+      // }
+      // })
+      // );
+
       // const results = [];
       console.log(results);
       // const data = results.map(fileResult => fileResult.map(res => res));
