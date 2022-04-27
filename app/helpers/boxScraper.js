@@ -247,7 +247,7 @@ function updateRawStats(data, gameId, team1, team2) {
 
 // scraper functions
 
-function takeScreenshots(video, videoLink, team1, team2) {
+function takeScreenshots(video, videoLink) {
   ffmpeg(video)
     .on("start", () => {
       if (i < 1) {
@@ -259,7 +259,7 @@ function takeScreenshots(video, videoLink, team1, team2) {
       console.log(`taken screenshot: ${i}`);
 
       if (i < count) {
-        takeScreenshots(video, videoLink, team1, team2);
+        takeScreenshots(video, videoLink);
       }
 
       if (i >= count) {
@@ -267,7 +267,7 @@ function takeScreenshots(video, videoLink, team1, team2) {
           if (err) throw err;
           console.log("Video Deleted");
         });
-        processImages(videoLink, team1, team2);
+        processImages(videoLink);
       }
     })
     .screenshots(
@@ -279,7 +279,7 @@ function takeScreenshots(video, videoLink, team1, team2) {
       path.join(path.dirname(video), `screenshots`)
     );
 }
-async function processImages(videoLink, team1, team2) {
+async function processImages(videoLink) {
   let counter = 0;
   await fs.readdir("screenshots", (err, files) => {
     if (!fs.existsSync("screenshots/processed")) {
@@ -348,142 +348,50 @@ async function processImages(videoLink, team1, team2) {
             if (counter >= count * 3) {
               console.log("Processing Images...");
               // TODO: this should eventually be removed
-              tessImages(videoLink, team1, team2);
-              return true;
+              tessImages(videoLink);
             }
           }
         );
       });
-      // TODO See if screenshots can be deleted w/o timing issue after processing (AZ)
-      // fs.unlinkSync(`screenshots/${file}`, err => {
-      //   if(err){
-      //     console.error(err)
-      //     return
-      //   }
-      // });
     });
   });
 }
 
-function printMem() {
-  // const used = process.memoryUsage();
-  const used = process.memoryUsage().heapUsed / 1024 / 1024;
-  console.log(`The script uses approximately ${used} MB`);
-  const usedMemory = os.totalmem() - os.freemem(),
-    totalMemory = os.totalmem();
-  console.log("Memory used in MB", (usedMemory / Math.pow(1024, 2)).toFixed(2));
+function removeChars(inputString) {
+  var regex = new RegExp("[^-a-zA-Z0-9 ]", "g");
+  return inputString.replace(regex, "");
 }
 
-async function tessImages(videoLink, team1, team2) {
+function removeLetters(inputString) {
+  var regex = new RegExp("[^0-9 ]", "g");
+  return inputString
+    .replaceAll("O", "0")
+    .replaceAll("Z", "2")
+    .replace(regex, "");
+}
+
+function findMode(arr) {
+  var map = {};
+  for (var i = 0; i < arr.length; i++) {
+    if (map[arr[i]] === undefined) {
+      map[arr[i]] = 0;
+    }
+    map[arr[i]] += 1;
+  }
+  var greatestFreq = 0;
+  var mode;
+  for (var prop in map) {
+    if (map[prop] > greatestFreq) {
+      greatestFreq = map[prop];
+      mode = prop;
+    }
+  }
+  return mode;
+}
+
+async function tessImages(videoLink) {
   fs.readdir("screenshots/processed", (err, files) => {
-    console.log("hit readdir");
-    // const scheduler = createScheduler();
-    // const scheduler2 = createScheduler();
-    // const worker1 = createWorker({
-    //   logger: m => {
-    //     console.log(m);
-    //     printMem();
-    //   }
-    // });
-    // const worker2 = createWorker();
-    // const worker3 = createWorker();
-    // const worker4 = createWorker();
-    // const worker5 = createWorker();
-    // const worker6 = createWorker();
-
-    printMem();
     return (async () => {
-      console.log("hit async func");
-      // await worker1.load();
-      // // await worker2.load();
-      // await worker1.loadLanguage("eng");
-      // // await worker2.loadLanguage("eng");
-      // await worker1.initialize("eng");
-      // // await worker2.initialize("eng");
-      // await worker1.setParameters({
-      //   tessedit_char_whitelist: "DNP0123456789.-"
-      // });
-      // // await worker2.setParameters({
-      // //   tessedit_char_whitelist: "DNP0123456789.-"
-      // // });
-
-      // // await worker3.load();
-      // // await worker4.load();
-      // // await worker3.loadLanguage("eng");
-      // // await worker4.loadLanguage("eng");
-      // // await worker3.initialize("eng");
-      // // await worker4.initialize("eng");
-      // // await worker3.setParameters({
-      // //   tessedit_char_whitelist: "DNP0123456789.-"
-      // // });
-      // // await worker4.setParameters({
-      // //   tessedit_char_whitelist: "DNP0123456789.-"
-      // // });
-
-      // // await worker5.load();
-      // // await worker6.load();
-      // // await worker5.loadLanguage("eng");
-      // // await worker6.loadLanguage("eng");
-      // // await worker5.initialize("eng");
-      // // await worker6.initialize("eng");
-      // // await worker5.setParameters({
-      // //   tessedit_char_whitelist:
-      // //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
-      // // });
-      // // await worker6.setParameters({
-      // //   tessedit_char_whitelist:
-      // //     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz.- "
-      // // });
-
-      // scheduler.addWorker(worker1);
-      // scheduler.addWorker(worker2);
-      // scheduler.addWorker(worker3);
-      // scheduler.addWorker(worker4);
-
-      // scheduler2.addWorker(worker5);
-      // scheduler2.addWorker(worker6);
-
-      printMem();
-      const bar1 = new cliProgress.SingleBar(
-        {},
-        cliProgress.Presets.shades_classic
-      );
-      bar1.start(150, 0);
-      // const results = await Promise.all(
-      //   files.map(async (file, index) => {
-      //     bar1.update(index);
-      //     // return Promise.all(
-      //     // rectangles.map(rect => {
-      //     //   const { key } = rect;
-      //     // if (key === "NAME") {
-      //     //   return scheduler2.addJob(
-      //     //     "recognize",
-      //     //     `screenshots/processed/${file}`,
-      //     //     {
-      //     //       rectangle: rect
-      //     //     }
-      //     //   );
-      //     // } else {
-      //     // return scheduler.addJob(
-      //     //   "recognize",
-      //     //   `screenshots/processed/${file}`,
-      //     //   {
-      //     //     rectangle: rect
-      //     //   }
-      //     // );
-      //     // }
-      //     // if (key === "NAME") {
-      //     // } else {
-      //     const rTwo = await tesseract.recognize(
-      //       `screenshots/processed/${file}`,
-      //       {
-      //         // rectangle: rect,
-      //         dpi: 96,
-      //         oem: 3,
-      //         psm: 6,
-      //         lang: "eng"
-      //       }
-      //     );
       filesDir = files.map(file => `screenshots/processed/${file}`);
       const results = await tesseract.recognize(filesDir, {
         // rectangle: rect,
@@ -492,75 +400,168 @@ async function tessImages(videoLink, team1, team2) {
         psm: 6,
         lang: "eng"
       });
-
-      printMem();
-
-      // }
-      // })
-      // );
-
-      // const results = [];
       console.log(results);
-      // const data = results.map(fileResult => fileResult.map(res => res));
+      const splitResults = results.split(/\r?\n/);
+      const sanitizedResults = splitResults.map(result =>
+        removeChars(result).split(" ")
+      );
+      console.log(splitResults);
+      console.log(sanitizedResults);
 
-      // const splitData = data.map(file =>
-      //   file.map(column => {
-      //     return column.split("\n");
-      //   })
-      // );
+      const statlines = sanitizedResults.map(sr => {
+        return sr.length === 17
+          ? {
+              Player: [sr[0], sr[1]].join(". "),
+              Minutes: sr[2],
+              Points: sr[3],
+              Rebounds: sr[4],
+              Assists: sr[5],
+              Steals: sr[6],
+              Blocks: sr[7],
+              Turnovers: sr[8],
+              "FG Made": sr[9].split("-")[0],
+              "FG Taken": sr[9].split("-")[1],
+              "3PT Made": sr[10].split("-")[0],
+              "3PT Taken": sr[10].split("-")[0],
+              "FT Made": sr[11].split("-")[0],
+              "FT Taken": sr[11].split("-")[0],
+              "Offensive Rebounds": sr[12],
+              Fouls: sr[13],
+              "+/-": sr[14],
+              "Points Responsible For": sr[15],
+              Dunks: sr[16]
+            }
+          : null;
+      });
 
-      // const transposed = splitData.map(file => {
-      //   return file[0].map((_, colIndex) => {
-      //     return file.map(row => {
-      //       return row[colIndex];
-      //     });
-      //   });
-      // });
+      console.log(statlines);
+      const playersObj = {};
+      for (sl of statlines.filter(element => {
+        return element !== null;
+      })) {
+        if (!playersObj[sl.Player]) {
+          playersObj[sl.Player] = {
+            Player: [],
+            Minutes: [],
+            Points: [],
+            Rebounds: [],
+            Assists: [],
+            Steals: [],
+            Blocks: [],
+            Turnovers: [],
+            "FG Made": [],
+            "FG Taken": [],
+            "3PT Made": [],
+            "3PT Taken": [],
+            "FT Made": [],
+            "FT Taken": [],
+            "Offensive Rebounds": [],
+            Fouls: [],
+            "+/-": [],
+            "Points Responsible For": [],
+            Dunks: []
+          };
+        }
 
-      // const headers = [
-      //   "Player",
-      //   "Minutes",
-      //   "Points",
-      //   "Rebounds",
-      //   "Assists",
-      //   "Steals",
-      //   "Blocks",
-      //   "Turnovers",
-      //   "FG Made",
-      //   "FG Taken",
-      //   "3PT Made",
-      //   "3PT Taken",
-      //   "FT Made",
-      //   "FT Taken",
-      //   "Offensive Rebounds",
-      //   "Fouls",
-      //   "+/-",
-      //   "Points Responsible For",
-      //   "Dunks"
-      // ];
+        for (key of _.keys(sl)) {
+          playersObj[sl.Player][key].push(sl[key]);
+        }
+      }
 
-      // const players = [].concat.apply([], transposed).map(player =>
-      //   Object.assign(
-      //     ...headers.map((k, i) => ({
-      //       [k]:
-      //         i === 0
-      //           ? validateName(player[i])
-      //           : validateNumber(player[i], i !== 16)
-      //     }))
-      //   )
-      // );
-      // updateRawStats(players, videoLink, team1, team2);
+      console.log(playersObj);
 
-      // await scheduler.terminate(); // It also terminates all workers.
-      // await scheduler2.terminate();
+      const modePlayersArray = _.values(playersObj).map(po => {
+        const poCopy = { ...po };
+
+        _.keys(poCopy).forEach(k => {
+          poCopy[k] =
+            k === "Player"
+              ? findMode(poCopy[k])
+              : removeLetters(findMode(poCopy[k]));
+        });
+
+        return poCopy;
+      });
+
+      updateRawGameStats(modePlayersArray, videoLink);
     })();
   });
 }
 
+function updateRawGameStats(data, gameId) {
+  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+  (async function main() {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+    const sheets = doc.sheetsById;
+    const rawStats = sheets[sheetIds.rawStats];
+    const players = sheets[sheetIds.players];
+    await rawStats.loadHeaderRow();
+
+    const statsLength = await rawStats.getRows().then(rows => rows.length);
+    players.getRows().then(async function (playerRows) {
+      const rowsToAdd = [];
+      const playerNames = playerRows.map(p => nameToInitial(p.Name));
+      const filteredData = data.filter(player =>
+        playerNames.includes(player.Player)
+      );
+
+      filteredData.forEach(fdPlayer => {
+        const playerVal = _.find(
+          playerRows,
+          pr => nameToInitial(pr.Name) === fdPlayer.Player
+        );
+        console.log(playerVal);
+        rowsToAdd.push({
+          ...fdPlayer,
+          Team:
+            playerVal.Role === "13" ||
+            playerVal.Team === "FA" ||
+            playerVal.Team === "Rookie"
+              ? playerVal["Other Team"].toUpperCase()
+              : playerVal.Team.toUpperCase(),
+          "Game Id": gameId
+        });
+      });
+
+      let orderedRowsToAdd = _.sortBy(rowsToAdd, x => x.Team);
+      orderedRowsToAdd.forEach((item, index) => {
+        const rowNum = statsLength + index + 2;
+        item[
+          "Valid Number of points"
+        ] = `=IF(($J${rowNum} - $L${rowNum}) * 2 + ($L${rowNum} * 3) + $N${rowNum} = $D${rowNum}, "YES", "NO" )`;
+        item[
+          "Valid Stat line"
+        ] = `=AND($J${rowNum} <=$K${rowNum}, $L${rowNum} <= $M${rowNum}, $N${rowNum} <= $O${rowNum})`;
+        item["Valid PRF"] = `=($D${rowNum} + 2*$F${rowNum}) <= $S${rowNum}`;
+        item["Valid Rebounds"] = `=$P${rowNum} <= $E${rowNum}`;
+        item["Valid Minutes"] = `=$C${rowNum} <= 48`;
+      });
+
+      (async () => {
+        if (process.env.environment === "DEVELOPMENT") {
+          await console.log("rojRowsToAdd", orderedRowsToAdd);
+        }
+        await rawStats.addRows(orderedRowsToAdd, { insert: true });
+      })();
+    });
+
+    fs.rmdir("screenshots", { recursive: true }, err => {
+      if (err) {
+        throw err;
+      }
+
+      console.log("Upload Completed!");
+    });
+  })();
+}
+
 // main function
-async function scrape(videoLink, team1, team2) {
+async function scrape(videoLink) {
   // hook in discord bot for messages
-  printMem();
   if (fs.existsSync("screenshots")) {
     fs.rmdirSync("screenshots", { recursive: true });
   }
@@ -574,7 +575,7 @@ async function scrape(videoLink, team1, team2) {
     youtubeSkipDashManifest: true
   }).then(output => {
     console.log(output);
-    takeScreenshots("myvideo.mp4", videoLink, team1, team2);
+    takeScreenshots("myvideo.mp4", videoLink);
   });
 }
 

@@ -104,13 +104,13 @@ const dedueCommand = (prompt, msg) => {
       }
       break;
 
-    case "scrapy":
+    case "scrapo":
       // Temporarily turning off scraping in prod
       // if (process.env.environment === "DEVELOPMENT") {
       //   scrape(words[1], words[2], words[3]);
       // }
       // scrape(words[1]);
-      scrape(words[1], words[2], words[3]);
+      scrape(words[1]);
       break;
 
     case "help":
