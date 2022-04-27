@@ -24,7 +24,14 @@ const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 const { sheetIds } = require("./app/helpers/sheetHelper");
 require("dotenv").config();
 const client = new Client({
-  intents: ["GUILDS", "GUILD_MEMBERS"],
+  intents: [
+    "DIRECT_MESSAGES",
+    "DIRECT_MESSAGE_REACTIONS",
+    "GUILD_MESSAGES",
+    "GUILD_MESSAGE_REACTIONS",
+    "GUILDS"
+  ],
+  partials: ["MESSAGE", "CHANNEL", "REACTION"],
   fetchAllMembers: true
 });
 
@@ -172,9 +179,9 @@ client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on("message", msg => {
+client.on("messageCreate", msg => {
   const { author, content } = msg;
-
+  console.log(content);
   if (author.bot) return;
 
   if (content.charAt(0) === "$") {

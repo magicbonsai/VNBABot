@@ -12,18 +12,41 @@ const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const distance = require("set-distance");
 const cliProgress = require("cli-progress");
+const heapdump = require("heapdump");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
 sharp.cache(false);
 
-const count = 1;
+const count = 10;
 const timestamps = [];
 const startPositionPercent = 1;
 const endPositionPercent = 95;
 const addPercent = (endPositionPercent - startPositionPercent) / (count - 1);
 let i = 0;
+
+const rectangles = [
+  { key: "NAME", left: 0, top: 0, width: 400, height: 125 }, // name
+  { left: 500, top: 0, width: 125, height: 125 }, // min
+  { left: 655, top: 0, width: 125, height: 125 }, // points
+  { left: 850, top: 0, width: 125, height: 125 }, // reb
+  { left: 1000, top: 0, width: 125, height: 125 }, // ast
+  { left: 1115, top: 0, width: 125, height: 125 }, // stl
+  { left: 1330, top: 0, width: 125, height: 125 }, // blk
+  { left: 1490, top: 0, width: 125, height: 125 }, // tov
+  { left: 1600, top: 0, width: 75, height: 125 }, // fg
+  { left: 1660, top: 0, width: 100, height: 125 }, // fga
+  { left: 1770, top: 0, width: 75, height: 125 }, // 3pt
+  { left: 1835, top: 0, width: 75, height: 125 }, // 3pta
+  { left: 1925, top: 0, width: 75, height: 125 }, // ft
+  { left: 2000, top: 0, width: 75, height: 125 }, // fta
+  { left: 2125, top: 0, width: 75, height: 125 }, // oreb
+  { left: 2280, top: 0, width: 125, height: 125 }, // foul
+  { left: 2410, top: 0, width: 150, height: 125 }, // +-
+  { left: 2590, top: 0, width: 125, height: 125 }, // prf
+  { left: 2760, top: 0, width: 125, height: 125 } // dnk
+];
 
 if (!timestamps.length) {
   let i = 0;
@@ -342,16 +365,14 @@ async function processImages(videoLink, team1, team2) {
 }
 
 function printMem() {
-  const used = process.memoryUsage();
-  for (let key in used) {
-    console.log(
-      `${key} ${Math.round((used[key] / 1024 / 1024) * 100) / 100} MB`
-    );
-  }
+  // const used = process.memoryUsage();
+  const used = process.memoryUsage().heapUsed / 1024 / 1024;
+  console.log(`The script uses approximately ${used} MB`);
 }
 
 async function tessImages(videoLink, team1, team2) {
   fs.readdir("screenshots/processed", (err, files) => {
+    console.log("hit readdir");
     // const scheduler = createScheduler();
     // const scheduler2 = createScheduler();
     // const worker1 = createWorker({
@@ -365,29 +386,10 @@ async function tessImages(videoLink, team1, team2) {
     // const worker4 = createWorker();
     // const worker5 = createWorker();
     // const worker6 = createWorker();
-    const rectangles = [
-      { key: "NAME", left: 0, top: 0, width: 400, height: 125 }, // name
-      { left: 500, top: 0, width: 125, height: 125 }, // min
-      { left: 655, top: 0, width: 125, height: 125 }, // points
-      { left: 850, top: 0, width: 125, height: 125 }, // reb
-      { left: 1000, top: 0, width: 125, height: 125 }, // ast
-      { left: 1115, top: 0, width: 125, height: 125 }, // stl
-      { left: 1330, top: 0, width: 125, height: 125 }, // blk
-      { left: 1490, top: 0, width: 125, height: 125 }, // tov
-      { left: 1600, top: 0, width: 75, height: 125 }, // fg
-      { left: 1660, top: 0, width: 100, height: 125 }, // fga
-      { left: 1770, top: 0, width: 75, height: 125 }, // 3pt
-      { left: 1835, top: 0, width: 75, height: 125 }, // 3pta
-      { left: 1925, top: 0, width: 75, height: 125 }, // ft
-      { left: 2000, top: 0, width: 75, height: 125 }, // fta
-      { left: 2125, top: 0, width: 75, height: 125 }, // oreb
-      { left: 2280, top: 0, width: 125, height: 125 }, // foul
-      { left: 2410, top: 0, width: 150, height: 125 }, // +-
-      { left: 2590, top: 0, width: 125, height: 125 }, // prf
-      { left: 2760, top: 0, width: 125, height: 125 } // dnk
-    ];
+
     printMem();
     return (async () => {
+      console.log("hit async func");
       // await worker1.load();
       // // await worker2.load();
       // await worker1.loadLanguage("eng");
@@ -543,6 +545,10 @@ async function tessImages(videoLink, team1, team2) {
 // main function
 async function scrape(videoLink, team1, team2) {
   // hook in discord bot for messages
+
+  if (fs.existsSync("screenshots")) {
+    fs.rmdirSync("screenshots", { recursive: true });
+  }
 
   youtubedl(videoLink, {
     output: "myvideo.mp4",
