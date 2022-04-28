@@ -5,16 +5,11 @@ const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 const ffmpeg = require("fluent-ffmpeg");
 const sharp = require("sharp");
-// const { createWorker, createScheduler } = require("tesseract.js");
 const tesseract = require("node-tesseract-ocr");
 const { sheetIds } = require("./sheetHelper");
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const distance = require("set-distance");
-const cliProgress = require("cli-progress");
-const heapdump = require("heapdump");
-const os = require("os");
-
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
