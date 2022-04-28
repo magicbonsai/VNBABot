@@ -104,7 +104,7 @@ const dedueCommand = (prompt, msg) => {
       }
       break;
 
-    case "scrapo":
+    case "scrape":
       // Temporarily turning off scraping in prod
       // if (process.env.environment === "DEVELOPMENT") {
       //   scrape(words[1], words[2], words[3]);
@@ -306,10 +306,26 @@ const triKovAnalysis = () => {
         await teamAssets.loadCells();
 
         playerListRows.forEach(row => {
+          const meanCVs = [0, 1, 2].map(num =>
+            _.mean(_.values(cashValues).map(p => p[num].Cash_Value))
+          );
+          const meanKNNs = [0, 1, 2].map(num =>
+            _.mean(_.values(knnCashValues).map(p => p[num].continuous_target))
+          );
           players.getCell(row.rowNumber - 1, 23).value = cashValues[row.Name]
-            ? _.mean(cashValues[row.Name].map(cr => cr.Cash_Value))
+            ? _.mean(
+                cashValues[row.Name].map(
+                  (cr, index) =>
+                    (cr.Cash_Value / meanCVs[index]) * _.mean(meanCVs)
+                )
+              )
             : knnCashValues[row.Name]
-            ? _.mean(knnCashValues[row.Name].map(knn => knn.continuous_target))
+            ? _.mean(
+                knnCashValues[row.Name].map(
+                  (knn, index) =>
+                    (knn.continuous_target / meanKNNs[index]) * _.mean(meanKNNs)
+                )
+              )
             : 0;
 
           players.getCell(row.rowNumber - 1, 27).value = cashValues[row.Name]

@@ -293,72 +293,74 @@ async function processImages(videoLink) {
 
       imgOne
         .resize({ width: 3840, height: 2160 })
-        .extract({ left: 230, top: 1630, width: 2900, height: 150 })
-        .normalize()
-        .greyscale()
-        .negate()
-        .linear(3, -(128 * 3) + 128)
-        .sharpen();
+        .extract({ left: 230, top: 1500, width: 2900, height: 150 });
 
       imgTwo
         .resize({ width: 3840, height: 2160 })
-        .extract({ left: 230, top: 1630, width: 2900, height: 150 })
-        .normalize()
-        .greyscale()
-        .negate()
-        .linear(3, -(128 * 3) + 128)
-        .sharpen();
+        .extract({ left: 230, top: 1630, width: 2900, height: 150 });
 
       imgThree
         .resize({ width: 3840, height: 2160 })
-        .extract({ left: 230, top: 1630, width: 2900, height: 150 })
-        .normalize()
-        .greyscale()
-        .negate()
-        .linear(3, -(128 * 3) + 128)
-        .sharpen();
+        .extract({ left: 230, top: 1760, width: 2900, height: 150 });
 
       const images = [imgOne, imgTwo, imgThree];
 
       images.forEach((img, index) => {
-        // img
-        //   .clone()
-        //   .raw()
-        //   .toBuffer({ resolveWithObject: true })
-        //   .then(({ data, info }) => {
-        //     const pixelArray = new Uint8ClampedArray(data);
-        //     const { width, height, channels } = info;
-        //     const offset = channels * (width * 100 + 700);
-        //     const red = pixelArray[offset];
-        //     const green = pixelArray[offset + 1];
-        //     const blue = pixelArray[offset + 2];
-        //     console.log(red);
-        //     if (red > 200) {
-        //       img.negate();
-        //     }
-
-        //     // data is a Buffer of length (width * height * channels)
-        //     // containing 8-bit RGB(A) pixel data.
-        //   });
-
-        img.toFile(
-          `screenshots/processed/${index + 1}-${file}`,
-          (err, info) => {
-            counter++;
-            if (counter >= count * 3) {
-              console.log("Processing Images...");
-              // TODO: this should eventually be removed
-              tessImages(videoLink);
+        const imgClone = img.clone();
+        imgClone
+          .raw()
+          .toBuffer({ resolveWithObject: true })
+          .then(({ data, info }) => {
+            const pixelArray = new Uint8ClampedArray(data);
+            const { width, height, channels } = info;
+            const offset = channels * (width * 50 + 350);
+            const red = pixelArray[offset];
+            if (red < 100) {
+              img
+                .normalize()
+                .greyscale()
+                .negate()
+                .linear(3, -(128 * 3) + 128)
+                .sharpen()
+                .toFile(
+                  `screenshots/processed/${index + 1}-${file}`,
+                  (err, info) => {
+                    counter++;
+                    if (counter >= count * 3) {
+                      console.log("Processing Images...");
+                      // TODO: this should eventually be removed
+                      tessImages(videoLink);
+                    }
+                  }
+                );
+            } else {
+              img
+                .normalize()
+                .greyscale()
+                .linear(50, -(128 * 50) + 128)
+                .toFile(
+                  `screenshots/processed/${index + 1}-${file}`,
+                  (err, info) => {
+                    counter++;
+                    if (counter >= count * 3) {
+                      console.log("Processing Images...");
+                      // TODO: this should eventually be removed
+                      tessImages(videoLink);
+                    }
+                  }
+                );
             }
-          }
-        );
+
+            // data is a Buffer of length (width * height * channels)
+            // containing 8-bit RGB(A) pixel data.
+          });
       });
     });
   });
 }
 
 function removeChars(inputString) {
-  var regex = new RegExp("[^-a-zA-Z0-9 ]", "g");
+  var regex = new RegExp("[^-a-zA-Z0-9. ]", "g");
   return inputString.replace(regex, "");
 }
 
@@ -400,44 +402,55 @@ async function tessImages(videoLink) {
         psm: 6,
         lang: "eng"
       });
-      console.log(results);
       const splitResults = results.split(/\r?\n/);
-      const sanitizedResults = splitResults.map(result =>
-        removeChars(result).split(" ")
-      );
-      console.log(splitResults);
-      console.log(sanitizedResults);
+      const sanitizedResults = splitResults
+        .map(result => {
+          const reverseResult = removeChars(result).split(" ").reverse();
+
+          if (reverseResult.length > 15) {
+            const lastName = reverseResult
+              .slice(15, reverseResult.length - 1)
+              .reverse()
+              .join(" ");
+            const initialName = [reverseResult.slice(-1), lastName].join(" ");
+            return [initialName, ...reverseResult.slice(0, 15).reverse()];
+          } else {
+            return null;
+          }
+        })
+        .filter(element => {
+          return element !== null;
+        });
 
       const statlines = sanitizedResults.map(sr => {
-        return sr.length === 17
+        return sr.length === 16
           ? {
-              Player: [sr[0], sr[1]].join(". "),
-              Minutes: sr[2],
-              Points: sr[3],
-              Rebounds: sr[4],
-              Assists: sr[5],
-              Steals: sr[6],
-              Blocks: sr[7],
-              Turnovers: sr[8],
-              "FG Made": sr[9].split("-")[0],
-              "FG Taken": sr[9].split("-")[1],
-              "3PT Made": sr[10].split("-")[0],
-              "3PT Taken": sr[10].split("-")[0],
-              "FT Made": sr[11].split("-")[0],
-              "FT Taken": sr[11].split("-")[0],
-              "Offensive Rebounds": sr[12],
-              Fouls: sr[13],
-              "+/-": sr[14],
-              "Points Responsible For": sr[15],
-              Dunks: sr[16]
+              Player: sr[0],
+              Minutes: sr[1],
+              Points: sr[2],
+              Rebounds: sr[3],
+              Assists: sr[4],
+              Steals: sr[5],
+              Blocks: sr[6],
+              Turnovers: sr[7],
+              "FG Made": sr[8].split("-")[0],
+              "FG Taken": sr[8].split("-")[1],
+              "3PT Made": sr[9].split("-")[0],
+              "3PT Taken": sr[9].split("-")[0],
+              "FT Made": sr[10].split("-")[0],
+              "FT Taken": sr[10].split("-")[0],
+              "Offensive Rebounds": sr[11],
+              Fouls: sr[12],
+              "+/-": sr[13],
+              "Points Responsible For": sr[14],
+              Dunks: sr[15]
             }
           : null;
       });
 
-      console.log(statlines);
       const playersObj = {};
       for (sl of statlines.filter(element => {
-        return element !== null;
+        return element !== null && element.Minutes !== "DNP";
       })) {
         if (!playersObj[sl.Player]) {
           playersObj[sl.Player] = {
@@ -467,8 +480,6 @@ async function tessImages(videoLink) {
           playersObj[sl.Player][key].push(sl[key]);
         }
       }
-
-      console.log(playersObj);
 
       const modePlayersArray = _.values(playersObj).map(po => {
         const poCopy = { ...po };
