@@ -69,10 +69,6 @@ function getMostCommon(arr) {
 }
 
 function validateNumber(num, stripNegative = true) {
-  if (!num) {
-    return false;
-  }
-
   const newNum = stripNegative ? num.replace("-", "") : num;
 
   if (newNum == "n" || newNum == "N") return "11";
