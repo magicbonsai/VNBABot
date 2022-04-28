@@ -6,18 +6,32 @@ const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
-const { generateInjuriesWith, removeInjuries } = require("./app/helpers/injuryReport");
+const {
+  generateInjuriesWith,
+  removeInjuries
+} = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const router = express.Router();
-const { postToChannelWith, postToTeamWith, updatePlayers } = require("./app/router/services");
+const {
+  postToChannelWith,
+  postToTeamWith,
+  updatePlayers
+} = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 const { sheetIds } = require("./app/helpers/sheetHelper");
 require("dotenv").config();
 const client = new Client({
-  intents: ["GUILDS", "GUILD_MEMBERS"],
+  intents: [
+    "DIRECT_MESSAGES",
+    "DIRECT_MESSAGE_REACTIONS",
+    "GUILD_MESSAGES",
+    "GUILD_MESSAGE_REACTIONS",
+    "GUILDS"
+  ],
+  partials: ["MESSAGE", "CHANNEL", "REACTION"],
   fetchAllMembers: true
 });
 
@@ -62,7 +76,7 @@ const dedueCommand = (prompt, msg) => {
     case "report":
       runReport(parseInt(words[1]));
       break;
-    case "signfa": 
+    case "signfa":
       signFAs(parseInt(words[1]));
       break;
     case "forceinjury":
@@ -92,10 +106,11 @@ const dedueCommand = (prompt, msg) => {
 
     case "scrape":
       // Temporarily turning off scraping in prod
-      if (process.env.environment === "DEVELOPMENT") {
-        scrape(words[1]);
-      }
+      // if (process.env.environment === "DEVELOPMENT") {
+      //   scrape(words[1], words[2], words[3]);
+      // }
       // scrape(words[1]);
+      scrape(words[1]);
       break;
 
     case "help":
@@ -164,9 +179,9 @@ client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on("message", msg => {
+client.on("messageCreate", msg => {
   const { author, content } = msg;
-
+  console.log(content);
   if (author.bot) return;
 
   if (content.charAt(0) === "$") {
@@ -227,10 +242,10 @@ const dailyInjuryReportJob = new CronJob("0 14 * * *", function () {
     const sheets = doc.sheetsById;
     const globalsSheet = sheets[sheetIds.globalVars];
 
-    const doInjuriesVar = await globalsSheet.getRows().then(
-      rows => rows.find(row => row.Global == "doInjuries")
-    );
-    console.log('daily injury job', doInjuriesVar);
+    const doInjuriesVar = await globalsSheet
+      .getRows()
+      .then(rows => rows.find(row => row.Global == "doInjuries"));
+    console.log("daily injury job", doInjuriesVar);
     if (doInjuriesVar.Status == "FALSE") {
       return;
     }
@@ -238,10 +253,10 @@ const dailyInjuryReportJob = new CronJob("0 14 * * *", function () {
   })();
 });
 
-const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function() {
-  console.log('daily remove injury job');
+const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function () {
+  console.log("daily remove injury job");
   removeInjuries();
-})
+});
 
 //some sort of trade request tracker
 
@@ -291,10 +306,26 @@ const triKovAnalysis = () => {
         await teamAssets.loadCells();
 
         playerListRows.forEach(row => {
+          const meanCVs = [0, 1, 2].map(num =>
+            _.mean(_.values(cashValues).map(p => p[num].Cash_Value))
+          );
+          const meanKNNs = [0, 1, 2].map(num =>
+            _.mean(_.values(knnCashValues).map(p => p[num].continuous_target))
+          );
           players.getCell(row.rowNumber - 1, 23).value = cashValues[row.Name]
-            ? _.mean(cashValues[row.Name].map(cr => cr.Cash_Value))
+            ? _.mean(
+                cashValues[row.Name].map(
+                  (cr, index) =>
+                    (cr.Cash_Value / meanCVs[index]) * _.mean(meanCVs)
+                )
+              )
             : knnCashValues[row.Name]
-            ? _.mean(knnCashValues[row.Name].map(knn => knn.continuous_target))
+            ? _.mean(
+                knnCashValues[row.Name].map(
+                  (knn, index) =>
+                    (knn.continuous_target / meanKNNs[index]) * _.mean(meanKNNs)
+                )
+              )
             : 0;
 
           players.getCell(row.rowNumber - 1, 27).value = cashValues[row.Name]
@@ -335,13 +366,17 @@ const triKovAnalysis = () => {
 
           teamAssets.getCell(row.rowNumber - 1, 6).value = picks
             .map(pick => {
-              return cashValues[pick] ? _.mean(cashValues[pick].map(cr => cr.Cash_Value)) : 0;
+              return cashValues[pick]
+                ? _.mean(cashValues[pick].map(cr => cr.Cash_Value))
+                : 0;
             })
             .join(", ");
 
           teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
             .map(pick => {
-              return cashValues[pick] ? _.mean(cashValues[pick].map(cr => cr.Cash_Value)) : 0;
+              return cashValues[pick]
+                ? _.mean(cashValues[pick].map(cr => cr.Cash_Value))
+                : 0;
             })
             .join(", ");
         });
