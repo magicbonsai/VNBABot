@@ -78,7 +78,7 @@ function validateNumber(num, stripNegative = true) {
   if (newNum == "n" || newNum == "N") return "11";
   if (newNum == "B") return "8";
 
-  return isNaN(newNum) ? false : newNum;
+  return newNum;
 }
 
 function validateName(playerName) {
@@ -311,6 +311,7 @@ async function processImages(videoLink) {
                 .normalize()
                 .greyscale()
                 .linear(50, -(128 * 50) + 128)
+                .sharpen()
                 .toFile(
                   `screenshots/processed/${index + 1}-${file}`,
                   (err, info) => {
@@ -364,6 +365,14 @@ function findMode(arr) {
   return mode;
 }
 
+function getAttempts(str) {
+  const stripped = removeLetters(str.replaceAll("-", ""));
+
+  const midpoint = Math.floor(stripped.length / 2);
+
+  return [stripped.substr(0, midpoint), stripped.substr(midpoint)];
+}
+
 async function tessImages(videoLink) {
   fs.readdir("screenshots/processed", (err, files) => {
     return (async () => {
@@ -406,12 +415,12 @@ async function tessImages(videoLink) {
               Steals: sr[5],
               Blocks: sr[6],
               Turnovers: sr[7],
-              "FG Made": sr[8].split("-")[0],
-              "FG Taken": sr[8].split("-")[1],
-              "3PT Made": sr[9].split("-")[0],
-              "3PT Taken": sr[9].split("-")[0],
-              "FT Made": sr[10].split("-")[0],
-              "FT Taken": sr[10].split("-")[0],
+              "FG Made": getAttempts(sr[8])[0],
+              "FG Taken": getAttempts(sr[8])[1],
+              "3PT Made": getAttempts(sr[9])[0],
+              "3PT Taken": getAttempts(sr[9])[1],
+              "FT Made": getAttempts(sr[10])[0],
+              "FT Taken": getAttempts(sr[10])[1],
               "Offensive Rebounds": sr[11],
               Fouls: sr[12],
               "+/-": sr[13],
@@ -461,7 +470,7 @@ async function tessImages(videoLink) {
           poCopy[k] =
             k === "Player"
               ? findMode(poCopy[k])
-              : removeLetters(findMode(poCopy[k]));
+              : validateNumber(removeLetters(findMode(poCopy[k])));
         });
 
         return poCopy;
