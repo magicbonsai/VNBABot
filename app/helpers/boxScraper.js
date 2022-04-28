@@ -526,7 +526,7 @@ function updateRawGameStats(data, gameId) {
       });
 
       (async () => {
-        await console.log("rojRowsToAdd", orderedRowsToAdd);
+        await console.log("rojRowsToAdd:", orderedRowsToAdd);
 
         await rawStats.addRows(orderedRowsToAdd, { insert: true });
       })();
