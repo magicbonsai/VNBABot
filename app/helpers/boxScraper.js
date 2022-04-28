@@ -22,28 +22,6 @@ const endPositionPercent = 95;
 const addPercent = (endPositionPercent - startPositionPercent) / (count - 1);
 let i = 0;
 
-const rectangles = [
-  { key: "NAME", left: 0, top: 0, width: 400, height: 125 }, // name
-  { left: 500, top: 0, width: 125, height: 125 }, // min
-  { left: 655, top: 0, width: 125, height: 125 }, // points
-  { left: 850, top: 0, width: 125, height: 125 }, // reb
-  { left: 1000, top: 0, width: 125, height: 125 }, // ast
-  { left: 1115, top: 0, width: 125, height: 125 }, // stl
-  { left: 1330, top: 0, width: 125, height: 125 }, // blk
-  { left: 1490, top: 0, width: 125, height: 125 }, // tov
-  { left: 1600, top: 0, width: 75, height: 125 }, // fg
-  { left: 1660, top: 0, width: 100, height: 125 }, // fga
-  { left: 1770, top: 0, width: 75, height: 125 }, // 3pt
-  { left: 1835, top: 0, width: 75, height: 125 }, // 3pta
-  { left: 1925, top: 0, width: 75, height: 125 }, // ft
-  { left: 2000, top: 0, width: 75, height: 125 }, // fta
-  { left: 2125, top: 0, width: 75, height: 125 }, // oreb
-  { left: 2280, top: 0, width: 125, height: 125 }, // foul
-  { left: 2410, top: 0, width: 150, height: 125 }, // +-
-  { left: 2590, top: 0, width: 125, height: 125 }, // prf
-  { left: 2760, top: 0, width: 125, height: 125 } // dnk
-];
-
 if (!timestamps.length) {
   let i = 0;
   while (i < count) {
