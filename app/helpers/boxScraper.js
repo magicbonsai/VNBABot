@@ -72,6 +72,8 @@ function validateNumber(num, stripNegative = true) {
   const newNum = stripNegative ? num.replace("-", "") : num;
 
   if (newNum == "n" || newNum == "N") return "11";
+  if (newNum == "I" || newNum == "i") return "1";
+  if (newNum == "O" || newNum == "o") return "1";
   if (newNum == "B") return "8";
 
   return newNum;
@@ -466,7 +468,7 @@ async function tessImages(videoLink) {
           poCopy[k] =
             k === "Player"
               ? findMode(poCopy[k])
-              : validateNumber(removeLetters(findMode(poCopy[k])));
+              : removeLetters(validateNumber(findMode(poCopy[k])));
         });
 
         return poCopy;
