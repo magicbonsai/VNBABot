@@ -545,6 +545,7 @@ function updateRawGameStats(data, gameId) {
       }
 
       console.log("Upload Completed!");
+      i = 0;
     });
   })();
 }
