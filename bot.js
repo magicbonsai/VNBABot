@@ -1,4 +1,4 @@
-const { Intents, Client } = require("discord.js");
+const { Client } = require("discord.js");
 const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const _ = require("lodash");
@@ -23,38 +23,6 @@ const {
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 const { sheetIds } = require("./app/helpers/sheetHelper");
 require("dotenv").config();
-const foo = new Intents();
-console.log(Intents);
-const myIntents = new Intents([
-    "GUILDS",
-    "GUILD_MEMBERS",  
-    "GUILD_BANS",  
-    "GUILD_EMOJIS_AND_STICKERS",  
-    "GUILD_INTEGRATIONS",   
-    "GUILD_WEBHOOKS", 
-    "GUILD_INVITES",   
-    "GUILD_VOICE_STATES",    
-    "GUILD_PRESENCES",    
-    "GUILD_MESSAGES",    
-    "GUILD_MESSAGE_REACTIONS",
-    "GUILD_MESSAGE_TYPING",
-    "DIRECT_MESSAGES",
-    "DIRECT_MESSAGE_REACTIONS",
-    "DIRECT_MESSAGE_TYPING",
-    "GUILD_SCHEDULED_EVENTS"
-]);
-// const client = new Client({
-//   intents: [
-//     "DIRECT_MESSAGES",
-//     "DIRECT_MESSAGE_REACTIONS",
-//     "GUILD_MESSAGES",
-//     "GUILD_MESSAGE_REACTIONS",
-//     "GUILDS",
-//     "GUILD_MEMBERS"
-//   ],
-//   partials: ["MESSAGE", "CHANNEL", "REACTION"],
-//   fetchAllMembers: true
-// });
 const client = new Client({
   intents: [
     "DIRECT_MESSAGES",
