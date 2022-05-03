@@ -48,10 +48,18 @@ const retirementCalculator = (discordClient) => {
         private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
       });
       await doc.loadInfo();
-      const validTeams = [...(process.env.VALID_TEAMS || []).split(','), 'FA'];
+
+      const teamAssetsSheet = sheets[sheetIds.teamAssets];
       const sheets = doc.sheetsById;
       const rawStats = sheets[sheetIds.rawStats];
       const players = sheets[sheetIds.players];
+      const validTeams = await teamAssetsSheet.getRows().then(rows => {
+        return rows
+          .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
+          .map(row => {
+            return row.Team;
+          });
+      });
       await rawStats.loadHeaderRow();
   
       players.getRows().then(playerRows => {

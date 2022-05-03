@@ -29,12 +29,12 @@ const client = new Client({
     "DIRECT_MESSAGE_REACTIONS",
     "GUILD_MESSAGES",
     "GUILD_MESSAGE_REACTIONS",
-    "GUILDS"
+    "GUILDS",
+    "GUILD_MEMBERS"
   ],
   partials: ["MESSAGE", "CHANNEL", "REACTION"],
-  fetchAllMembers: true
+  fetchAllMembers: true,
 });
-
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
 const { runReportWith } = require("./app/bots/rojBot");
