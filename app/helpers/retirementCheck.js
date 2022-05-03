@@ -49,8 +49,8 @@ const retirementCalculator = (discordClient) => {
       });
       await doc.loadInfo();
 
-      const teamAssetsSheet = sheets[sheetIds.teamAssets];
       const sheets = doc.sheetsById;
+      const teamAssetsSheet = sheets[sheetIds.teamAssets];
       const rawStats = sheets[sheetIds.rawStats];
       const players = sheets[sheetIds.players];
       const validTeams = await teamAssetsSheet.getRows().then(rows => {
