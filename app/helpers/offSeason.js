@@ -1,6 +1,5 @@
 const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const rwc = require('random-weighted-choice');
 const { CHANNEL_IDS } = require("../../consts");
 
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);

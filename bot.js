@@ -11,6 +11,7 @@ const {
   removeInjuries
 } = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
+const { offSeasonPaperWork } = require("./app/helpers/offSeason");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -170,7 +171,10 @@ const dedueCommand = (prompt, msg) => {
     case "retirement":
       retirementCheck(client);
       break;
-
+    case "offseason":
+      offSeasonPaperWork(client);
+      break;
+      
     default:
   }
 };
