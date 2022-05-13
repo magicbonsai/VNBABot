@@ -14,9 +14,18 @@ const offSeasonPaperWork = discordClient => {
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
+    const teamAssetsSheet = sheets[sheetIds.teamAssets];
+    const validTeams = await teamAssetsSheet.getRows().then(rows => {
+      return rows
+        .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
+        .map(row => {
+          return row.Team;
+        });
+    });
     const modifiedRows = await playerSheet.getRows().then(
       rows => {
-        await rows.reduce(
+        const filteredRows = rows.filter(row => !row["Retiring?"] && [...validTeams, 'FA'].includes(row.Team));
+        await filteredRows.reduce(
           async (memo, currentValue = {}) => {
             const acc = await memo;
               if (_.clamp(parseInt(currentValue["Contract Length"]) - 1, 0, 3) == 0) {
