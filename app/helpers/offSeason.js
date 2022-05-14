@@ -15,6 +15,7 @@ const offSeasonPaperWork = discordClient => {
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
     const teamAssetsSheet = sheets[sheetIds.teamAssets];
+    const teamAssetsRows = awaitTeamAssetsSheet.getRows();
     const validTeams = await teamAssetsSheet.getRows().then(rows => {
       return rows
         .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
@@ -44,6 +45,34 @@ const offSeasonPaperWork = discordClient => {
         );
       }
     );
+    const retirementMentorships = await playerSheet.getRows().then(
+      rows => {
+        const filteredRows = rows.filter(row => row["Retiring?"] && [...validTeams, 'FA'].includes(row.Team));
+        await filteredRows.reduce(
+          async (memo, currentValue) => {
+            const acc = await memo;
+            const { Name, Team, ["Contract Length"]: contractLength  } = currentValue;
+            if (_.clamp(parseInt(currentValue["Contract Length"]) - 1, 0, 3) == 0) {
+              return [
+                ...acc
+              ]
+            }
+            const rowIdxToUpdate = teamAssetsRows.findIndex(row => row.Team == Team) + 1;
+            const colIdxToUpdate = 45;
+            await teamAssetsSheet.loadCells();
+            let cellToUpdate = teamAssetsSheet.getCell(rowIdxToUpdate, colIdxToUpdate);
+            const oldValue = cellToUpdate.value;
+            let newValue = oldValue.split(',').push(Name);
+            if (_.clamp(parseInt(currentValue["Contract Length"]) - 1, 0, 3) == 2) {
+              newValue.push(Name);
+            }
+            cellToUpdate.value = newValue.join(',');
+            await teamAssetsSheet.saveUpdatedCells();
+          },
+          []
+        )
+      }
+    )
     discordClient.channels.get(CHANNEL_IDS[tech-stuff]).send("OffSeason processing complete.");
     return modifiedRows.filter(row => row.Team == "FA").map(row => row.Name);
   })();
