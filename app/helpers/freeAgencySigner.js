@@ -153,7 +153,7 @@ const signFAsWith = discordClient => (numOfSignings = 10) => {
     });
 
     // send a discord msg to the channel
-    fullDiscordMessageMap.forEach(message => discordClient.channels.get(CHANNEL_IDS.transactions).send(message));
+    fullDiscordMessageMap.forEach(message => discordClient.channels.cache.get(CHANNEL_IDS.transactions).send(message));
 
     // for safety purposes, save a row to the archive
     
