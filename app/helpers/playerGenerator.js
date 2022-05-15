@@ -548,7 +548,7 @@ const updateValues = (values, delta) => {
   attrDelta.forEach(({ key, value }) => {
     newAttributes[key] = `${_.clamp(
       parseInt(newAttributes[key]) + value,
-      0,
+      45,
       222
     )}`;
   });
