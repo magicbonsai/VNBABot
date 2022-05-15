@@ -262,6 +262,29 @@ const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function () {
   removeInjuries();
 });
 
+const runReportWithCheck = num => {
+  (async () => {
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+
+    await doc.loadInfo();
+    const sheets = doc.sheetsById;
+    const globalsSheet = sheets[sheetIds.globalVars];
+
+    const doBoostsVar = await globalsSheet
+      .getRows()
+      .then(rows => rows.find(row => row.Global == "doBoosts"));
+    console.log("daily injury job", doBoostsVar);
+    if (doBoostsVar.Status == "FALSE") {
+      return;
+    }
+    runReport(num);
+  })();
+};
+
 //some sort of trade request tracker
 
 const trikovJob = new CronJob("0 13 * * *", function () {
