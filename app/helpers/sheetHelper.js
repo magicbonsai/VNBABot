@@ -20,6 +20,7 @@ const colIdx = {
     "Frozen":1,
     "Cash": 2,
     "Cash Next Season": 3,
+    "Mentorships": 45,
   }
 };
 

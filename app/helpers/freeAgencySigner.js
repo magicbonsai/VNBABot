@@ -82,11 +82,15 @@ const signFAsWith = discordClient => (numOfSignings = 10) => {
         const {
           Data
         } = playerRowToUpdate;
-
+        const newLoyalty = _.random(1, 10);
         playerRowToUpdate["Team"] = newTeam;
         playerRowToUpdate["Salary"] = Cash;
         playerRowToUpdate["Contract Length"] = toContractLength(parseInt(Cash));
-        playerRowToUpdate["Loyalty"] = _.random(1, 10);
+        playerRowToUpdate["Loyalty"] = newLoyalty;
+        playerRowToUpdate["Contract Offer"] = JSON.stringify({
+          ...contractJson,
+          Loyalty: newLoyalty
+        });
         console.log('newRow', playerName, newTeam);
         await playerRowToUpdate.save();
 
@@ -149,7 +153,7 @@ const signFAsWith = discordClient => (numOfSignings = 10) => {
     });
 
     // send a discord msg to the channel
-    fullDiscordMessageMap.forEach(message => discordClient.channels.get(CHANNEL_IDS.transactions).send(message));
+    fullDiscordMessageMap.forEach(message => discordClient.channels.cache.get(CHANNEL_IDS.transactions).send(message));
 
     // for safety purposes, save a row to the archive
     

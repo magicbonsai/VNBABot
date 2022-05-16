@@ -11,6 +11,7 @@ const {
   removeInjuries
 } = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
+const { offSeasonPaperWork } = require("./app/helpers/offSeason");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -170,7 +171,10 @@ const dedueCommand = (prompt, msg) => {
     case "retirement":
       retirementCheck(client);
       break;
-
+    case "offseason":
+      offSeasonPaperWork(client);
+      break;
+      
     default:
   }
 };
@@ -214,19 +218,19 @@ const preJob = new CronJob("0 14 * * *", function () {
   // })();
 });
 
-const WednesdayJob = new CronJob("0 16 * * 3", function () {
+const WednesdayJob = new CronJob("0 13 * * 3", function () {
   runReport(5);
 });
 
-const WednesdayJob2 = new CronJob("15 16 * * 3", function () {
+const WednesdayJob2 = new CronJob("15 13 * * 3", function () {
   runReport(5);
 });
 
-const SaturdayJob = new CronJob("0 16 * * 6", function () {
+const SaturdayJob = new CronJob("0 13 * * 6", function () {
   runReport(5);
 });
 
-const SaturdayJob2 = new CronJob("15 16 * * 6", function () {
+const SaturdayJob2 = new CronJob("15 13 * * 6", function () {
   runReport(5);
 });
 
@@ -257,6 +261,29 @@ const dailyRemoveInjuryJob = new CronJob("15 14 * * *", function () {
   console.log("daily remove injury job");
   removeInjuries();
 });
+
+const runReportWithCheck = num => {
+  (async () => {
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+
+    await doc.loadInfo();
+    const sheets = doc.sheetsById;
+    const globalsSheet = sheets[sheetIds.globalVars];
+
+    const doBoostsVar = await globalsSheet
+      .getRows()
+      .then(rows => rows.find(row => row.Global == "doBoosts"));
+    console.log("daily injury job", doBoostsVar);
+    if (doBoostsVar.Status == "FALSE") {
+      return;
+    }
+    runReport(num);
+  })();
+};
 
 //some sort of trade request tracker
 
