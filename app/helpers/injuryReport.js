@@ -98,13 +98,15 @@ const generateInjuriesWith = discordClient => forceInjury => {
     } = injury;
 
     const injuryDuration = _.random(DurationMin, DurationMax);
+    const todayDate = new Date().toLocaleString().split(",")[0];
     const newInjuryDate = generateFutureDate(injuryDuration);
 
     const { Name: playerName, Data: oldData } = playerRowToUpdate || {};
     const newJSON = updateVitals(oldData, id);
     const statusObj = {
       Name: injuryName,
-      Duration: newInjuryDate,
+      DateInjured: todayDate,
+      Duration: injuryDuration,
       AffectedLow,
       AffectedHigh,
       DNP
@@ -146,7 +148,7 @@ const generateInjuriesWith = discordClient => forceInjury => {
     }
 
     const dnpMessage = `What's severely affected is his ${AffectedHigh}.  It is recommended to bench this player until they recover.`;
-    const message = `${playerName} has suffered an injury: ${injuryName} for ${injuryDuration} days.  He will recover on ${newInjuryDate}. 
+    const message = `${playerName} has suffered an injury: ${injuryName} for ${injuryDuration} games. 
       \n The injury minorly affects his ${AffectedLow}.  ${
       DNP ? dnpMessage : ""
     }`;
@@ -174,13 +176,29 @@ const removeInjuries = () => {
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
+    const scheduleSheet = sheets[sheedIds.schedule];
     const dateToCompare = new Date().toLocaleDateString().split(",")[0];
+    const endDate = generateFutureDate(-1);
+    const scheduleSheetRows = await scheduleSheet.getRows();
     const filteredRows = await playerSheet.getRows().then(rows => {
       return rows.filter(row => {
-        const { Status } = row;
+        const { Status, Team } = row;
         if (!Status) return;
-        const { Duration } = JSON.parse(Status);
-        return Duration == dateToCompare;
+        const { DateInjured, Duration } = JSON.parse(Status);
+        let gamesPlayed = 0;
+        const startIndex = scheduleSheetRows.findIndex(row => row.Date == DateInjured);
+        const endIndex = scheduleSheetRows.findIndex(row => row.Date == endDate);
+        const filteredDates = scheduleSheetRows.slice(startIndex, endIndex);
+        filteredDates.forEach(row => {
+          const {
+            Home,
+            Away
+          } = row;
+          if (Home == Team || Away == Team ) {
+            gamesPlayed = gamesPlayed + 1;
+          }
+        });
+        return Duration == gamesPlayed;
       });
     });
     await filteredRows.reduce(async (memo, currentValue = {}) => {

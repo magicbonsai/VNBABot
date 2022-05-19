@@ -91,7 +91,7 @@ const offSeasonPaperWork = discordClient => {
           return acc
         }
         const rowIdxToUpdate = teamAssetsRows.findIndex(row => row.Team == Team) + 1;
-        const colIdxToUpdate = 45;
+        const colIdxToUpdate = 44;
         let cellToUpdate = teamAssetsSheet.getCell(rowIdxToUpdate, colIdxToUpdate);
         const oldValue = cellToUpdate.value || "";
         let newValue = [ ...oldValue.split(','), Name].filter(value => !!value);
