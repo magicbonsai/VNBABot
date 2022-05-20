@@ -198,7 +198,7 @@ const removeInjuries = () => {
             gamesPlayed = gamesPlayed + 1;
           }
         });
-        return Duration == gamesPlayed;
+        return gamesPlayed >= Duration;
       });
     });
     await filteredRows.reduce(async (memo, currentValue = {}) => {
