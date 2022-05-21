@@ -4,6 +4,8 @@ const CHANNEL_IDS = {
   transactions: '917503775894282280',
   updates: '920526414757896233',
   resources: '917457507620913167',
+  // media
+  rumors: "921088591969529906",
   // text channel ids
   general: '917457507620913169',
   "trading-block": '917457507620913170',
