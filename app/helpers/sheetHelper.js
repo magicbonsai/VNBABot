@@ -11,7 +11,8 @@ const sheetIds = {
   teamAssets: "395261312",
   requestQueue: "770847722",
   reportArchive: "832018399",
-  globalVars: "1159560836"
+  globalVars: "1159560836",
+  schedule: "1115239568"
 };
 
 //TODO Fill this out in the future if needed
