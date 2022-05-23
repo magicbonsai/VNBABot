@@ -176,20 +176,24 @@ const removeInjuries = () => {
     const playerSheet = sheets[sheetIds.players];
     const scheduleSheet = sheets[sheetIds.schedule];
     const endDate = generateFutureDate(-1);
-    console.log('endDate', endDate);
     const scheduleSheetRows = await scheduleSheet.getRows();
+    const allRowsWithDates = scheduleSheetRows.filter(row => !!row.Date);
     const filteredRows = await playerSheet.getRows().then(rows => {
       return rows.filter(row => {
         const { Status, Team } = row;
         if (!Status) return;
         const { DateInjured, Duration } = JSON.parse(Status);
-        const foundStartIndex = scheduleSheetRows.findIndex(row => row.Date == DateInjured);
+        const foundStartIndex = allRowsWithDates.findIndex(row => row.Date == DateInjured);
         const startIndex = foundStartIndex == -1 ? 0 : foundStartIndex;
-        const endIndex = scheduleSheetRows.findIndex(row => row.Date == endDate);
-        const filteredDates = scheduleSheetRows.slice(startIndex, endIndex);
-        const lastDate = filteredDates[filteredDates.length - 1].Date;
+        // find the last index by using lastIndexOf, which starts from the end of the array, so we can duplicate dates for games.
+        const endIndex = allRowsWithDates.map(row => row.Date).lastIndexOf(endDate);
+        // const endIndex = scheduleSheetRows.findIndex(row => row.Date == endDate);
+        const filteredDates = allRowsWithDates.slice(startIndex, endIndex);
+        const lastDate = allRowsWithDates[allRowsWithDates.length - 1].Date;
         // last check, if we're done with the season schedule, then clear all the injuries.
-        const seasonDone = new Date(endDate) > new Date(lastDate); 
+        const d = new Date(endDate);
+        const c = new Date(lastDate);
+        const seasonDone = d > c; 
         const gamesPlayed = filteredDates.filter(row => {
           const {
             Home,
@@ -197,7 +201,7 @@ const removeInjuries = () => {
           } = row;
           return (Home.toLowerCase().includes(Team.toLowerCase()) || Away.toLowerCase().includes(Team.toLowerCase()));
         }).length;
-        console.log('gamesPlayed', row.Name, gamesPlayed, gamesPlayed >= Duration )
+        console.log('gamesPlayed', row.Name, gamesPlayed, gamesPlayed >= Duration, seasonDone )
         return gamesPlayed >= Duration || seasonDone;
       });
     });
