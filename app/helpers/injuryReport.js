@@ -12,7 +12,6 @@ const { createChangeListJSON } = require("../bots/rojBot");
 const generateFutureDate = days => {
   let d = new Date();
   d.setDate(d.getDate() + days);
-  console.log("newDate", d, days, d.toLocaleString());
   return d.toLocaleString().split(",")[0];
 };
 
@@ -38,11 +37,11 @@ const updateVitals = (data, id) => {
 const weights = [
   {
     id: "y",
-    weight: 0.1
+    weight: 0.2
   },
   {
     id: "n",
-    weight: 0.9
+    weight: 0.8
   }
 ];
 
@@ -152,7 +151,6 @@ const generateInjuriesWith = discordClient => forceInjury => {
       \n The injury minorly affects his ${AffectedLow}.  ${
       DNP ? dnpMessage : ""
     }`;
-
     discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message);
 
     await archive.addRow({
@@ -176,31 +174,34 @@ const removeInjuries = () => {
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
-    const scheduleSheet = sheets[sheedIds.schedule];
-    const dateToCompare = new Date().toLocaleDateString().split(",")[0];
+    const scheduleSheet = sheets[sheetIds.schedule];
     const endDate = generateFutureDate(-1);
+    console.log('endDate', endDate);
     const scheduleSheetRows = await scheduleSheet.getRows();
     const filteredRows = await playerSheet.getRows().then(rows => {
       return rows.filter(row => {
         const { Status, Team } = row;
         if (!Status) return;
         const { DateInjured, Duration } = JSON.parse(Status);
-        let gamesPlayed = 0;
-        const startIndex = scheduleSheetRows.findIndex(row => row.Date == DateInjured);
+        const foundStartIndex = scheduleSheetRows.findIndex(row => row.Date == DateInjured);
+        const startIndex = foundStartIndex == -1 ? 0 : foundStartIndex;
         const endIndex = scheduleSheetRows.findIndex(row => row.Date == endDate);
         const filteredDates = scheduleSheetRows.slice(startIndex, endIndex);
-        filteredDates.forEach(row => {
+        const lastDate = filteredDates[filteredDates.length - 1].Date;
+        // last check, if we're done with the season schedule, then clear all the injuries.
+        const seasonDone = new Date(endDate) > new Date(lastDate); 
+        const gamesPlayed = filteredDates.filter(row => {
           const {
             Home,
             Away
           } = row;
-          if (Home == Team || Away == Team ) {
-            gamesPlayed = gamesPlayed + 1;
-          }
-        });
-        return gamesPlayed >= Duration;
+          return (Home.toLowerCase().includes(Team.toLowerCase()) || Away.toLowerCase().includes(Team.toLowerCase()));
+        }).length;
+        console.log('gamesPlayed', row.Name, gamesPlayed, gamesPlayed >= Duration )
+        return gamesPlayed >= Duration || seasonDone;
       });
     });
+    console.log('players to remove injury', filteredRows.map(row => row.Name));
     await filteredRows.reduce(async (memo, currentValue = {}) => {
       const acc = await memo;
       await doc.loadInfo();

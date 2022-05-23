@@ -43,7 +43,6 @@ const { runReportWith } = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const { CHANNEL_IDS } = require("./consts");
 
 const runReport = runReportWith(client);
 const signFAs = signFAsWith(client);
