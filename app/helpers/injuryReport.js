@@ -185,7 +185,7 @@ const removeInjuries = () => {
         const { DateInjured, Duration } = JSON.parse(Status);
         const foundStartIndex = allRowsWithDates.findIndex(row => row.Date == DateInjured);
         const startIndex = foundStartIndex == -1 ? 0 : foundStartIndex;
-        // find the last index by using lastIndexOf, which starts from the end of the array, so we can duplicate dates for games.
+        // find the last index by using lastIndexOf, which starts from the end of the array, so we can find duplicate dates for games.
         const endIndex = allRowsWithDates.map(row => row.Date).lastIndexOf(endDate);
         // const endIndex = scheduleSheetRows.findIndex(row => row.Date == endDate);
         const filteredDates = allRowsWithDates.slice(startIndex, endIndex);
