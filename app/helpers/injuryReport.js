@@ -12,7 +12,6 @@ const { createChangeListJSON } = require("../bots/rojBot");
 const generateFutureDate = days => {
   let d = new Date();
   d.setDate(d.getDate() + days);
-  console.log("newDate", d, days, d.toLocaleString());
   return d.toLocaleString().split(",")[0];
 };
 
@@ -38,11 +37,11 @@ const updateVitals = (data, id) => {
 const weights = [
   {
     id: "y",
-    weight: 0.1
+    weight: 0.2
   },
   {
     id: "n",
-    weight: 0.9
+    weight: 0.8
   }
 ];
 
@@ -98,13 +97,15 @@ const generateInjuriesWith = discordClient => forceInjury => {
     } = injury;
 
     const injuryDuration = _.random(DurationMin, DurationMax);
+    const todayDate = new Date().toLocaleString().split(",")[0];
     const newInjuryDate = generateFutureDate(injuryDuration);
 
     const { Name: playerName, Data: oldData } = playerRowToUpdate || {};
     const newJSON = updateVitals(oldData, id);
     const statusObj = {
       Name: injuryName,
-      Duration: newInjuryDate,
+      DateInjured: todayDate,
+      Duration: injuryDuration,
       AffectedLow,
       AffectedHigh,
       DNP
@@ -146,11 +147,10 @@ const generateInjuriesWith = discordClient => forceInjury => {
     }
 
     const dnpMessage = `What's severely affected is his ${AffectedHigh}.  It is recommended to bench this player until they recover.`;
-    const message = `${playerName} has suffered an injury: ${injuryName} for ${injuryDuration} days.  He will recover on ${newInjuryDate}. 
+    const message = `${playerName} has suffered an injury: ${injuryName} for ${injuryDuration} games. 
       \n The injury minorly affects his ${AffectedLow}.  ${
       DNP ? dnpMessage : ""
     }`;
-
     discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message);
 
     await archive.addRow({
@@ -174,15 +174,38 @@ const removeInjuries = () => {
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
-    const dateToCompare = new Date().toLocaleDateString().split(",")[0];
+    const scheduleSheet = sheets[sheetIds.schedule];
+    const endDate = generateFutureDate(-1);
+    const scheduleSheetRows = await scheduleSheet.getRows();
+    const allRowsWithDates = scheduleSheetRows.filter(row => !!row.Date);
     const filteredRows = await playerSheet.getRows().then(rows => {
       return rows.filter(row => {
-        const { Status } = row;
+        const { Status, Team } = row;
         if (!Status) return;
-        const { Duration } = JSON.parse(Status);
-        return Duration == dateToCompare;
+        const { DateInjured, Duration } = JSON.parse(Status);
+        const foundStartIndex = allRowsWithDates.findIndex(row => row.Date == DateInjured);
+        const startIndex = foundStartIndex == -1 ? 0 : foundStartIndex;
+        // find the last index by using lastIndexOf, which starts from the end of the array, so we can find duplicate dates for games.
+        const endIndex = allRowsWithDates.map(row => row.Date).lastIndexOf(endDate);
+        // const endIndex = scheduleSheetRows.findIndex(row => row.Date == endDate);
+        const filteredDates = allRowsWithDates.slice(startIndex, endIndex);
+        const lastDate = allRowsWithDates[allRowsWithDates.length - 1].Date;
+        // last check, if we're done with the season schedule, then clear all the injuries.
+        const d = new Date(endDate);
+        const c = new Date(lastDate);
+        const seasonDone = d > c; 
+        const gamesPlayed = filteredDates.filter(row => {
+          const {
+            Home,
+            Away
+          } = row;
+          return (Home.toLowerCase().includes(Team.toLowerCase()) || Away.toLowerCase().includes(Team.toLowerCase()));
+        }).length;
+        console.log('gamesPlayed', row.Name, gamesPlayed, gamesPlayed >= Duration, seasonDone )
+        return gamesPlayed >= Duration || seasonDone;
       });
     });
+    console.log('players to remove injury', filteredRows.map(row => row.Name));
     await filteredRows.reduce(async (memo, currentValue = {}) => {
       const acc = await memo;
       await doc.loadInfo();

@@ -23,6 +23,7 @@ const {
 } = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 const { sheetIds } = require("./app/helpers/sheetHelper");
+const { CHANNEL_IDS } = require('./consts');
 require("dotenv").config();
 const client = new Client({
   intents: [
@@ -102,6 +103,14 @@ const dedueCommand = (prompt, msg) => {
         msg.reply("Posting on Roj twitter!");
         const tweet = words.slice(1).join(" ");
         postRojTweet(tweet);
+      }
+      break;
+
+    case "rumor": 
+      if (msg.channel.type == "dm") {
+        msg.reply("Posting on Rumors channel!");
+        const message = words.slice(1).join(" ");
+        return client.channels.cache.get(CHANNEL_IDS.rumors).send(message); 
       }
       break;
 
