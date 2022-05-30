@@ -91,7 +91,7 @@ const dedueCommand = (prompt, msg) => {
       triKovAnalysis();
       break;
     case "smithy":
-      if (msg.channel.type == "dm") {
+      if (msg.channel.type == "DM") {
         msg.reply("Posting on Smithy twitter!");
         const tweet = words.slice(1).join(" ");
         postSmithyTweet(tweet);
@@ -99,7 +99,7 @@ const dedueCommand = (prompt, msg) => {
       break;
 
     case "roj":
-      if (msg.channel.type == "dm") {
+      if (msg.channel.type == "DM") {
         msg.reply("Posting on Roj twitter!");
         const tweet = words.slice(1).join(" ");
         postRojTweet(tweet);
@@ -107,7 +107,8 @@ const dedueCommand = (prompt, msg) => {
       break;
 
     case "rumor": 
-      if (msg.channel.type == "dm") {
+      console.log('msg', msg, msg.channel);
+      if (msg.channel.type == "DM") {
         msg.reply("Posting on Rumors channel!");
         const message = words.slice(1).join(" ");
         return client.channels.cache.get(CHANNEL_IDS.rumors).send(message); 

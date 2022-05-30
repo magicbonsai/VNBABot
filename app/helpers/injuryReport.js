@@ -16,12 +16,13 @@ const generateFutureDate = days => {
 };
 
 // I hate this
-const updateVitals = (data, id) => {
+const updateVitals = (data, id, duration) => {
   const valuesFromJSON = JSON.parse(data);
   const selectedTab = valuesFromJSON.find(page => page.tab === "VITALS");
   const selectedIndex = valuesFromJSON.findIndex(page => page.tab === "VITALS");
   let newData = selectedTab.data;
   newData["INJURY1TYPE"] = id;
+  newData["INJURY1DAY"] = duration;
 
   return JSON.stringify([
     ...valuesFromJSON.slice(0, selectedIndex),
@@ -101,7 +102,7 @@ const generateInjuriesWith = discordClient => forceInjury => {
     const newInjuryDate = generateFutureDate(injuryDuration);
 
     const { Name: playerName, Data: oldData } = playerRowToUpdate || {};
-    const newJSON = updateVitals(oldData, id);
+    const newJSON = updateVitals(oldData, id, "14");
     const statusObj = {
       Name: injuryName,
       DateInjured: todayDate,
@@ -184,7 +185,8 @@ const removeInjuries = () => {
         if (!Status) return;
         const { DateInjured, Duration } = JSON.parse(Status);
         const foundStartIndex = allRowsWithDates.findIndex(row => row.Date == DateInjured);
-        const startIndex = foundStartIndex == -1 ? 0 : foundStartIndex;
+        // const isDateInRows = !!allRowsWithDates.find(row => row.Date == DateInjured);
+        const startIndex = foundStartIndex < 0 ? 0 : foundStartIndex;
         // find the last index by using lastIndexOf, which starts from the end of the array, so we can find duplicate dates for games.
         const endIndex = allRowsWithDates.map(row => row.Date).lastIndexOf(endDate);
         // const endIndex = scheduleSheetRows.findIndex(row => row.Date == endDate);
@@ -218,7 +220,7 @@ const removeInjuries = () => {
 
       let playerRowToUpdate = playerRows.find(row => row.Name === playerName);
       const { Data: oldData } = playerRowToUpdate;
-      const newJSON = updateVitals(oldData, "0");
+      const newJSON = updateVitals(oldData, "0", "0");
 
       playerRowToUpdate["Status"] = "";
       playerRowToUpdate["Data"] = newJSON;
