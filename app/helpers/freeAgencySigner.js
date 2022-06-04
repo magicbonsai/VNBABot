@@ -139,7 +139,6 @@ const signFAsWith =
           const newValue = oldValue - parseInt(Cash);
 
           cellToUpdate.value = newValue;
-          console.log("newTeamCash", newTeam, oldValue, newValue);
           await teamAssetsSheet.saveUpdatedCells();
 
           // return relevant info to parse into a discord message

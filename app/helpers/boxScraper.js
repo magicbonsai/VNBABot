@@ -402,7 +402,7 @@ async function tessImages(videoLink) {
       const results = await tesseract.recognize(filesDir, {
         // rectangle: rect,
         dpi: 96,
-        oem: 3,
+        oem: 1,
         psm: 6,
         lang: "eng"
       });
