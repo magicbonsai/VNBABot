@@ -137,18 +137,16 @@ function getClosestPlayer(playerName, players) {
   let highestMeasure = 0;
   let result = "";
   for (const player of players) {
-    const { Name } = player;
-    const nameKey = Name;
     const measure = new distance.Jaccard(
       playerName.split(""),
-      nameKey.split("")
+      player.split("")
     ).getCoefficient();
     if (measure > highestMeasure) {
       highestMeasure = measure;
-      result = nameKey;
+      result = player;
     }
   }
-  if (highestMeasure < 0.5) {
+  if (highestMeasure < 0.8) {
     return "";
   }
   return result;
@@ -426,10 +424,36 @@ async function tessImages(videoLink) {
           return element !== null;
         });
 
-      const statlines = sanitizedResults.map(sr => {
+      updateRawGameStats(sanitizedResults, videoLink);
+    })();
+  });
+}
+
+function updateRawGameStats(data, gameId) {
+  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+  (async function main() {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+    const sheets = doc.sheetsById;
+    const rawStats = sheets[sheetIds.rawStats];
+    const players = sheets[sheetIds.players];
+    await rawStats.loadHeaderRow();
+
+    const statsLength = await rawStats.getRows().then(rows => rows.length);
+    players.getRows().then(async function (playerRows) {
+      const rowsToAdd = [];
+      const playerNames = playerRows.map(p => nameToInitial(p.Name));
+      const filteredData = data.filter(player =>
+        playerNames.includes(player.Player)
+      );
+
+      const statlines = data.map(sr => {
         return sr.length === 16
           ? {
-              Player: sr[0],
+              Player: getClosestPlayer(sr[0], playerNames),
               Minutes: sr[1],
               Points: sr[2],
               Rebounds: sr[3],
@@ -501,33 +525,7 @@ async function tessImages(videoLink) {
         return poCopy;
       });
 
-      updateRawGameStats(modePlayersArray, videoLink);
-    })();
-  });
-}
-
-function updateRawGameStats(data, gameId) {
-  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-  (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const rawStats = sheets[sheetIds.rawStats];
-    const players = sheets[sheetIds.players];
-    await rawStats.loadHeaderRow();
-
-    const statsLength = await rawStats.getRows().then(rows => rows.length);
-    players.getRows().then(async function (playerRows) {
-      const rowsToAdd = [];
-      const playerNames = playerRows.map(p => nameToInitial(p.Name));
-      const filteredData = data.filter(player =>
-        playerNames.includes(player.Player)
-      );
-
-      data.forEach(fdPlayer => {
+      modePlayersArray.forEach(fdPlayer => {
         const closestPlayer = getClosestPlayer(fdPlayer.Player, playerNames);
         if (closestPlayer) {
           const playerVal = _.find(
@@ -537,6 +535,7 @@ function updateRawGameStats(data, gameId) {
 
           rowsToAdd.push({
             ...fdPlayer,
+            Player: closestPlayer,
             Team:
               playerVal.Role === "13" ||
               playerVal.Team === "FA" ||
