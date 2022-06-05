@@ -130,6 +130,30 @@ function returnMostCommonKey(playerName, players) {
   return result;
 }
 
+function returnClosestPlayer(playerName, players) {
+  if (!playerName) {
+    return "";
+  }
+  let highestMeasure = 0;
+  let result = "";
+  for (const player of players) {
+    const { Name } = player;
+    const nameKey = nameToPlayerKey(Name);
+    const measure = new distance.Jaccard(
+      playerName.split(""),
+      nameKey.split("")
+    ).getCoefficient();
+    if (measure > highestMeasure) {
+      highestMeasure = measure;
+      result = nameKey;
+    }
+  }
+  if (highestMeasure < 0.5) {
+    return "";
+  }
+  return result;
+}
+
 function updateRawStats(data, gameId, team1, team2) {
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
   (async function main() {
@@ -465,10 +489,13 @@ async function tessImages(videoLink) {
         const poCopy = { ...po };
 
         _.keys(poCopy).forEach(k => {
+          const stripNegative = k !== "+/-";
           poCopy[k] =
             k === "Player"
               ? findMode(poCopy[k])
-              : removeLetters(validateNumber(findMode(poCopy[k])));
+              : removeLetters(
+                  validateNumber(findMode(poCopy[k]), stripNegative)
+                );
         });
 
         return poCopy;
@@ -500,22 +527,25 @@ function updateRawGameStats(data, gameId) {
         playerNames.includes(player.Player)
       );
 
-      filteredData.forEach(fdPlayer => {
-        const playerVal = _.find(
-          playerRows,
-          pr => nameToInitial(pr.Name) === fdPlayer.Player
-        );
+      data.forEach(fdPlayer => {
+        const closestPlayer = getClosestPlayer(fdPlayer.Player, playerNames);
+        if (closestPlayer) {
+          const playerVal = _.find(
+            playerRows,
+            pr => nameToInitial(pr.Name) === closestPlayer
+          );
 
-        rowsToAdd.push({
-          ...fdPlayer,
-          Team:
-            playerVal.Role === "13" ||
-            playerVal.Team === "FA" ||
-            playerVal.Team === "Rookie"
-              ? playerVal["Other Team"].toUpperCase()
-              : playerVal.Team.toUpperCase(),
-          "Game Id": gameId
-        });
+          rowsToAdd.push({
+            ...fdPlayer,
+            Team:
+              playerVal.Role === "13" ||
+              playerVal.Team === "FA" ||
+              playerVal.Team === "Rookie"
+                ? playerVal["Other Team"].toUpperCase()
+                : playerVal.Team.toUpperCase(),
+            "Game Id": gameId
+          });
+        }
       });
 
       let orderedRowsToAdd = _.sortBy(rowsToAdd, x => x.Team);
