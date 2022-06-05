@@ -359,7 +359,7 @@ function removeChars(inputString) {
 }
 
 function removeLetters(inputString) {
-  var regex = new RegExp("[^0-9 ]", "g");
+  var regex = new RegExp("[^-0-9 ]", "g");
   return inputString
     .replaceAll("O", "0")
     .replaceAll("Z", "2")
@@ -521,21 +521,19 @@ function updateRawGameStats(data, gameId) {
                   validateNumber(findMode(poCopy[k]), stripNegative)
                 );
         });
-
+        console.log(poCopy);
         return poCopy;
       });
 
       modePlayersArray.forEach(fdPlayer => {
-        const closestPlayer = getClosestPlayer(fdPlayer.Player, playerNames);
-        if (closestPlayer) {
-          const playerVal = _.find(
-            playerRows,
-            pr => nameToInitial(pr.Name) === closestPlayer
-          );
+        const playerVal = _.find(
+          playerRows,
+          pr => nameToInitial(pr.Name) === fdPlayer.Player
+        );
 
+        if (fdPlayer.Player) {
           rowsToAdd.push({
             ...fdPlayer,
-            Player: closestPlayer,
             Team:
               playerVal.Role === "13" ||
               playerVal.Team === "FA" ||
