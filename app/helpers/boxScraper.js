@@ -130,7 +130,7 @@ function returnMostCommonKey(playerName, players) {
   return result;
 }
 
-function returnClosestPlayer(playerName, players) {
+function getClosestPlayer(playerName, players) {
   if (!playerName) {
     return "";
   }
