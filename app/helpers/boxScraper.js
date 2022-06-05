@@ -138,7 +138,7 @@ function getClosestPlayer(playerName, players) {
   let result = "";
   for (const player of players) {
     const { Name } = player;
-    const nameKey = nameToPlayerKey(Name);
+    const nameKey = Name;
     const measure = new distance.Jaccard(
       playerName.split(""),
       nameKey.split("")
