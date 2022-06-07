@@ -327,26 +327,26 @@ function generateAttributes() {
   // attributes
   // WIP: rework how values are instantiated
   for (let step = 0; step < 11; step++) {
-    values.push(getRandomInt(80, 99));
+    values.push(_.random(80, 99));
   }
   for (let step = 0; step < 10; step++) {
-    values.push(getRandomInt(70, 99));
+    values.push(_.random(70, 99));
   }
   for (let step = 0; step < 8; step++) {
-    values.push(getRandomInt(60, 99));
+    values.push(_.random(60, 99));
   }
   for (let step = 0; step < 5; step++) {
-    values.push(getRandomInt(50, 99));
+    values.push(_.random(50, 99));
   }
   for (let step = 0; step < 4; step++) {
-    values.push(getRandomInt(40, 89));
+    values.push(_.random(40, 89));
   }
   for (let step = 0; step < 3; step++) {
-    values.push(getRandomInt(30, 79));
+    values.push(_.random(30, 79));
   }
   // durability
   for (let step = 0; step < 12; step++) {
-    injuryValues.push(getRandomInt(30, 99));
+    injuryValues.push(_.random(30, 99));
   }
   shuffle(values);
   shuffle(injuryValues);
@@ -403,11 +403,11 @@ function positionBias(position, attributes) {
 const weights = [
   {
     id: "0",
-    weight: 0.67
+    weight: 0.65
   },
   {
     id: "1",
-    weight: 0.15
+    weight: 0.17
   },
   {
     id: "2",
@@ -430,7 +430,7 @@ const personalityWeights = [
   },
   {
     id: "1",
-    weight: 0.8
+    weight: 0.08
   }
 ];
 
@@ -533,18 +533,18 @@ const updateValues = (values, delta) => {
   const badgesTab = valuesFromJSON.find(page => page.tab === "BADGES");
   const hotzoneTab = valuesFromJSON.find(page => page.tab === "HOTZONE");
   let newAttributes = attributesTab.data;
-  let newBadges = badgesTab.data;
-  const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
+  // let newBadges = badgesTab.data;
+  // const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
   const attrDelta = _.sampleSize(keys, 5).map(key => ({
     key,
     value: deltas[delta] * getRandomArbitrary(15, 45)
   }));
-  const badgeKeys = delta == "up" ? badges : filteredBadgeKeys;
-  const badgeSampleSize = delta == "up" ? 5 : 3;
-  const badgeDelta = _.sampleSize(badgeKeys, badgeSampleSize).map(key => ({
-    key,
-    value: deltas[delta]
-  }));
+  // const badgeKeys = delta == "up" ? badges : filteredBadgeKeys;
+  // const badgeSampleSize = delta == "up" ? 5 : 3;
+  // const badgeDelta = _.sampleSize(badgeKeys, badgeSampleSize).map(key => ({
+  //   key,
+  //   value: deltas[delta]
+  // }));
   attrDelta.forEach(({ key, value }) => {
     newAttributes[key] = `${_.clamp(
       parseInt(newAttributes[key]) + value,
@@ -552,10 +552,10 @@ const updateValues = (values, delta) => {
       222
     )}`;
   });
-  badgeDelta.forEach(({ key, value }) => {
-    newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
-  });
-  const { data: newTendencies } = generateTendencies({ data: newAttributes}, { data: newBadges }, hotzoneTab);
+  // badgeDelta.forEach(({ key, value }) => {
+  //   newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
+  // });
+  const { data: newTendencies } = generateTendencies({ data: newAttributes}, { data: badgesTab.data }, hotzoneTab);
   const newValues = [
     vitalsTab,
     {
@@ -568,21 +568,24 @@ const updateValues = (values, delta) => {
     {
       module: "PLAYER",
       tab: "BADGES",
-      data: newBadges
+      data: badgesTab.data
     },
   ];
   return {
     newValues,
     attrDelta,
-    badgeDelta,
+    // badgeDelta,
     attributeTotal: getAttributeTotal(newAttributes),
-    badgeTotal: getBadgeTotal(newBadges)
+    badgeTotal: getBadgeTotal(badgesTab.data)
   };
 };
 
 function toDelta(overall, targetOverall) {
+  if (!targetOverall) {
+    return "neutral";
+  };
   const difference = targetOverall - overall;
-  if (Math.abs(difference) < 1) return "neutral";
+  if (Math.abs(difference) < 69) return "neutral";
   if (difference > 0) return "up";
   if (difference < 0) return "down";
   return "error";
@@ -594,7 +597,7 @@ function toDeltaString(valueDelta) {
 
 function runBatch(batchNum) {
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-  const { generatedPlayers: genPlayersId } = sheetIds;
+  const { generatedPlayers: genPlayersId, players: playerListId } = sheetIds;
   return (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -603,34 +606,61 @@ function runBatch(batchNum) {
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const genPlayers = sheets[genPlayersId];
+    const playerListSheet = sheets[playerListId];
     const playersToBatch = genPlayers.getRows().then(rows => {
       return rows.filter(row => {
-        return row.Batch === batchNum && !row.IgnoreBatch;
+        // return row.Batch === batchNum && !row.IgnoreBatch;
+        return !row.IgnoreBatch;
       });
     });
     playersToBatch.then(rows => {
-      const newRows = rows.map(row => {
-        const data = row.Values;
-        const delta = toDelta(row.Overall, row.TargetOverall);
-        const rowOverall = delta == "neutral" ? row.Overall : "";
-        console.log("foo", delta);
-        const { newValues, attrDelta, badgeDelta, attributeTotal, badgeTotal } =
-          updateValues(data, delta) || {};
+      // newRows.every(row => row.delta == "neutral");
+      let newRows = rows;
+      while (!newRows.every(row => row.PrevDelta == "neutral")) {
+        console.log('here');
+        newRows = newRows.map(row => {
+          const data = row.Values;
+          const delta = toDelta(row.AttributeTotal, row.TargetAttributeTotal);
+          // const rowOverall = delta == "neutral" ? row.Overall : "";
+          console.log("foo", delta);
+          const { newValues, attrDelta, attributeTotal, badgeTotal } =
+            updateValues(data, delta) || {};
+          return {
+            ...row,
+            AttributeTotal: attributeTotal,
+            BadgeTotal: badgeTotal,
+            Values: JSON.stringify(newValues),
+            Batch: delta == "neutral" ? row.Batch : parseInt(row.Batch) + 1,
+            PrevDelta: delta,
+            DeltaValues: delta == "neutral" ?  row.DeltaValues : `${row.DeltaValues}, ${toDeltaString(attrDelta)}}`
+          };
+        })
+      }
+      const playerListRows = newRows.map(row => {
+        const {
+          Name,
+          Height,
+          Weight,
+          AttributeTotal,
+          Position,
+          Role,
+          Values,
+        } = row; 
         return {
-          ...row,
-          Overall: rowOverall,
-          AttributeTotal: attributeTotal,
-          BadgeTotal: badgeTotal,
-          Values: JSON.stringify(newValues),
-          Batch: parseInt(row.Batch) + 1,
-          PrevDelta: delta,
-          DeltaValues: `${toDeltaString(attrDelta)}; ${toDeltaString(
-            badgeDelta
-          )}`
+          Name,
+          Height,
+          Weight,
+          Team: "Rookie",
+          AttributeTotal,
+          Position,
+          Type: Role,
+          Data: Values,
+          Age: "0"
         };
-      });
+      })
       return (async () => {
         await genPlayers.addRows(newRows);
+        await playerListSheet.addRows(playerListRows);
       })();
     });
   })();
@@ -664,9 +694,9 @@ function generatePlayer(
     const formattedWingSpan = toFtInFromCm(
       ((genWingspan / 100) * 0.2 + 0.94) * genHeight
     );
-    const biasedAttributes = positionBias(playerType, attributes);
-    const { data: tendencies } = generateTendencies(biasedAttributes, badges, hotzones);
-    const player = [vitals, biasedAttributes, tendencies, hotzones, badges];
+    // const biasedAttributes = positionBias(playerType, attributes);
+    const { data: tendencies } = generateTendencies(attributes, badges, hotzones);
+    const player = [vitals, attributes, tendencies, hotzones, badges];
     const randomPosition = chooseOne(playerTypeNames[playerType]);
     (async () => {
       await generatedPlayersSheet.addRow({
