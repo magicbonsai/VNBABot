@@ -23,7 +23,7 @@ const {
 } = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 const { sheetIds } = require("./app/helpers/sheetHelper");
-const { CHANNEL_IDS } = require('./consts');
+const { CHANNEL_IDS } = require("./consts");
 require("dotenv").config();
 const client = new Client({
   intents: [
@@ -35,7 +35,7 @@ const client = new Client({
     "GUILD_MEMBERS"
   ],
   partials: ["MESSAGE", "CHANNEL", "REACTION"],
-  fetchAllMembers: true,
+  fetchAllMembers: true
 });
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
@@ -106,12 +106,12 @@ const dedueCommand = (prompt, msg) => {
       }
       break;
 
-    case "rumor": 
-      console.log('msg', msg, msg.channel);
+    case "rumor":
+      console.log("msg", msg, msg.channel);
       if (msg.channel.type == "DM") {
         msg.reply("Posting on Rumors channel!");
         const message = words.slice(1).join(" ");
-        return client.channels.cache.get(CHANNEL_IDS.rumors).send(message); 
+        return client.channels.cache.get(CHANNEL_IDS.rumors).send(message);
       }
       break;
 
@@ -184,7 +184,7 @@ const dedueCommand = (prompt, msg) => {
     case "offseason":
       offSeasonPaperWork(client);
       break;
-      
+
     default:
   }
 };
@@ -330,6 +330,8 @@ const triKovAnalysis = () => {
 
         const cashValues = {};
         const knnCashValues = {};
+        console.log(err);
+        console.log(d);
 
         for (let i = 0; i < d[0].length; i++) {
           cashValues[d[0][i].Name] = [d[0][i], d[2][i], d[4][i]];

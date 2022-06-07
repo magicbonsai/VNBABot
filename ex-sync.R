@@ -88,7 +88,7 @@ getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, min
   playerStatsOldOld[, 3:ncol(playerStatsOldOld)] = lapply(playerStatsOldOld[, 3:ncol(playerStatsOldOld)], function(x){as.numeric(as.character(x))})
   
   playerStatsFull = merge(playerList[, .(Player, Name, Current_Team = Team, Overall, Position, Height, Weight, Contract_Length, Age, Salary, Type)], 
-                          rbindlist(list(playerStats[, Season := "Current"], playerStatsOld[, Season := "Last"], playerStatsOldOld[, Season := "Last_2"])), 
+                          rbindlist(list(playerStats[, Season := "Current"], playerStatsOld[, Season := "Last"], playerStatsOldOld[, Season := "Last_2"]), use.names=TRUE, fill=TRUE), 
                           by = "Player",
                           all.x = TRUE)
   playerStatsFull[, Height := unlist(lapply(Height, heightToInches))]
@@ -189,7 +189,7 @@ getAssetStatValues  = function(categoryValues, playerScores, teamAssets, assetVa
     temp[, Pick := str_extract(Pick_Full, "1|2")]
     temp[, Pick_Team := str_extract(Pick_Full, "[:alpha:]+")]
     return(temp)
-    }))
+    }), fill = TRUE)
   
   if (assetWeights[Asset == "Season_End"]$Asset_Weight == 1) {
     draftAssets = merge(draftAssets, categoryValues[!is.na(Pick_Full), .(Pick_Full, Pick_Position = as.numeric(Pick_Position))], by = "Pick_Full")
@@ -199,7 +199,7 @@ getAssetStatValues  = function(categoryValues, playerScores, teamAssets, assetVa
         as.numeric(str_split(x, " ")[[1]][1]) / (as.numeric(str_split(x, " ")[[1]][3]) + as.numeric(str_split(x, " ")[[1]][1]))
       })][Frozen == FALSE][order(Win_Perc)]
     pickPositions[, Pick_Position := rank(Win_Perc)]
-    pickPositions = rbindlist(list(copy(pickPositions)[, Pick := 1], pickPositions[, Pick := 2]))
+    pickPositions = rbindlist(list(copy(pickPositions)[, Pick := 1], pickPositions[, Pick := 2]), fill = TRUE)
     pickPositions[, Pick_Position := ifelse(Pick == 2, Pick_Position + nrow(teamAssets[Frozen == FALSE]), Pick_Position)]
     draftAssets = merge(draftAssets, pickPositions[, .(Pick_Team = Team, Pick = as.character(Pick), Pick_Position)], by = c("Pick_Team", "Pick"))
   }
@@ -374,8 +374,8 @@ teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24
 
 playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
 playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 
-                             "https://docs.google.com/spreadsheets/d/1cezlMgcDLk9p9CowCMWcwwWpmDYg1DN-FykSUZdZwpA/edit#gid=1367256051",
-                             "https://docs.google.com/spreadsheets/d/16WdF6aYULiJeIihYVcz1N0skTZICUQHAI1wIGzaZPnU/edit#gid=1550230054",
+                             "https://docs.google.com/spreadsheets/d/1xOw3IqRDchMBy_P5ge3myTl4FsVNkGLCPo1FJ8VuZUc/edit#gid=1367256051",
+                             "https://docs.google.com/spreadsheets/d/1cezlMgcDLk9p9CowCMWcwwWpmDYg1DN-FykSUZdZwpA/edit#gid=1550230054",
                              playerList)
                           
 playerAttributes = getPlayerAttributes(playerList)
