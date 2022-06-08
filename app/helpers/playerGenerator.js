@@ -451,6 +451,12 @@ function generateBadges() {
   };
 }
 
+const letterMapping = {
+  g: "guard",
+  w: "wing",
+  b: "big",
+};
+
 const classes = {
   guard: {
     height: 191,
@@ -666,11 +672,11 @@ function runBatch(batchNum) {
   })();
 }
 
-function generatePlayer(
-  playerType = chooseOne(["guard", "wing", "big"]),
-  overall,
-  addToSheet
+// typeString is of gwb
+function generatePlayers(
+  typeString,
 ) {
+  if(!typeString) return;
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
   const { players: playersId, generatedPlayers: genPlayersId } = sheetIds;
   return (async function main() {
@@ -682,24 +688,25 @@ function generatePlayer(
     const sheets = doc.sheetsById;
     const generatedPlayersSheet = sheets[genPlayersId];
     const playersSheet = sheets[playersId];
-    const { data: attributes, attributeTotal } = generateAttributes();
-    const { data: badges, badgeTotal } = generateBadges();
-    const { data: hotzones, } = generateHotzones();
-    console.log('hotzones', hotzones);
-    const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
-    const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(
-      playerType
-    );
-    const formattedHeight = toFtInFromCm(genHeight);
-    const formattedWingSpan = toFtInFromCm(
-      ((genWingspan / 100) * 0.2 + 0.94) * genHeight
-    );
-    // const biasedAttributes = positionBias(playerType, attributes);
-    const { data: tendencies } = generateTendencies(attributes, badges, hotzones);
-    const player = [vitals, attributes, tendencies, hotzones, badges];
-    const randomPosition = chooseOne(playerTypeNames[playerType]);
-    (async () => {
-      await generatedPlayersSheet.addRow({
+    const rowsToAdd = typeString.map(char => {
+      const playerType = letterMapping[char];
+      const { data: attributes, attributeTotal } = generateAttributes();
+      const { data: badges, badgeTotal } = generateBadges();
+      const { data: hotzones, } = generateHotzones();
+      console.log('hotzones', hotzones);
+      const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
+      const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(
+        playerType
+      );
+      const formattedHeight = toFtInFromCm(genHeight);
+      const formattedWingSpan = toFtInFromCm(
+        ((genWingspan / 100) * 0.2 + 0.94) * genHeight
+      );
+      // const biasedAttributes = positionBias(playerType, attributes);
+      const { data: tendencies } = generateTendencies(attributes, badges, hotzones);
+      const player = [vitals, attributes, tendencies, hotzones, badges];
+      const randomPosition = chooseOne(playerTypeNames[playerType]);
+      return {
         Name: name,
         AttributeTotal: attributeTotal,
         BadgeTotal: badgeTotal,
@@ -715,25 +722,13 @@ function generatePlayer(
         Batch: 0,
         PrevDelta: "N/A",
         DeltaValues: "N/A"
-      });
-      if (!!addToSheet) {
-        await playersSheet.addRow({
-          Name: name,
-          Position: randomPosition,
-          Height: formattedHeight,
-          Weight: genWeight,
-          Team: "Rookie",
-          Age: "0"
-        });
-      }
-    })();
-    return {
-      height: formattedHeight,
-      weight: genWeight,
-      wingspan: genWingspan,
-      name
-    };
+      };
+    });
+    (async () => {
+      await generatedPlayersSheet.addRows(rowsToAdd);
+    });
+    return rowsToAdd;
   })();
 }
 
-module.exports = { generatePlayer, runBatch };
+module.exports = { generatePlayers, runBatch };
