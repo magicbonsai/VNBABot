@@ -151,7 +151,7 @@ const dedueCommand = (prompt, msg) => {
       rosterCheckCommand(msg);
       break;
 
-    case "generateplayer":
+    case "generateplayers":
       generatePlayers(words[1]);
       if (process.env.environment === "PRODUCTION") {
         msg.author.send("Generating a new player data.");

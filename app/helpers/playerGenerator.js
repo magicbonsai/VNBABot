@@ -281,7 +281,6 @@ const generateTendencies = (attributes, badges, hotzones) => {
       [key]: parseInt(hotzoneData[key])
     })
   }, {});
-  console.log('red', parsedAttributeData)
   const newTendencies = Object.keys(tendencyDictionary).reduce((acc, key) => {
     return ({
       ...acc,
@@ -309,7 +308,6 @@ const generateHotzones = () => {
       [key]: `${_.random(0, 2)}`
     });
   }, {});
-  console.log('bar', hotzones);
   return {
     data: {
       module: "PLAYER",
@@ -623,12 +621,10 @@ function runBatch(batchNum) {
       // newRows.every(row => row.delta == "neutral");
       let newRows = rows;
       while (!newRows.every(row => row.PrevDelta == "neutral")) {
-        console.log('here');
         newRows = newRows.map(row => {
           const data = row.Values;
           const delta = toDelta(row.AttributeTotal, row.TargetAttributeTotal);
           // const rowOverall = delta == "neutral" ? row.Overall : "";
-          console.log("foo", delta);
           const { newValues, attrDelta, attributeTotal, badgeTotal } =
             updateValues(data, delta) || {};
           return {
@@ -678,7 +674,7 @@ function generatePlayers(
 ) {
   if(!typeString) return;
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-  const { players: playersId, generatedPlayers: genPlayersId } = sheetIds;
+  const { generatedPlayers: genPlayersId } = sheetIds;
   return (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -687,13 +683,11 @@ function generatePlayers(
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const generatedPlayersSheet = sheets[genPlayersId];
-    const playersSheet = sheets[playersId];
-    const rowsToAdd = typeString.map(char => {
+    const rowsToAdd = await typeString.split('').map(char => {
       const playerType = letterMapping[char];
       const { data: attributes, attributeTotal } = generateAttributes();
       const { data: badges, badgeTotal } = generateBadges();
       const { data: hotzones, } = generateHotzones();
-      console.log('hotzones', hotzones);
       const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
       const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(
         playerType
@@ -714,7 +708,6 @@ function generatePlayers(
         Height: formattedHeight,
         Weight: genWeight,
         Wingspan: formattedWingSpan,
-        TargetOverall: overall,
         WingspanNo: genWingspan,
         Values: JSON.stringify(player),
         Role: playerType,
@@ -726,7 +719,8 @@ function generatePlayers(
     });
     (async () => {
       await generatedPlayersSheet.addRows(rowsToAdd);
-    });
+    })();
+    console.log(`${rowsToAdd.length} players generated.`);
     return rowsToAdd;
   })();
 }
