@@ -4,7 +4,7 @@ const robin = require("roundrobin");
 const _ = require("lodash");
 const scrape = require("./app/helpers/boxScraper");
 const rosterCheckCommand = require("./app/helpers/rosterChecker");
-const { generatePlayer, runBatch } = require("./app/helpers/playerGenerator");
+const { generatePlayers, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
 const {
   generateInjuriesWith,
@@ -151,8 +151,8 @@ const dedueCommand = (prompt, msg) => {
       rosterCheckCommand(msg);
       break;
 
-    case "generateplayer":
-      generatePlayer(words[1], words[2], words[3]);
+    case "generateplayers":
+      generatePlayers(words[1]);
       if (process.env.environment === "PRODUCTION") {
         msg.author.send("Generating a new player data.");
       } else {
