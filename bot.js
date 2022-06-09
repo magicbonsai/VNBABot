@@ -1,9 +1,7 @@
 const { Client } = require("discord.js");
 const CronJob = require("cron").CronJob;
-const robin = require("roundrobin");
 const _ = require("lodash");
 const scrape = require("./app/helpers/boxScraper");
-const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayers, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
 const {
@@ -37,7 +35,7 @@ const client = new Client({
   partials: ["MESSAGE", "CHANNEL", "REACTION"],
   fetchAllMembers: true
 });
-const { help: docs, devHelp: devDocs } = require("./docs/help.js");
+const { help: docs, devHelp: devDocs, serviceDocs, serviceHelp, } = require("./docs/help.js");
 
 const { runReportWith } = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
@@ -116,11 +114,6 @@ const dedueCommand = (prompt, msg) => {
       break;
 
     case "scrape":
-      // Temporarily turning off scraping in prod
-      // if (process.env.environment === "DEVELOPMENT") {
-      //   scrape(words[1], words[2], words[3]);
-      // }
-      // scrape(words[1]);
       scrape(words[1]);
       break;
 
@@ -133,25 +126,7 @@ const dedueCommand = (prompt, msg) => {
       }
       break;
 
-    case "robin":
-      const schedule = robin(7, [
-        "Dallas Mavericks",
-        "Toronto Raptors",
-        "Indiana Pacers",
-        "Denver Nuggets",
-        "Golden State Warriors",
-        "Los Angeles Lakers",
-        "Washington Wizards"
-      ]);
-
-      console.log(schedule.flat(2));
-      break;
-
-    case "checkroster":
-      rosterCheckCommand(msg);
-      break;
-
-    case "generateplayers":
+      case "generateplayers":
       generatePlayers(words[1]);
       if (process.env.environment === "PRODUCTION") {
         msg.author.send("Generating a new player data.");
@@ -183,6 +158,13 @@ const dedueCommand = (prompt, msg) => {
       break;
     case "offseason":
       offSeasonPaperWork(client);
+      break;
+    case "servicehelp":
+      msg.react(`✉`);
+      if(!serviceDocs[words[1]]) {
+        msg.author.send(serviceDocs);
+      }
+      msg.author.send(serviceDocs[words[1]]);
       break;
 
     default:

@@ -30,4 +30,42 @@ const devHelp =
   $removeinjury: run the remove injury job. \n\
 ```";
 
-module.exports = { help, devHelp };
+const serviceHelp = 
+  "``` Here are all the services.  Please type $servicehelp [nameOfService] to see detailed api information.\n\n\
+  toChannel\n\
+  toTeam\n\
+  updatePlayers\n\
+  ```";
+
+const serviceDocs = {
+  tochannel: 
+    "``` /roj/post/toChannel: post a message to a specific channel on the VNBA discord.\n\n\
+    API:\n\
+    {\n\
+      channelTitle: String,\n\
+      value: String\n\
+    }\n\
+    ```",
+  toteam:
+    "``` /roj/post/toTeam: takes in a team name (no capitalization) and message content to post a messge to a discord user via the tagged role.\n\n\
+    API:\n\
+    {\n\
+      teamName: String,\n\
+      value: String\n\
+    }\n\
+    ```",
+  updateplayers:
+    "``` /roj/post/updatePlayers: Take in an array of objects.\n\n\
+    API:\n\
+      value: Array [\n\
+        {\n\
+          Name: String,\n\
+          value: array [ { key: string, value: num }, etc]\n\
+          value: array [ { key: string, value: num }, etc]\n\
+          value: array [ { key: string, value: num }, etc]\n\
+        }\n\
+      ]\n\
+    ```", 
+}
+
+module.exports = { help, devHelp, serviceHelp, serviceDocs };
