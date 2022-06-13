@@ -5,8 +5,8 @@ const _ = require("lodash");
 const faker = require("faker");
 faker.setLocale("en");
 const { sheetIds } = require("./sheetHelper");
-const {tendencyDictionary, toIsoTendencies} = require('./tendencyDictionary');
-const { hotzones: hotzoneKeys } = require('../bots/consts');
+const { tendencyDictionary, toIsoTendencies } = require("./tendencyDictionary");
+const { hotzones: hotzoneKeys } = require("../bots/consts");
 
 // NBA2k attribute formula to be readable by the 2ktools
 // 0 - 222
@@ -254,65 +254,63 @@ const getBadgeTotal = data => {
 };
 
 const generateTendencies = (attributes, badges, hotzones) => {
-  const {
-    data: attributeData
-  } = attributes;
-  const {
-    data: badgeData
-  } = badges;
-  const {
-    data: hotzoneData
-  } = hotzones;
+  const { data: attributeData } = attributes;
+  const { data: badgeData } = badges;
+  const { data: hotzoneData } = hotzones;
   const parsedAttributeData = Object.keys(attributeData).reduce((acc, key) => {
-    return ({
+    return {
       ...acc,
-      [key]: (parseInt(attributeData[key]) / 3) + 25
-    })
+      [key]: parseInt(attributeData[key]) / 3 + 25
+    };
   }, {});
   const parsedBadgeData = Object.keys(badgeData).reduce((acc, key) => {
-    return ({
+    return {
       ...acc,
       [key]: parseInt(badgeData[key])
-    })
+    };
   }, {});
   const parsedHotzoneData = Object.keys(hotzoneData).reduce((acc, key) => {
-    return ({
+    return {
       ...acc,
       [key]: parseInt(hotzoneData[key])
-    })
+    };
   }, {});
   const newTendencies = Object.keys(tendencyDictionary).reduce((acc, key) => {
-    return ({
+    return {
       ...acc,
-      [key]: tendencyDictionary[key](parsedAttributeData, parsedBadgeData, parsedHotzoneData)
-    });
+      [key]: tendencyDictionary[key](
+        parsedAttributeData,
+        parsedBadgeData,
+        parsedHotzoneData
+      )
+    };
   }, {});
   const isoTendencies = toIsoTendencies();
-  const newTendenciesWithIso = ({
+  const newTendenciesWithIso = {
     ...newTendencies,
-    ...isoTendencies,
-  })
-  return ({
+    ...isoTendencies
+  };
+  return {
     data: {
       module: "PLAYER",
       tab: "TENDENCIES",
       data: newTendenciesWithIso
     }
-  })
+  };
 };
 
 const generateHotzones = () => {
   const hotzones = Object.keys(hotzoneKeys).reduce((acc, key) => {
-    return ({
+    return {
       ...acc,
       [key]: `${_.random(0, 2)}`
-    });
+    };
   }, {});
   return {
     data: {
       module: "PLAYER",
       tab: "HOTZONE",
-      data: hotzones,
+      data: hotzones
     }
   };
 };
@@ -322,30 +320,27 @@ const bigKeysForBias = [
   "SPEED_WITH_BALL",
   "ACCELERATION",
   "LATERAL_QUICKNESS"
-]
+];
 
 const guardKeysForBias = [
   "3PT_SHOT",
-    "DRAW_FOUL",
-    "FREE_THROW",
-    "BALL_CONTROL",
-    "PASSING_IQ",
-    "PASSING_ACCURACY",
-    "PASSING_VISION",
-    "SPEED",
-    "SPEED_WITH_BALL"
-]
-
+  "DRAW_FOUL",
+  "FREE_THROW",
+  "BALL_CONTROL",
+  "PASSING_IQ",
+  "PASSING_ACCURACY",
+  "PASSING_VISION",
+  "SPEED",
+  "SPEED_WITH_BALL"
+];
 
 const initialBiasedDelta = (data, delta, keys) => {
-  const {
-    data,
-  } = data;
-  let newAttributes = attributesTab.data;
+  const { data: initData } = data;
+  let newAttributes = initData;
 
   const attrDelta = keys.map(key => ({
     key,
-    value: deltas[delta] * _.random(1,10) * 3,
+    value: deltas[delta] * _.random(1, 10) * 3
   }));
 
   attrDelta.forEach(({ key, value }) => {
@@ -362,14 +357,15 @@ const initialBiasedDelta = (data, delta, keys) => {
       data: newAttributes
     },
     attrDelta,
-    attributeTotal: getAttributeTotal(newAttributes),
+    attributeTotal: getAttributeTotal(newAttributes)
   };
 };
 
 function generateAttributes(playerType) {
-  const initDeltaKeys = playerType == "guard" ? guardKeysForBias : bigKeysForBias;
+  const initDeltaKeys =
+    playerType == "guard" ? guardKeysForBias : bigKeysForBias;
   const initDelta = playerType == "guard" ? "up" : "down";
-  
+
   // 58 41
   // 11 numbers from 80 - 100, 9 num from 70 to 100, 7 num from 60 to 100, 5 num from 50 to 100, 4 num from 40 to 90, 3 from 30 to 80
   let values = [];
@@ -413,17 +409,17 @@ function generateAttributes(playerType) {
     return {
       data,
       attributeTotal: getAttributeTotal(result)
-    }
+    };
   }
-  const {
-    newValues,
-    attrDelta,
-    attributeTotal,
-  } = initialBiasedDelta(playerType, initDelta, initDeltaKeys);
+  const { newValues, attrDelta, attributeTotal } = initialBiasedDelta(
+    data,
+    initDelta,
+    initDeltaKeys
+  );
   return {
     data: newValues,
     attrDelta,
-    attributeTotal,
+    attributeTotal
   };
 }
 
@@ -516,7 +512,7 @@ function generateBadges() {
 const letterMapping = {
   g: "guard",
   w: "wing",
-  b: "big",
+  b: "big"
 };
 
 const classes = {
@@ -598,26 +594,26 @@ const deltas = {
 
 const toMappedKeyWeights = (keys, typeKeys = [], direction) => {
   // base case for wings
-  if(!typeKeys.length) {
+  if (!typeKeys.length) {
     return keys.map(key => {
       return {
         id: key,
-        weight: 1,
-      }
+        weight: 1
+      };
     });
-  };
-  const modifier = direction == "up" ? 2 :  -2;
+  }
+  const modifier = direction == "up" ? 2 : -2;
   const mappedKeys = keys.map(key => {
-    if(typeKeys.includes(key)) {
+    if (typeKeys.includes(key)) {
       return {
         id: key,
-        weight: 4 + modifier,
+        weight: 4 + modifier
       };
     }
     return {
       id: key,
-      weight: 4,
-    }
+      weight: 4
+    };
   });
   return mappedKeys;
 };
@@ -633,7 +629,7 @@ const updateValues = (values, delta) => {
   // const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
   const attrDelta = _.sampleSize(keys, 5).map(key => ({
     key,
-    value: deltas[delta] * _.random(3,12) * 3
+    value: deltas[delta] * _.random(3, 12) * 3
   }));
 
   // const badgeKeys = delta == "up" ? badges : filteredBadgeKeys;
@@ -652,7 +648,11 @@ const updateValues = (values, delta) => {
   // badgeDelta.forEach(({ key, value }) => {
   //   newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
   // });
-  const { data: newTendencies } = generateTendencies({ data: newAttributes}, { data: badgesTab.data }, hotzoneTab);
+  const { data: newTendencies } = generateTendencies(
+    { data: newAttributes },
+    { data: badgesTab.data },
+    hotzoneTab
+  );
   const newValues = [
     vitalsTab,
     {
@@ -666,7 +666,7 @@ const updateValues = (values, delta) => {
       module: "PLAYER",
       tab: "BADGES",
       data: badgesTab.data
-    },
+    }
   ];
   return {
     newValues,
@@ -677,11 +677,10 @@ const updateValues = (values, delta) => {
   };
 };
 
-
 function toDelta(overall, targetOverall) {
   if (!targetOverall) {
     return "neutral";
-  };
+  }
   const difference = targetOverall - overall;
   if (Math.abs(difference) < 69) return "neutral";
   if (difference > 0) return "up";
@@ -690,7 +689,10 @@ function toDelta(overall, targetOverall) {
 }
 
 function toDeltaString(valueDelta) {
-  return valueDelta.map(({ key, value }) => `${key}: ${value}`).join(",  ");
+  const valueDeltaToUse = valueDelta || [];
+  return valueDeltaToUse
+    .map(({ key, value }) => `${key}: ${value}`)
+    .join(",  ");
 }
 
 function runBatch(batchNum) {
@@ -728,9 +730,12 @@ function runBatch(batchNum) {
             Values: JSON.stringify(newValues),
             Batch: delta == "neutral" ? row.Batch : parseInt(row.Batch) + 1,
             PrevDelta: delta,
-            DeltaValues: delta == "neutral" ?  row.DeltaValues : `${row.DeltaValues}, ${toDeltaString(attrDelta)}}`
+            DeltaValues:
+              delta == "neutral"
+                ? row.DeltaValues
+                : `${row.DeltaValues}, ${toDeltaString(attrDelta)}}`
           };
-        })
+        });
       }
       const playerListRows = newRows.map(row => {
         const {
@@ -740,8 +745,8 @@ function runBatch(batchNum) {
           AttributeTotal,
           Position,
           Role,
-          Values,
-        } = row; 
+          Values
+        } = row;
         return {
           Name,
           Height,
@@ -753,7 +758,7 @@ function runBatch(batchNum) {
           Data: Values,
           Age: "0"
         };
-      })
+      });
       return (async () => {
         await genPlayers.addRows(newRows);
         await playerListSheet.addRows(playerListRows);
@@ -763,10 +768,8 @@ function runBatch(batchNum) {
 }
 
 // typeString is of gwb
-function generatePlayers(
-  typeString,
-) {
-  if(!typeString) return;
+function generatePlayers(typeString) {
+  if (!typeString) return;
   const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
   const { generatedPlayers: genPlayersId } = sheetIds;
   return (async function main() {
@@ -777,11 +780,15 @@ function generatePlayers(
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const generatedPlayersSheet = sheets[genPlayersId];
-    const rowsToAdd = await typeString.split('').map(char => {
+    const rowsToAdd = await typeString.split("").map(char => {
       const playerType = letterMapping[char];
-      const { data: attributes, attributeTotal, attrDelta: initAttrDelta } = generateAttributes(playerType);
+      const {
+        data: attributes,
+        attributeTotal,
+        attrDelta: initAttrDelta
+      } = generateAttributes(playerType);
       const { data: badges, badgeTotal } = generateBadges();
-      const { data: hotzones, } = generateHotzones();
+      const { data: hotzones } = generateHotzones();
       const initDeltaValues = toDeltaString(initAttrDelta);
       const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
       const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(
@@ -792,7 +799,11 @@ function generatePlayers(
         ((genWingspan / 100) * 0.2 + 0.94) * genHeight
       );
       // const biasedAttributes = positionBias(playerType, attributes);
-      const { data: tendencies } = generateTendencies(attributes, badges, hotzones);
+      const { data: tendencies } = generateTendencies(
+        attributes,
+        badges,
+        hotzones
+      );
       const player = [vitals, attributes, tendencies, hotzones, badges];
       const randomPosition = chooseOne(playerTypeNames[playerType]);
       return {
