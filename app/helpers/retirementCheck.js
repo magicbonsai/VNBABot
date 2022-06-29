@@ -72,10 +72,8 @@ const retirementCalculator = (discordClient) => {
                 case 5:
                     return rwc(weightsFive) === "yes"
                 case 6:
-                    return rwc(weightsSix) === "yes"
-                case 7:
                 default:
-                    return rwc(weightsSeven) == "yes"
+                    return rwc(weightsSix) === "yes"
             }
         });
         const retirementMessage = `These players will be retiring before the start of the next VNBA season: ${retiredPlayers.map(({ Name }) => Name).join(', ')}.  We hope the best of these players in their retirements.`
