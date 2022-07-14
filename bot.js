@@ -229,19 +229,19 @@ const preJob = new CronJob("0 10 * * *", function () {
 });
 
 const WednesdayJob = new CronJob("0 13 * * 3", function () {
-  runReport(5);
+  runReportWithCheck(5);
 });
 
 const WednesdayJob2 = new CronJob("30 13 * * 3", function () {
-  runReport(5);
+  runReportWithCheck(5);
 });
 
 const SaturdayJob = new CronJob("0 13 * * 6", function () {
-  runReport(5);
+  runReportWithCheck(5);
 });
 
 const SaturdayJob2 = new CronJob("30 13 * * 6", function () {
-  runReport(5);
+  runReportWithCheck(5);
 });
 
 const dailyInjuryReportJob = new CronJob("0 11 * * *", function () {
