@@ -44,7 +44,7 @@ getAssetValues = function(assetUrl) {
                                "Team Assets", 
                                col_names = TRUE))
   output = setNames(output, str_replace_all(names(output), " ", "_"))
-  return(output[, .(Team, Frozen, Cash, Cash_Next_Season, Draft_Picks, Record)])
+  return(output[, .(Team, Frozen, Cash, Cash_Next_Season, Draft_Picks, Record, Real)])
 }
 
 
@@ -59,7 +59,7 @@ getPlayerList = function(listUrl) {
 }
 
 # Get player stats from past 2 + current seasons
-getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, minThreshold = 8) {
+getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, teamAssets, minThreshold = 8) {
   playerStats = data.table(read_sheet(statsUrl, 
                                       "League Leaders", 
                                       col_names = TRUE,
@@ -97,6 +97,7 @@ getPlayerStats = function(statsUrl, statsUrlOld, statsUrlOldOld, playerList, min
   playerStatsFull = playerStatsFull[Minutes >= minThreshold]
   playerStatsFull = playerStatsFull[Games_Played >= 3]
   playerStatsFull = playerStatsFull[Games_Played * Minutes >= 50]
+  playerStatsFull = playerStatsFull[Team %in% toupper(teamAssets[Real == TRUE]$Team)]
   playerStatsFull[, Overall := Overall + (Position == "PG" | Position == "C") * 3 + (Position == "SG") * 2]
   
   return(playerStatsFull)
@@ -376,7 +377,8 @@ playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24Q
 playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 
                              "https://docs.google.com/spreadsheets/d/1xOw3IqRDchMBy_P5ge3myTl4FsVNkGLCPo1FJ8VuZUc/edit#gid=1367256051",
                              "https://docs.google.com/spreadsheets/d/1cezlMgcDLk9p9CowCMWcwwWpmDYg1DN-FykSUZdZwpA/edit#gid=1550230054",
-                             playerList)
+                             playerList,
+                             teamAssets)
                           
 playerAttributes = getPlayerAttributes(playerList)
 
