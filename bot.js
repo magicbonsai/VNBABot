@@ -39,12 +39,12 @@ const client = new Client({
 });
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
-const { runReportWith } = require("./app/bots/rojBot");
+const { runDevReportWith } = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
-const runReport = runReportWith(client);
+const runDevReport = runDevReportWith(client);
 const signFAs = signFAsWith(client);
 const generateInjuries = generateInjuriesWith(client);
 
@@ -75,8 +75,8 @@ const dedueCommand = (prompt, msg) => {
 
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
-    case "report":
-      runReport(parseInt(words[1]));
+    case "devreport":
+      runDevReport(words[1]);
       break;
     case "signfa":
       signFAs(parseInt(words[1]));
@@ -229,19 +229,11 @@ const preJob = new CronJob("0 10 * * *", function () {
 });
 
 const WednesdayJob = new CronJob("0 13 * * 3", function () {
-  runReportWithCheck(5);
-});
-
-const WednesdayJob2 = new CronJob("30 13 * * 3", function () {
-  runReportWithCheck(5);
+  runReportWithCheck();
 });
 
 const SaturdayJob = new CronJob("0 13 * * 6", function () {
-  runReportWithCheck(5);
-});
-
-const SaturdayJob2 = new CronJob("30 13 * * 6", function () {
-  runReportWithCheck(5);
+  runReportWithCheck(true);
 });
 
 const dailyInjuryReportJob = new CronJob("0 11 * * *", function () {
@@ -272,7 +264,7 @@ const dailyRemoveInjuryJob = new CronJob("15 11 * * *", function () {
   removeInjuries();
 });
 
-const runReportWithCheck = num => {
+const runReportWithCheck = isWeekend => {
   (async () => {
     const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
     await doc.useServiceAccountAuth({
@@ -291,7 +283,7 @@ const runReportWithCheck = num => {
     if (doBoostsVar.Status == "FALSE") {
       return;
     }
-    runReport(num);
+    runReport(isWeekend);
   })();
 };
 
@@ -304,9 +296,7 @@ const trikovJob = new CronJob("0 6 * * *", function () {
 preJob.start();
 trikovJob.start();
 WednesdayJob.start();
-WednesdayJob2.start();
 SaturdayJob.start();
-SaturdayJob2.start();
 dailyInjuryReportJob.start();
 dailyRemoveInjuryJob.start();
 

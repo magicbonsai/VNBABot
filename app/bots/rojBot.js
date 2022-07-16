@@ -177,6 +177,20 @@ async function runEvent(playerRowsToUse, weights, doc) {
   };
 }
 
+async function runDevEvent(playerRowToUse, weights, doc) {
+  const eventId = rwc(weights);
+  const { fn } = rojEvents[eventId] || {};
+  const { type, updateKey, messageString } = fn(playerRowToUse);
+  console.log("result", type, updateKey, playerRowToUse.Name);
+  const updateFunction = updateFunctionMap[type];
+  await updateFunction(playerRowToUse, doc, type, updateKey);
+  return {
+    team: playerRowToUse.Team,
+    name: playerRowToUse.Name,
+    messageString
+  };
+}
+
 const toWeights = (weights, faWeights) => team => {
   switch (team) {
     case "FA":
@@ -303,4 +317,134 @@ const runReportWith =
     })();
   };
 
-module.exports = { runReportWith, createChangeListJSON, updateJSON };
+const runDevReportWith = discordClient => isWeekend => {
+  (async function main() {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+
+    const sheets = doc.sheetsById;
+    const assets = sheets[sheetIds.teamAssets];
+    const events = sheets[sheetIds.news];
+    const players = sheets[sheetIds.players];
+    const archive = sheets[sheetIds.reportArchive];
+
+    const playerRows = await players.getRows();
+    const validTeams = await assets.getRows().then(rows => {
+      return rows
+        .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
+        .map(row => {
+          return row.Team;
+        });
+    });
+    const weights = await events.getRows().then(rows => {
+      return rows.map(row => {
+        return {
+          id: row.event,
+          weight: parseFloat(row.prob)
+        };
+      });
+    });
+
+    const faWeights = await events.getRows().then(rows => {
+      return rows
+        .filter(row => row.isBoost)
+        .map(row => {
+          return {
+            id: row.event,
+            weight: parseFloat(row.prob)
+          };
+        });
+    });
+
+    const weightsByTeam = toWeights(weights, faWeights);
+
+    //for all valid teams run a set of events
+
+    // allUpdates = {
+    //   team_name: [array of messages]
+    //   ...etc
+    // }
+    const shuffledTeams = _.shuffle(validTeams);
+    const allTeams = [...shuffledTeams, "FA"];
+
+    const allUpdates = await allTeams.reduce(async (memo, currentValue) => {
+      const acc = await memo;
+      // we need to refresh the local copy of the doc after every iteration of the loop.
+      const playerRowsToUse = playerRows.filter(
+        player => player.Team === currentValue && parseInt(player.Age) < 5
+      );
+      console.log("Team", currentValue);
+      let arrayOfResults = [];
+
+      const numberOfRuns = {
+        1: 2,
+        2: 1,
+        3: !!isWeekend ? 1 : 0,
+        4: !!isWeekend ? 0 : 1
+      };
+
+      for (playerRow of playerRowsToUse) {
+        for (let i = 0; i < numberOfRuns[parseInt(playerRow.Age)]; i++) {
+          const {
+            messageString
+            // pass the doc all the way up to the updateFunction
+          } = await runDevEvent(playerRow, weightsByTeam(currentValue), doc);
+          // the updateFunction will use the relevant function
+          // and also update the relevant sheets (hopefully)
+          arrayOfResults = [...arrayOfResults, `${messageString}\n`];
+        }
+      }
+      return [
+        ...acc,
+        {
+          team: currentValue,
+          messages: arrayOfResults
+        }
+      ];
+    }, []);
+
+    console.log("allUpdates", allUpdates);
+
+    const fullDiscordMessageMap = [
+      `Here is the Twice-Weekly report for ${
+        new Date().toLocaleString().split(",")[0]
+      }:\n\n`,
+      ...allUpdates.map(value => {
+        const { team, messages } = value;
+        const allMessages = messages.join("");
+        return `\nReport for the **${team}**:\n${allMessages}\n\n`;
+      })
+    ];
+
+    const payload = allUpdates
+      .map(value => {
+        const { team, messages } = value;
+        const allMessages = messages.join("");
+        return `\nReport for the **${team}**:\n${allMessages}\n`;
+      })
+      .join("");
+
+    const fullPayload = `Here is the Twice-Weekly report for ${
+      new Date().toLocaleString().split(",")[0]
+    }:\n\n`.concat(payload);
+
+    fullDiscordMessageMap.forEach(message =>
+      discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message)
+    );
+
+    await archive.addRow({
+      Date: new Date().toLocaleString().split(",")[0],
+      Content: fullPayload
+    });
+  })();
+};
+
+module.exports = {
+  runReportWith,
+  runDevReportWith,
+  createChangeListJSON,
+  updateJSON
+};
