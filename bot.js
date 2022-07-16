@@ -283,7 +283,7 @@ const runReportWithCheck = isWeekend => {
     if (doBoostsVar.Status == "FALSE") {
       return;
     }
-    runReport(isWeekend);
+    runDevReport(isWeekend);
   })();
 };
 
