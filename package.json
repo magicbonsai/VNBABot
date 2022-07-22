@@ -43,7 +43,7 @@
     "tesseract.js": "https://github.com/Balearica/tesseract.js.git#revert-exif-orientation",
     "twit": "^2.2.11",
     "twitter-lite": "^0.14.0",
-    "youtube-dl-exec": "^2.0.11"
+    "youtube-dl-exec": "^2.1.3"
   },
   "engines": {
     "npm": "6.11.3"

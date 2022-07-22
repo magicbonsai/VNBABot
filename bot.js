@@ -39,12 +39,13 @@ const client = new Client({
 });
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
-const { runDevReportWith } = require("./app/bots/rojBot");
+const { runDevReportWith, runDeclineReportWith } = require("./app/bots/rojBot");
 const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const runDevReport = runDevReportWith(client);
+const runDeclineReport = runDeclineReportWith(client);
 const signFAs = signFAsWith(client);
 const generateInjuries = generateInjuriesWith(client);
 
@@ -75,8 +76,11 @@ const dedueCommand = (prompt, msg) => {
 
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
-    case "devreport":
+    case "devreport2":
       runDevReport(words[1]);
+      break;
+    case "declinereport":
+      runDeclineReport(words[1]);
       break;
     case "signfa":
       signFAs(parseInt(words[1]));

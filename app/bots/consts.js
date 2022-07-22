@@ -17,31 +17,34 @@ const playerTypes = ["guard", "wing", "big"];
 const tabMap = {
   ATTRIBUTES: {
     multiplier: 3,
-    upperBound: 222
+    upperBound: 222,
+    lowerBound: 0
   },
   BADGES: {
     multiplier: 1,
-    upperBound: 4
+    upperBound: 4,
+    lowerBound: 0
   },
   HOTZONE: {
     multiplier: 1,
-    upperBound: 2
+    upperBound: 2,
+    lowerBound: 0
   },
   TENDENCIES: {
     multiplier: 1,
-    upperBound: 100
+    upperBound: 100,
+    lowerBound: 0
   },
   VITALS: {
     multipler: 1,
-    upperBound: 350
+    upperBound: 350,
+    lowerBound: 150
   }
 };
 
-// Return a list of keys on a data Tab that have hit the maximum value.
+// Return a list of keys on a data Tab that have hit the maximum or minimum value.
 const toKeysWithCappedValues = (playerRow, tabKey) => {
-  const {
-    Data
-  } = playerRow;
+  const { Data } = playerRow;
   const { upperBound } = tabMap[tabKey] || {};
   const valuesFromJSON = JSON.parse(Data);
   const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
@@ -49,10 +52,23 @@ const toKeysWithCappedValues = (playerRow, tabKey) => {
   return Object.entries(data).reduce((acc, curr) => {
     const [key, value] = curr;
     if (parseInt(value) == upperBound) {
-      return [
-        ...acc,
-        key
-      ];
+      return [...acc, key];
+    } else {
+      return acc;
+    }
+  }, []);
+};
+
+const toKeysWithMinValues = (playerRow, tabKey) => {
+  const { Data } = playerRow;
+  const { lowerBound } = tabMap[tabKey] || {};
+  const valuesFromJSON = JSON.parse(Data);
+  const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
+  const data = selectedTab.data;
+  return Object.entries(data).reduce((acc, curr) => {
+    const [key, value] = curr;
+    if (parseInt(value) == lowerBound) {
+      return [...acc, key];
     } else {
       return acc;
     }
@@ -117,8 +133,10 @@ const rojEvents = {
 
   boost: {
     valid: true,
-    fn: function (player) {
-      const keysToFilter = toKeysWithCappedValues(player, 'ATTRIBUTES');
+    fn: function (player, isDecline) {
+      const keysToFilter = isDecline
+        ? toKeysWithMinValues(player, "ATTRIBUTES")
+        : toKeysWithCappedValues(player, "ATTRIBUTES");
       const datem = randomAttribute(keysToFilter);
       // const datem = randomAttributeWithoutFilter();
       const { key, data: { name, value } = {} } = datem;
@@ -139,8 +157,10 @@ const rojEvents = {
 
   badge: {
     valid: true,
-    fn: function (player) {
-      const keysToFilter = toKeysWithCappedValues(player, 'BADGES');
+    fn: function (player, isDecline) {
+      const keysToFilter = isDecline
+        ? toKeysWithMinValues(player, "BADGES")
+        : toKeysWithCappedValues(player, "BADGES");
       const datem = randomBadge(keysToFilter);
       // const datem = randomBadgeWithoutFilter();
       const { key, data: { name, value } = {} } = datem;
@@ -159,8 +179,10 @@ const rojEvents = {
 
   hotzone: {
     valid: true,
-    fn: function (player) {
-      const keysToFilter = toKeysWithCappedValues(player, 'HOTZONE');
+    fn: function (player, isDecline) {
+      const keysToFilter = isDecline
+        ? toKeysWithMinValues(player, "HOTZONE")
+        : toKeysWithCappedValues(player, "HOTZONE");
       const datem = randomHotZone(keysToFilter);
       // const datem = randomHotZoneWithoutFilter();
       const { key, data: { name, value } = {} } = datem;
@@ -282,7 +304,7 @@ const rojEvents = {
           value: {
             name: player.Name,
             infoString: "Increase player height by 1 inch."
-          },
+          }
         },
         messageString
       };
@@ -301,7 +323,7 @@ const rojEvents = {
           value: {
             name: player.Name,
             infoString: "(+5 on the wingspan slider in player body)"
-          },
+          }
         },
         messageString
       };
@@ -1126,22 +1148,24 @@ const hotzones = {
 const reducedAttrKeys = Object.keys(attributes).reduce((acc, key) => {
   const attrKeys = Object.keys(attributes[key]);
   return [...acc, ...attrKeys];
-}, [])
+}, []);
 
 const reducedBadgeKeys = Object.keys(badges).reduce((acc, key) => {
   const badgeKeys = Object.keys(badges[key]);
   return [...acc, ...badgeKeys];
-}, [])
+}, []);
 
 const randomAttribute = (keysToFilter = []) => {
-  const filteredKeys = reducedAttrKeys.filter(key => !keysToFilter.includes(key));
+  const filteredKeys = reducedAttrKeys.filter(
+    key => !keysToFilter.includes(key)
+  );
   const attributeKey = _.sample(filteredKeys);
   const categoryKey = Object.keys(attributes).find(key => {
     const attrKeys = Object.keys(attributes[key]);
     if (attrKeys.includes(attributeKey)) {
       return true;
     }
-  })
+  });
   return {
     key: attributeKey,
     data: attributes[categoryKey][attributeKey]
@@ -1158,14 +1182,16 @@ const randomAttributeWithoutFilter = () => {
 };
 
 const randomBadge = (keysToFilter = []) => {
-  const filteredKeys = reducedBadgeKeys.filter(key => !keysToFilter.includes(key));
+  const filteredKeys = reducedBadgeKeys.filter(
+    key => !keysToFilter.includes(key)
+  );
   const badgeKey = _.sample(filteredKeys);
   const categoryKey = Object.keys(badges).find(key => {
     const badgeKeys = Object.keys(badges[key]);
     if (badgeKeys.includes(badgeKey)) {
       return true;
     }
-  })
+  });
   return {
     key: badgeKey,
     data: badges[categoryKey][badgeKey]
@@ -1182,7 +1208,9 @@ const randomBadgeWithoutFilter = () => {
 };
 
 const randomHotZone = (keysToFilter = []) => {
-  const filteredKeys = Object.keys(hotzones).filter(key => !keysToFilter.includes(key));
+  const filteredKeys = Object.keys(hotzones).filter(
+    key => !keysToFilter.includes(key)
+  );
   const key = _.sample(filteredKeys);
   return {
     key,
@@ -1309,7 +1337,14 @@ const boostEvents = () => {
     "won a drinking contest.",
     "tripped over nothing, but no one was watching so he never tripped in the first place.",
     "ordered a new armchair.",
-    `caught a shiny pokemon in Pokemon ${_.sample(['Brilliant Diamond', 'Shining Pearl', 'Omega Ruby', 'Alpha Sapphire', 'Sword', 'Shield'])}.`,
+    `caught a shiny pokemon in Pokemon ${_.sample([
+      "Brilliant Diamond",
+      "Shining Pearl",
+      "Omega Ruby",
+      "Alpha Sapphire",
+      "Sword",
+      "Shield"
+    ])}.`,
     "ran at least three miles.",
     "bought a pound of potatos.",
     "sat on a bench with a box of chocolates to wait for the bus.",
@@ -1327,7 +1362,7 @@ const boostEvents = () => {
     "was as swift as a coursing river in practice.",
     "ate an orange to avoid scurvy.",
     "missed every shot in shoot-around.",
-    "juggled chainsaws and didn't lose a finger.",
+    "juggled chainsaws and didn't lose a finger."
   ];
 
   return chooseOne(bEvents);
@@ -1339,5 +1374,5 @@ module.exports = {
   tabMap,
   hotzones,
   attributes,
-  badges,
+  badges
 };
