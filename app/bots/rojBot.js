@@ -517,11 +517,7 @@ const runDeclineReportWith = discordClient => () => {
           const {
             messageString
             // pass the doc all the way up to the updateFunction
-          } = await runDeclineEvent(
-            playerRow,
-            weightsByTeam(currentValue),
-            doc
-          );
+          } = await runDeclineEvent(playerRow, weightsByTeam, doc);
           // the updateFunction will use the relevant function
           // and also update the relevant sheets (hopefully)
           arrayOfResults = [...arrayOfResults, `${messageString}\n`];
@@ -572,10 +568,66 @@ const runDeclineReportWith = discordClient => () => {
   })();
 };
 
+const capSpeed = async (player, doc) => {
+  const { Data } = player;
+  const parsedData = JSON.parse(Data);
+  const vitals = parsedData.find(page => page.tab === "VITALS").data;
+  const attributes = parsedData.find(page => page.tab === "ATTRIBUTES").data;
+  const playerHeight = parseInt(vitals.HEIGHT_CM);
+  const athleticismKeys = ["SPEED", "SPEED_WITH_BALL"];
+
+  const playerHeightInInches = Math.round(playerHeight / 2.54);
+  const baseHeightInInches = 79;
+  const baseAthleticismAttr = 88 - 25;
+  const capDiff = baseHeightInInches - playerHeightInInches;
+  const maxAthleticismValue = (baseAthleticismAttr + capDiff) * 3;
+  const maxAthleticismAttr = baseAthleticismAttr + capDiff + 25;
+
+  console.log(player.Name);
+  console.log(playerHeight);
+  console.log(playerHeightInInches);
+  console.log(maxAthleticismAttr);
+  console.log(maxAthleticismValue);
+
+  for (const aKey of athleticismKeys) {
+    const attrValue = parseInt(attributes[aKey]);
+    const attr = attrValue / 3 + 25;
+    if (parseInt(attributes[aKey]) > maxAthleticismValue) {
+      const athDiff = maxAthleticismAttr - attr;
+      await updatePlayerObject(player, doc, "ATTRIBUTES", {
+        key: aKey,
+        value: athDiff
+      });
+    }
+  }
+};
+
+const capSpeedWithHeight = () => {
+  (async function main() {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+
+    const sheets = doc.sheetsById;
+    const players = sheets[sheetIds.players];
+
+    const playerRows = await players.getRows();
+
+    for (playerRow of playerRows) {
+      await capSpeed(playerRow, doc);
+    }
+
+    console.log("athleticism capped");
+  })();
+};
+
 module.exports = {
   runReportWith,
   runDevReportWith,
   runDeclineReportWith,
   createChangeListJSON,
+  capSpeedWithHeight,
   updateJSON
 };

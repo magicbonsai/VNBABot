@@ -48,10 +48,28 @@ const toKeysWithCappedValues = (playerRow, tabKey) => {
   const { upperBound } = tabMap[tabKey] || {};
   const valuesFromJSON = JSON.parse(Data);
   const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
+  const vitals = valuesFromJSON.find(page => page.tab === "VITALS").data;
   const data = selectedTab.data;
+
+  const playerHeightInInches = Math.round(vitals["HEIGHT_CM"] / 2.54);
+  const baseHeightInInches = 79;
+  const baseAthleticismAttr = 88;
+  const capDiff = baseHeightInInches - playerHeightInInches;
+  const maxAthleticismValue = (baseAthleticismAttr + capDiff) * 3;
+
+  const athleticismCaps = {
+    SPEED: maxAthleticismValue,
+    SPEED_WITH_BALL: maxAthleticismValue
+  };
+
   return Object.entries(data).reduce((acc, curr) => {
     const [key, value] = curr;
-    if (parseInt(value) == upperBound) {
+    if (
+      Object.keys(athleticismCaps).includes(key) &&
+      parseInt(value) == maxAthleticismValue
+    ) {
+      return [...acc, key];
+    } else if (parseInt(value) == upperBound) {
       return [...acc, key];
     } else {
       return acc;
