@@ -55,7 +55,7 @@ const toKeysWithCappedValues = (playerRow, tabKey) => {
   const baseHeightInInches = 79;
   const baseAthleticismAttr = 88;
   const capDiff = baseHeightInInches - playerHeightInInches;
-  const maxAthleticismValue = (baseAthleticismAttr + capDiff) * 3;
+  const maxAthleticismValue = (baseAthleticismAttr + capDiff - 25) * 3;
 
   const athleticismCaps = {
     SPEED: maxAthleticismValue,

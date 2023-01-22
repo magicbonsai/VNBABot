@@ -351,7 +351,7 @@ getPlayerComparisons = function(assetValues, playerAttributes, categoryValues) {
   test[, Score := NULL]
   testNames = test$Name
   test[, Name := NULL]
-  
+             
   fit = 
     knn(train_set = train,
       test_set = test,
@@ -375,8 +375,8 @@ teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24
 
 playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
 playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 
+                             "https://docs.google.com/spreadsheets/d/1bpImNDVYWfJJ8DY4-36_onMhjVt_kt3GFLPWc_7EqsU/edit#gid=39022674",
                              "https://docs.google.com/spreadsheets/d/1hYAMwR-LnBgWLx6w1mnQGwjS_z5jAGcE1EeEC2qQ81U/edit#gid=39022674",
-                             "https://docs.google.com/spreadsheets/d/1xOw3IqRDchMBy_P5ge3myTl4FsVNkGLCPo1FJ8VuZUc/edit#gid=1367256051",
                              playerList,
                              teamAssets)
                           
@@ -384,7 +384,7 @@ playerAttributes = getPlayerAttributes(playerList)
 
 # Bot 1                          
 normalizedStats1 = normalizeStats(playerStats, categoryValues1)
-parameters1 = getParameters(categoryValues1, normalizedStats1)
+parameters1 = getParameters(categoryValues1, normalizedStats1) 
 playerScores1 = getPlayerStatScores(playerStats, normalizedStats1, parameters1)
 
 assetValueParams1 = getAssetValueParam(playerScores1, playerList)
