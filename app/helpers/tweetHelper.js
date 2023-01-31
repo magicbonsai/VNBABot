@@ -72,7 +72,8 @@ const drawTweet = async (tweet, player, team) => {
   context.closePath();
   context.clip();
 
-  const avatar = await loadImage(player.Image && team.Logo);
+  const imgToUse = player.Image ?? team.Logo;
+  const avatar = await loadImage(imgToUse);
 
   // Compute aspectration
   const aspect = avatar.height / avatar.width;
@@ -146,6 +147,7 @@ const getRedditRandom = async () => {
 };
 
 const getUserID = async player => {
+  console.log(player);
   const user = await roj.v2.userByUsername(player);
 
   return user.data.id;
@@ -172,8 +174,14 @@ const getRandomTweet = async (channel, playerRows, teamRows) => {
 
     for (let i of splitTweet) {
       if (i.charAt(0) === "@") {
+        const randPlayer = _.sample(playerRows).Name;
         newTweet.push(
-          `[${toHandle(_.sample(playerRows).Name)}](http://thevnba.com)`
+          `[${toHandle(
+            randPlayer
+          )}](http://thevnba.com/player/${randPlayer.Name.replaceAll(
+            " ",
+            "_"
+          )})`
         );
       } else if (i.charAt(0) === "#") {
         newTweet.push(
@@ -201,7 +209,9 @@ const getRandomTweet = async (channel, playerRows, teamRows) => {
     const discTweet = new MessageEmbed()
       .setColor(playerTeam["Primary Color"])
       .setTitle(toHandle(selectedPlayer.Name))
-      .setURL("https://discord.js.org/")
+      .setURL(
+        `http://thevnba.com/player/${selectedPlayer.Name.replaceAll(" ", "_")}`
+      )
       .setDescription(newTweet.join(" "))
       .setThumbnail("attachment://propic.png")
       .setTimestamp()
