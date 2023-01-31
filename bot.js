@@ -44,7 +44,11 @@ const {
   runDeclineReportWith,
   capSpeedWithHeight
 } = require("./app/bots/rojBot");
-const { postRojTweet, postSmithyTweet } = require("./app/helpers/tweetHelper");
+const {
+  postRojTweet,
+  postSmithyTweet,
+  getRandomTweet
+} = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 
@@ -80,6 +84,9 @@ const dedueCommand = (prompt, msg) => {
 
   // Runs slots using a server's custom emojis
   switch (words[0].toLowerCase()) {
+    case "faketweet":
+      generateSocialTweet();
+      break;
     case "capathleticism":
       capSpeedWithHeight();
       break;
@@ -304,12 +311,49 @@ const trikovJob = new CronJob("0 6 * * *", function () {
   triKovAnalysis();
 });
 
+const vtwitter = new CronJob("*/15 * * * *", function () {
+  generateSocialTweet();
+});
+
 preJob.start();
 trikovJob.start();
 WednesdayJob.start();
 SaturdayJob.start();
 dailyInjuryReportJob.start();
 dailyRemoveInjuryJob.start();
+vtwitter.start();
+
+const generateSocialTweet = () => {
+  (async () => {
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+
+    await doc.loadInfo();
+    const sheets = doc.sheetsById;
+    const players = sheets[sheetIds.players];
+    const teamAssets = sheets[sheetIds.teamAssets];
+
+    const teamAssetsRows = (await teamAssets.getRows()).filter(
+      team => team.Frozen !== "TRUE"
+    );
+
+    const playerListRows = (await players.getRows()).filter(
+      player =>
+        player.Team !== "Rookie" &&
+        player.Team !== "FA" &&
+        teamAssetsRows.map(t => t.Team).includes(player.Team)
+    );
+
+    await getRandomTweet(
+      client.channels.cache.get(CHANNEL_IDS.vtwitter),
+      playerListRows,
+      teamAssetsRows
+    );
+  })();
+};
 
 const triKovAnalysis = () => {
   R("ex-sync.R")

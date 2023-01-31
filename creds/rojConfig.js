@@ -7,8 +7,9 @@
  */
 
 module.exports = {
-  consumer_key: process.env.TWITTER_CONSUMER_KEY,
-  consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-  access_token_key: process.env.TWITTER_ACCESS_TOKEN,
-  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+  appKey: process.env.TWITTER_CONSUMER_KEY,
+  appSecret: process.env.TWITTER_CONSUMER_SECRET,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN,
+  accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+  bearerToken: process.env.TWITTER_BEARER
 };
