@@ -72,7 +72,7 @@ const drawTweet = async (tweet, player, team) => {
   context.closePath();
   context.clip();
 
-  const avatar = await loadImage(player.Image);
+  const avatar = await loadImage(player.Image && team.Logo);
 
   // Compute aspectration
   const aspect = avatar.height / avatar.width;
@@ -193,7 +193,7 @@ const getRandomTweet = async (channel, playerRows, teamRows) => {
     const propic = await drawTweet(
       newTweet.join(" "),
       selectedPlayer,
-      teamRows
+      playerTeam
     );
 
     const file = new MessageAttachment(propic, "propic.png");
@@ -205,6 +205,7 @@ const getRandomTweet = async (channel, playerRows, teamRows) => {
       .setDescription(newTweet.join(" "))
       .setThumbnail("attachment://propic.png")
       .setTimestamp()
+      .setFooter({ text: playerTeam.Team, iconURL: playerTeam.Logo })
       .setImage(imgUrl);
 
     if (imgUrl) {
