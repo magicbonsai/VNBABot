@@ -6,10 +6,11 @@ needs(stringr)
 needs(tidyr)
 needs(jsonlite)
 needs(neighbr)
-gs4_auth(
-  path = "creds/client_credentials.json",
-  scopes = "https://www.googleapis.com/auth/spreadsheets.readonly"
-)
+# gs4_auth(
+#   path = googleCreds,
+#   scopes = "https://www.googleapis.com/auth/spreadsheets.readonly"
+# )
+gs4_deauth()
 attach(input[[1]])
 # Get player from sheet
 getPlayer = function(name) {
