@@ -321,7 +321,7 @@ WednesdayJob.start();
 SaturdayJob.start();
 dailyInjuryReportJob.start();
 dailyRemoveInjuryJob.start();
-vtwitter.start();
+// vtwitter.start();
 
 const generateSocialTweet = () => {
   (async () => {
