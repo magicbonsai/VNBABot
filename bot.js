@@ -139,6 +139,7 @@ const dedueCommand = (prompt, msg) => {
       //   scrape(words[1], words[2], words[3]);
       // }
       // scrape(words[1]);
+      msg.reply("Scraping now...");
       scrape(words[1]);
       break;
 

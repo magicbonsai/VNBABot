@@ -589,7 +589,7 @@ async function scrape(videoLink) {
     noWarnings: true,
     noCallHome: true,
     noCheckCertificate: true,
-    preferFreeFormats: true,
+    f: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
     youtubeSkipDashManifest: true
   }).then(output => {
     console.log(output);
