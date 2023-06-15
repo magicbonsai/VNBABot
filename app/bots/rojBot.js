@@ -574,7 +574,7 @@ const capSpeed = async (player, doc) => {
   const vitals = parsedData.find(page => page.tab === "VITALS").data;
   const attributes = parsedData.find(page => page.tab === "ATTRIBUTES").data;
   const playerHeight = parseInt(vitals.HEIGHT_CM);
-  const athleticismKeys = ["SPEED", "SPEED_WITH_BALL"];
+  const athleticismKeys = ["SPEED", "SPEED_WITH_BALL", "ACCELERATION"];
 
   const playerHeightInInches = Math.round(playerHeight / 2.54);
   const baseHeightInInches = 79;

@@ -59,7 +59,8 @@ const toKeysWithCappedValues = (playerRow, tabKey) => {
 
   const athleticismCaps = {
     SPEED: maxAthleticismValue,
-    SPEED_WITH_BALL: maxAthleticismValue
+    SPEED_WITH_BALL: maxAthleticismValue,
+    ACCELERATION: maxAthleticismValue
   };
 
   return Object.entries(data).reduce((acc, curr) => {
