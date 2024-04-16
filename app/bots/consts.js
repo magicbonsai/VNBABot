@@ -1204,6 +1204,9 @@ const randomBadge = (keysToFilter = []) => {
   const filteredKeys = reducedBadgeKeys.filter(
     key => !keysToFilter.includes(key)
   );
+  if (!filteredKeys.length) {
+    return { key: "None" };
+  }
   const badgeKey = _.sample(filteredKeys);
   const categoryKey = Object.keys(badges).find(key => {
     const badgeKeys = Object.keys(badges[key]);
@@ -1211,6 +1214,7 @@ const randomBadge = (keysToFilter = []) => {
       return true;
     }
   });
+
   return {
     key: badgeKey,
     data: badges[categoryKey][badgeKey]
@@ -1393,5 +1397,10 @@ module.exports = {
   tabMap,
   hotzones,
   attributes,
-  badges
+  badges,
+  randomAttribute,
+  randomBadge,
+  randomHotZone,
+  toKeysWithCappedValues,
+  toKeysWithMinValues
 };

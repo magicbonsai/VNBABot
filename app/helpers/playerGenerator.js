@@ -546,21 +546,36 @@ function generateClass(playerType) {
   // const genWingspan = _.clamp(rn({ mean: 1.04, dev: 0.05}), 0.94, 1.14) * genHeight;
   // wingspan numbers from 0 to 100, mean 50, stdev 15
   const genWingspan = _.clamp(rn({ mean: 55, dev: 15 }), 0, 100);
+  const randomPosition = chooseOne(playerTypeNames[playerType]);
+  const positions = splitOnce(randomPosition, "/");
+  const firstPosition = getPosition(positions[0]);
+  const secondPosition = getPosition(positions[1]);
 
   const data = {
     module: "PLAYER",
     tab: "VITALS",
     data: {
       HEIGHT_CM: `${Math.floor(genHeight)}`,
-      WEIGHT_LBS: `${genWeight}`
+      WEIGHT_LBS: `${genWeight}`,
+      WINGSPAN_CM: `${Math.round(
+        ((genWingspan / 100) * 0.2 + 0.94) * genHeight
+      )}`,
+      POSITION: firstPosition,
+      SECONDARY_POSITION: secondPosition
     }
   };
   return {
     genHeight,
     genWeight,
     genWingspan,
+    randomPosition,
     data
   };
+}
+
+function splitOnce(s, on) {
+  [first, ...rest] = s.split(on);
+  return [first, rest.length > 0 ? rest.join(on) : null];
 }
 
 function toFtInFromCm(value) {
@@ -569,6 +584,23 @@ function toFtInFromCm(value) {
   const inches = totalLength % 12;
   return `${ft}'${inches}"`;
 }
+
+const getPosition = pos => {
+  switch (pos) {
+    case "PG":
+      return "0";
+    case "SG":
+      return "1";
+    case "SF":
+      return "2";
+    case "PF":
+      return "3";
+    case "C":
+      return "4";
+    case null:
+      return "5";
+  }
+};
 
 const playerTypeNames = {
   guard: ["PG", "SG", "PG/SG"],
@@ -618,26 +650,30 @@ const toMappedKeyWeights = (keys, typeKeys = [], direction) => {
   return mappedKeys;
 };
 
-const updateValues = (values, delta) => {
+const updateValues = (name, values, delta) => {
   const valuesFromJSON = JSON.parse(values);
   const vitalsTab = valuesFromJSON.find(page => page.tab === "VITALS");
   const attributesTab = valuesFromJSON.find(page => page.tab === "ATTRIBUTES");
   const badgesTab = valuesFromJSON.find(page => page.tab === "BADGES");
   const hotzoneTab = valuesFromJSON.find(page => page.tab === "HOTZONE");
+
+  const firstName = splitOnce(name, " ")[0];
+  const lastName = splitOnce(name, " ")[1];
+
   let newAttributes = attributesTab.data;
-  // let newBadges = badgesTab.data;
-  // const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
+  let newBadges = badgesTab.data;
+  const filteredBadgeKeys = badges.filter(badge => badgesTab.data[badge] > 0);
   const attrDelta = _.sampleSize(keys, 5).map(key => ({
     key,
     value: deltas[delta] * _.random(3, 12) * 3
   }));
 
-  // const badgeKeys = delta == "up" ? badges : filteredBadgeKeys;
-  // const badgeSampleSize = delta == "up" ? 5 : 3;
-  // const badgeDelta = _.sampleSize(badgeKeys, badgeSampleSize).map(key => ({
-  //   key,
-  //   value: deltas[delta]
-  // }));
+  const badgeKeys = delta == "up" ? badges : filteredBadgeKeys;
+  const badgeSampleSize = delta == "up" ? 5 : 2;
+  const badgeDelta = _.sampleSize(badgeKeys, badgeSampleSize).map(key => ({
+    key,
+    value: deltas[delta]
+  }));
   attrDelta.forEach(({ key, value }) => {
     newAttributes[key] = `${_.clamp(
       parseInt(newAttributes[key]) + value,
@@ -645,16 +681,24 @@ const updateValues = (values, delta) => {
       222
     )}`;
   });
-  // badgeDelta.forEach(({ key, value }) => {
-  //   newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
-  // });
+  badgeDelta.forEach(({ key, value }) => {
+    newBadges[key] = `${_.clamp(parseInt(newBadges[key]) + value, 0, 4)}`;
+  });
   const { data: newTendencies } = generateTendencies(
     { data: newAttributes },
     { data: badgesTab.data },
     hotzoneTab
   );
   const newValues = [
-    vitalsTab,
+    {
+      module: "PLAYER",
+      tab: "VITALS",
+      data: {
+        FIRSTNAME: firstName,
+        LASTNAME: lastName,
+        ...vitalsTab.data
+      }
+    },
     {
       module: "PLAYER",
       tab: "ATTRIBUTES",
@@ -665,15 +709,15 @@ const updateValues = (values, delta) => {
     {
       module: "PLAYER",
       tab: "BADGES",
-      data: badgesTab.data
+      data: newBadges
     }
   ];
   return {
     newValues,
     attrDelta,
-    // badgeDelta,
+    badgeDelta,
     attributeTotal: getAttributeTotal(newAttributes),
-    badgeTotal: getBadgeTotal(badgesTab.data)
+    badgeTotal: getBadgeTotal(newBadges)
   };
 };
 
@@ -719,10 +763,11 @@ function runBatch(batchNum) {
       while (!newRows.every(row => row.PrevDelta == "neutral")) {
         newRows = newRows.map(row => {
           const data = row.Values;
+          const name = row.Name;
           const delta = toDelta(row.AttributeTotal, row.TargetAttributeTotal);
           // const rowOverall = delta == "neutral" ? row.Overall : "";
           const { newValues, attrDelta, attributeTotal, badgeTotal } =
-            updateValues(data, delta) || {};
+            updateValues(name, data, delta) || {};
           return {
             ...row,
             AttributeTotal: attributeTotal,
@@ -738,15 +783,8 @@ function runBatch(batchNum) {
         });
       }
       const playerListRows = newRows.map(row => {
-        const {
-          Name,
-          Height,
-          Weight,
-          AttributeTotal,
-          Position,
-          Role,
-          Values
-        } = row;
+        const { Name, Height, Weight, AttributeTotal, Position, Role, Values } =
+          row;
         return {
           Name,
           Height,
@@ -791,9 +829,13 @@ function generatePlayers(typeString) {
       const { data: hotzones } = generateHotzones();
       const initDeltaValues = toDeltaString(initAttrDelta);
       const name = `${faker.name.firstName(0)} ${faker.name.lastName()}`;
-      const { genHeight, genWeight, genWingspan, data: vitals } = generateClass(
-        playerType
-      );
+      const {
+        genHeight,
+        genWeight,
+        genWingspan,
+        data: vitals,
+        randomPosition
+      } = generateClass(playerType);
       const formattedHeight = toFtInFromCm(genHeight);
       const formattedWingSpan = toFtInFromCm(
         ((genWingspan / 100) * 0.2 + 0.94) * genHeight
@@ -805,7 +847,7 @@ function generatePlayers(typeString) {
         hotzones
       );
       const player = [vitals, attributes, tendencies, hotzones, badges];
-      const randomPosition = chooseOne(playerTypeNames[playerType]);
+      console.log(vitals);
       return {
         Name: name,
         AttributeTotal: attributeTotal,
