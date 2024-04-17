@@ -2,7 +2,6 @@ const _ = require("lodash");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
 const { CHANNEL_IDS } = require("../../consts");
 const { sheetIds } = require("./sheetHelper");
-const { JWT } = require("google-auth-library");
 const {
   randomAttribute,
   randomBadge,
@@ -11,34 +10,30 @@ const {
   toKeysWithMinValues
 } = require("../bots/consts");
 const rwc = require("random-weighted-choice");
-const serviceAccountAuth = new JWT({
-  email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"]
-});
-const doc = new GoogleSpreadsheet(
-  process.env.GOOGLE_SHEETS_KEY,
-  serviceAccountAuth
-);
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
 
 const TEAM_INDEX = 6;
 const CONTRACT_INDEX = 10;
 const AGE_INDEX = 11;
 const PRIOR_TEAM_INDEX = 31;
+const DATA_INDEX = 22;
+const CHANGES_INDEX = 39;
 
 const offSeasonPaperWork = discordClient => {
   (async () => {
     discordClient.channels.cache
       .get(CHANNEL_IDS["tech-stuff"])
       .send("OffSeason processing in progress.");
-
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const playerSheet = sheets[sheetIds.players];
     const teamAssetsSheet = sheets[sheetIds.teamAssets];
     const teamAssetsRows = await teamAssetsSheet.getRows();
     const validTeams = await teamAssetsSheet.getRows().then(rows => {
-      console.log(rows);
       return rows
         .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
         .map(row => {
@@ -47,28 +42,31 @@ const offSeasonPaperWork = discordClient => {
     });
     const playerRows = await playerSheet.getRows();
     const filteredRows = playerRows.filter(
-      row => !row["Retiring?"] && [...validTeams, "FA"].includes(row.Team)
+      row =>
+        !row["Retiring?"] && [...validTeams, "FA", "Rookie"].includes(row.Team)
     );
 
     discordClient.channels.cache
       .get(CHANNEL_IDS["tech-stuff"])
       .send("Performing Offseason Decline/Boosts");
-    console.log(filteredRows);
-    console.log(validTeams);
+
+    const playerChanges = {};
     filteredRows.forEach(playerRow => {
       const playerAge = parseInt(playerRow["Age"]);
       if (playerAge > 4) {
-        declinePlayer(playerRow, 25);
+        playerChanges[playerRow.Name] = declinePlayer(playerRow, 25);
       } else {
         switch (playerAge) {
-          case (0, 1):
-            boostPlayer(playerRow, 60);
+          case 0:
+          case 1:
+            playerChanges[playerRow.Name] = boostPlayer(playerRow, 60);
             break;
           case 2:
-            boostPlayer(playerRow, 30);
+            playerChanges[playerRow.Name] = boostPlayer(playerRow, 30);
             break;
-          case (3, 4):
-            boostPlayer(playerRow, 15);
+          case 3:
+          case 4:
+            playerChanges[playerRow.Name] = boostPlayer(playerRow, 15);
             break;
           default:
             break;
@@ -93,12 +91,12 @@ const offSeasonPaperWork = discordClient => {
       let newPriorTeam = priorTeam;
       let newTeam = Team;
       let newAge = Age;
-      let newContractLength = contractLength;
-      if (_.clamp(parseInt(contractLength) - 1, 0, 3) == 0) {
+      let newContractLength = contractLength || "0";
+      if (_.clamp(parseInt(contractLength || "0") - 1, 0, 3) == 0) {
         newPriorTeam = Team;
         newTeam = "FA";
       }
-      newContractLength = _.clamp(parseInt(contractLength) - 1, 0, 3);
+      newContractLength = _.clamp(parseInt(contractLength || "0") - 1, 0, 3);
       newAge = parseInt(Age) + 1;
       console.log("foo", Name, Age, priorTeam, contractLength);
       console.log("numbers", newTeam, newPriorTeam, newAge, newContractLength);
@@ -112,10 +110,18 @@ const offSeasonPaperWork = discordClient => {
       // Prior Team
       playerSheet.getCell(rowIdxToUpdate, PRIOR_TEAM_INDEX).value =
         newPriorTeam;
+      // Boosts/Decline
+      if (playerChanges[Name]) {
+        playerSheet.getCell(rowIdxToUpdate, DATA_INDEX).value =
+          playerChanges[Name].data;
+
+        playerSheet.getCell(rowIdxToUpdate, CHANGES_INDEX).value =
+          playerChanges[Name].changes;
+      }
 
       return [...acc, currentValue];
     }, []);
-    // await playerSheet.saveUpdatedCells();
+    await playerSheet.saveUpdatedCells();
     discordClient.channels.cache
       .get(CHANNEL_IDS["tech-stuff"])
       .send("Updating Contracts and Ages Complete.");
@@ -190,17 +196,28 @@ const boostPlayer = (player, numBoosts) => {
 
     switch (chosenBoost) {
       case "ATTRIBUTES":
-        const cappedAttrKeys = toKeysWithCappedValues(player, "ATTRIBUTES");
+        const cappedAttrKeys = toKeysWithCappedValues(
+          player,
+          "ATTRIBUTES",
+          playerData
+        );
         const { key: attrKey } = randomAttribute(cappedAttrKeys);
 
-        playerCats.ATTRIBUTES[attrKey] =
-          parseInt(playerCats.ATTRIBUTES[attrKey]) + 5;
+        playerCats.ATTRIBUTES[attrKey] = _.clamp(
+          parseInt(playerCats.ATTRIBUTES[attrKey]) + 15,
+          0,
+          222
+        );
         playerChanges[attrKey] = !!playerChanges[attrKey]
           ? playerChanges[attrKey] + 5
           : 5;
         break;
       case "BADGES":
-        const cappedBadgeKeys = toKeysWithCappedValues(player, "BADGES");
+        const cappedBadgeKeys = toKeysWithCappedValues(
+          player,
+          "BADGES",
+          playerData
+        );
         const { key: badgeKey } = randomBadge(cappedBadgeKeys);
         if (badgeKey === "None") {
           break;
@@ -211,7 +228,11 @@ const boostPlayer = (player, numBoosts) => {
           : 1;
         break;
       case "HOTZONE":
-        const cappedHotzoneKeys = toKeysWithCappedValues(player, "HOTZONE");
+        const cappedHotzoneKeys = toKeysWithCappedValues(
+          player,
+          "HOTZONE",
+          playerData
+        );
         const { key: hotZoneKey } = randomHotZone(cappedHotzoneKeys);
 
         playerCats.HOTZONE[hotZoneKey] =
@@ -231,10 +252,10 @@ const boostPlayer = (player, numBoosts) => {
             ? playerChanges["HEIGHT_CM"] + 3
             : 3;
         } else {
-          playerCats.VITALS["WEIGHT_CM"] =
-            parseInt(playerCats.VITALS["WEIGHT_CM"]) + 15;
-          playerChanges["WEIGHT_CM"] = !!playerChanges["WEIGHT_CM"]
-            ? playerChanges["WEIGHT_CM"] + 15
+          playerCats.VITALS["WEIGHT_LBS"] =
+            parseInt(playerCats.VITALS["WEIGHT_LBS"]) + 15;
+          playerChanges["WEIGHT_LBS"] = !!playerChanges["WEIGHT_LBS"]
+            ? playerChanges["WEIGHT_LBS"] + 15
             : 15;
         }
 
@@ -243,10 +264,10 @@ const boostPlayer = (player, numBoosts) => {
         break;
     }
   }
-  console.log(playerChanges);
+
   return {
-    data: playerData,
-    changes: playerChanges
+    data: JSON.stringify(playerData),
+    changes: JSON.stringify(playerChanges)
   };
 };
 
@@ -280,28 +301,40 @@ const declinePlayer = (player, numBoosts) => {
 
     switch (chosenBoost) {
       case "ATTRIBUTES":
-        const minAttrKeys = toKeysWithMinValues(player, "ATTRIBUTES");
+        const minAttrKeys = toKeysWithMinValues(
+          player,
+          "ATTRIBUTES",
+          playerData
+        );
         const { key: attrKey } = randomAttribute(minAttrKeys);
 
-        playerCats.ATTRIBUTES[attrKey] =
-          parseInt(playerCats.ATTRIBUTES[attrKey]) - 5;
+        playerCats.ATTRIBUTES[attrKey] = _.clamp(
+          parseInt(playerCats.ATTRIBUTES[attrKey]) - 15,
+          0,
+          222
+        );
         playerChanges[attrKey] = !!playerChanges[attrKey]
           ? playerChanges[attrKey] - 5
           : -5;
         break;
       case "BADGES":
-        const minBadgeKeys = toKeysWithMinValues(player, "BADGES");
+        const minBadgeKeys = toKeysWithMinValues(player, "BADGES", playerData);
         const { key: badgeKey } = randomBadge(minBadgeKeys);
         if (badgeKey === "None") {
           break;
         }
+
         playerCats.BADGES[badgeKey] = parseInt(playerCats.BADGES[badgeKey]) - 1;
         playerChanges[badgeKey] = !!playerChanges[badgeKey]
           ? playerChanges[badgeKey] - 1
           : -1;
         break;
       case "HOTZONE":
-        const minHotzoneKeys = toKeysWithMinValues(player, "HOTZONE");
+        const minHotzoneKeys = toKeysWithMinValues(
+          player,
+          "HOTZONE",
+          playerData
+        );
         const { key: hotZoneKey } = randomHotZone(minHotzoneKeys);
 
         playerCats.HOTZONE[hotZoneKey] =
@@ -314,14 +347,10 @@ const declinePlayer = (player, numBoosts) => {
         break;
     }
   }
-  console.log("hi");
-  player.set("Data", playerData);
-  player.set("Changes", playerChanges);
-  player.save();
-  console.log(playerChanges);
+
   return {
-    data: playerData,
-    changes: playerChanges
+    data: JSON.stringify(playerData),
+    changes: JSON.stringify(playerChanges)
   };
 };
 

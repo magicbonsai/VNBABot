@@ -43,10 +43,10 @@ const tabMap = {
 };
 
 // Return a list of keys on a data Tab that have hit the maximum or minimum value.
-const toKeysWithCappedValues = (playerRow, tabKey) => {
+const toKeysWithCappedValues = (playerRow, tabKey, specificData) => {
   const { Data } = playerRow;
   const { upperBound } = tabMap[tabKey] || {};
-  const valuesFromJSON = JSON.parse(Data);
+  const valuesFromJSON = specificData ?? JSON.parse(Data);
   const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
   const vitals = valuesFromJSON.find(page => page.tab === "VITALS").data;
   const data = selectedTab.data;
@@ -67,7 +67,7 @@ const toKeysWithCappedValues = (playerRow, tabKey) => {
     const [key, value] = curr;
     if (
       Object.keys(athleticismCaps).includes(key) &&
-      parseInt(value) == maxAthleticismValue
+      parseInt(value) >= maxAthleticismValue
     ) {
       return [...acc, key];
     } else if (parseInt(value) == upperBound) {
@@ -78,10 +78,10 @@ const toKeysWithCappedValues = (playerRow, tabKey) => {
   }, []);
 };
 
-const toKeysWithMinValues = (playerRow, tabKey) => {
+const toKeysWithMinValues = (playerRow, tabKey, specificData) => {
   const { Data } = playerRow;
   const { lowerBound } = tabMap[tabKey] || {};
-  const valuesFromJSON = JSON.parse(Data);
+  const valuesFromJSON = specificData ?? JSON.parse(Data);
   const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
   const data = selectedTab.data;
   return Object.entries(data).reduce((acc, curr) => {
@@ -705,11 +705,11 @@ const attributes = {
     DEFENSIVE_CONSISTENCY: {
       name: "Defensive Consistency",
       value: 5
-    },
-    INTANGIBLES: {
-      name: "Intangibles",
-      value: 5
     }
+    // INTANGIBLES: {
+    //   name: "Intangibles",
+    //   value: 5
+    // }
   },
   Conditioning: {
     STAMINA: {
@@ -1042,11 +1042,11 @@ const badges = {
       desc: "Offensive players have less success shooting when contested by players with this badge. Also boosts the shot defense rating when tightly guarding an opponent.",
       value: 1
     },
-    LIGHTNING_REFLEXES: {
-      name: "Lightning Reflexes",
-      desc: "Gives the defender an advantage to read where the ball handler is going in the Read and React System.",
-      value: 1
-    },
+    // LIGHTNING_REFLEXES: {
+    //   name: "Lightning Reflexes",
+    //   desc: "Gives the defender an advantage to read where the ball handler is going in the Read and React System.",
+    //   value: 1
+    // },
     MOVING_TRUCK: {
       name: "Moving Truck",
       desc: "Players are more effective pushing opponents out of the post while playing defense.",
