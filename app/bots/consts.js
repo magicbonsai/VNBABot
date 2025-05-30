@@ -22,7 +22,7 @@ const tabMap = {
   },
   BADGES: {
     multiplier: 1,
-    upperBound: 4,
+    upperBound: 5,
     lowerBound: 0
   },
   HOTZONE: {
@@ -63,12 +63,16 @@ const toKeysWithCappedValues = (playerRow, tabKey, specificData) => {
     ACCELERATION: maxAthleticismValue
   };
 
+  const heightBadgeFilters = ["GIANT_SLAYER"];
+
   return Object.entries(data).reduce((acc, curr) => {
     const [key, value] = curr;
     if (
       Object.keys(athleticismCaps).includes(key) &&
       parseInt(value) >= maxAthleticismValue
     ) {
+      return [...acc, key];
+    } else if (playerHeightInInches > 75 && heightBadgeFilters.includes(key)) {
       return [...acc, key];
     } else if (parseInt(value) == upperBound) {
       return [...acc, key];
@@ -656,10 +660,10 @@ const attributes = {
       name: "Speed with Ball",
       value: 5
     },
-    LATERAL_QUICKNESS: {
-      name: "Lateral Quickness",
-      value: 5
-    },
+    // LATERAL_QUICKNESS: {
+    //   name: "Lateral Quickness",
+    //   value: 5
+    // },
     VERTICAL: {
       name: "Vertical",
       value: 5
@@ -722,196 +726,222 @@ const attributes = {
 const badges = {
   Finishing: {
     ACROBAT: {
-      name: "Acrobat",
-      desc: "Spin, half-spin, hop step, euro-step, cradle, reverse, and change shot layup attempts receive a significant boost.",
+      name: "Layup Mixmaster",
+      desc: "Increases the ability to finish an alley-oop from a teammate, or putback a finish off an offensive rebound",
       value: 1
     },
     BACKDOWN_PUNISHER: {
-      name: "Backdown Punisher",
-      desc: "Allows players to have more success than normal when backing down a defender in the paint.",
+      name: "Post Powerhouse",
+      desc: "Strengthens a player's ability at backing down defenders and moving them with dropsteps.",
       value: 1
     },
     CONSISTENT_FINISHER: {
-      name: "Consistent Finisher",
-      desc: "Penalties for mis-timed layups are reduced, allowing players to make layups more consistently.",
+      name: "Physical Finisher",
+      desc: "Improves a player's ability to battle through contact and convert contact layups.",
       value: 1
     },
     CONTACT_FINISHER: {
-      name: "Contact Finisher",
-      desc: "Slashers who play below the rim finish contact layups more successfully while dunkers are able to pull off more contact dunks.",
+      name: "Posterizer",
+      desc: "Increases the chances of throwing down a dunk on your defender",
       value: 1
     },
-    "CROSS-KEY_SCORER": {
-      name: "Cross-Key Scorer",
-      desc: "Boosts the ability to make running hooks, layups, or close range pull-ups while driving across the paint.",
-      value: 1
-    },
+    // "CROSS-KEY_SCORER": {
+    //   name: "Cross-Key Scorer",
+    //   desc:
+    //     "Boosts the ability to make running hooks, layups, or close range pull-ups while driving across the paint.",
+    //   value: 0
+    // },
     DEEP_HOOKS: {
-      name: "Deep Hooks",
-      desc: "Post hooks taken far from the basket receive less of a distance penalty than normal.",
+      name: "Hook Specialist",
+      desc: "Improves a player's ability to make post hooks",
       value: 1
     },
     "DROP-STEPPER": {
-      name: "Dropstepper",
-      desc: "Allows for more success when attempting post dropsteps and hop steps, in addition to protecting the ball better, while performing these moves in the post.",
+      name: "Post Up Poet",
+      desc: "Raises the chances of faking or getting by the defender, as well as scoring, when performing moves in the post.",
       value: 1
     },
-    FANCY_FOOTWORK: {
-      name: "Fancy Footwork",
-      desc: " players get past defenders more efficiently when performing euro, cradle, hop step, spin, and half-spin gathers.",
-      value: 1
-    },
-    FASTBREAK_FINISHER: {
-      name: "Fastbreak Finisher",
-      desc: "Gives an additional boost to a player’s takeover meter when successfully dunking on a fastbreak.",
-      value: 1
-    },
-    GIANT_SLAYER: {
-      name: "Giant Slayer",
-      desc: "Boosts the shot percentage for a layup attempt when mismatched against a taller defender and reduces the possibility of getting blocked.",
-      value: 1
-    },
+    // FANCY_FOOTWORK: {
+    //   name: "Fancy Footwork",
+    //   desc:
+    //     " players get past defenders more efficiently when performing euro, cradle, hop step, spin, and half-spin gathers.",
+    //   value: 0
+    // },
+    // FASTBREAK_FINISHER: {
+    //   name: "Fastbreak Finisher",
+    //   desc:
+    //     "Gives an additional boost to a player’s takeover meter when successfully dunking on a fastbreak.",
+    //   value: 0
+    // },
     LOB_CITY_FINISHER: {
-      name: "Lob City Finisher",
-      desc: "Improves a player’s ability to successfully finish an alley-oop layup or dunk. The shot must be taken before the receiver lands.",
+      name: "Aerial Wizard",
+      desc: "Increases the ability to finish an alley-oop from a teammate, or putback a finish off an offensive rebound",
       value: 1
     },
-    PICK_ROLLER: {
-      name: "Pick and Roller",
-      desc: "When rolling off the pick and roll, a shot boost is applied if the layup or dunk attempt comes within a few seconds after catching the pass.",
-      value: 1
-    },
-    PRO_TOUCH: {
-      name: "Pro Touch",
-      desc: "Gives an extra shot boost for having slightly early, slightly late, or excellent shot timing on layups.",
-      value: 1
-    },
+    // PICK_ROLLER: {
+    //   name: "Pick and Roller",
+    //   desc:
+    //     "When rolling off the pick and roll, a shot boost is applied if the layup or dunk attempt comes within a few seconds after catching the pass.",
+    //   value: 0
+    // },
+    // PRO_TOUCH: {
+    //   name: "Pro Touch",
+    //   desc:
+    //     "Gives an extra shot boost for having slightly early, slightly late, or excellent shot timing on layups.",
+    //   value: 0
+    // },
+    // POST_SPIN_TECHNICIAN: {
+    //   name: "Post Up Poet",
+    //   desc:
+    //     "Raises the chances of faking or getting by the defender, as well as scoring, when performing moves in the post.",
+    //   value: 0
+    // },
     PUTBACK_BOSS: {
-      name: "Putback Boss",
-      desc: "Boosts the shot attributes of a player that attempts a putback layup or dunk right after getting an offensive rebound.",
+      name: "Aerial Wizard",
+      desc: "Increases the ability to finish an alley-oop from a teammate, or putback a finish off an offensive rebound",
       value: 1
     },
-    RELENTLESS_FINISHER: {
-      name: "Relentless Finisher",
-      desc: "Improves a player’s ability to take a lot of contact by reducing the energy lost when attacking the rim for contact shots.",
-      value: 1
-    },
-    SHOWTIME: {
-      name: "Showtime",
-      desc: "Gives an additional boost to a player’s takeover meter and his teammates, when successfully completing an and-1 or flashy dunk.",
-      value: 1
-    },
-    SLITHERY_FINISHER: {
-      name: "Slithery Finisher",
-      desc: "Increases a player’s ability to slide through traffic and avoid contact during gathers and finishes at the rim.",
-      value: 1
-    },
+    // RELENTLESS_FINISHER: {
+    //   name: "Relentless Finisher",
+    //   desc:
+    //     "Improves a player’s ability to take a lot of contact by reducing the energy lost when attacking the rim for contact shots.",
+    //   value: 0
+    // },
+    // SHOWTIME: {
+    //   name: "Showtime",
+    //   desc:
+    //     "Gives an additional boost to a player’s takeover meter and his teammates, when successfully completing an and-1 or flashy dunk.",
+    //   value: 0
+    // },
+    // SLITHERY_FINISHER: {
+    //   name: "Slithery Finisher",
+    //   desc:
+    //     "Increases a player’s ability to slide through traffic and avoid contact during gathers and finishes at the rim.",
+    //   value: 0
+    // },
     TEAR_DROPPER: {
-      name: "Tear Dropper",
-      desc: "Improves a player’s ability to known down floaters and runners.",
+      name: "Float Game",
+      desc: "Improves a player's ability to make floaters",
       value: 1
     }
   },
   Shooting: {
     CATCH_SHOOT: {
-      name: "Catch & Shoot",
-      desc: "For a short time after receiving a pass, the receiver’s outside shooting attributes get a significant boost.",
+      name: "Set Shot Specialist",
+      desc: "Specialist	Boosts chances of knocking down stand-still jump shots.",
       value: 1
     },
-    CLUTCH_SHOOTER: {
-      name: "Clutch Shooter",
-      desc: "Shot attempts that occur during the final moments of the 4th quarter, or in any overtime period, receive a large boost.",
-      value: 1
-    },
-    CORNER_SPECIALIST: {
-      name: "Corner Specialist",
-      desc: "Deep mid-range or 3pt shots taken along the baseline of the court receive a boost, whether it is off the dribble or off the catch.",
-      value: 1
-    },
+    // CLUTCH_SHOOTER: {
+    //   name: "Clutch Shooter",
+    //   desc:
+    //     "Shot attempts that occur during the final moments of the 4th quarter, or in any overtime period, receive a large boost.",
+    //   value: 0
+    // },
+    // CORNER_SPECIALIST: {
+    //   name: "Corner Specialist",
+    //   desc:
+    //     "Deep mid-range or 3pt shots taken along the baseline of the court receive a boost, whether it is off the dribble or off the catch.",
+    //   value: 0
+    // },
     DEADEYE: {
       name: "Deadeye",
       desc: "Jump shots taken with a defender closing out receive less of a penalty from a shot contest. This includes both mid-range and 3pt shots.",
       value: 1
     },
     DEEP_FADES: {
-      name: "Deep Fades",
-      desc: "Post fadeaways taken far from the basket receive less of a distance penalty than normal.",
+      name: "Post Fade Phenom",
+      desc: "Improves a player's ability to make post fades and hop shots",
       value: 1
     },
     DIFFICULT_SHOTS: {
-      name: "Difficult Shots",
-      desc: "Boosts your player’s ability to make shots off the dribble, in addition to boosting your player’s ability to make moving shots.",
+      name: "Shifty Shooter",
+      desc: "Improves a player's ability to successfully make off-the-dribble, high-difficulty jump shots.",
       value: 1
     },
-    FLEXIBLE_RELEASE: {
-      name: "Flexible Release",
-      desc: "Shot timing penalties for jump shots are reduced, making it easier to knock down attempts even when releasing early or late.",
+    // FLEXIBLE_RELEASE: {
+    //   name: "Flexible Release",
+    //   desc:
+    //     "Shot timing penalties for jump shots are reduced, making it easier to knock down attempts even when releasing early or late.",
+    //   value: 0
+    // },
+    // GREEN_MACHINE: {
+    //   name: "Green Machine",
+    //   desc:
+    //     "Gives an additional shot boost when consecutively achieving excellent releases on jump shots. ",
+    //   value: 0
+    // },
+    // HOT_START: {
+    //   name: "Hot Start",
+    //   desc:
+    //     "For every made shot from the beginning of the game, players receives a shot attribute bonus that lasts until the first missed shot attempt",
+    //   value: 0
+    // },
+    // HOT_ZONE_HUNTER: {
+    //   name: "Hot Zone Hunter",
+    //   desc: "Shots that are taken in a player’s hot zone(s) are given a boost",
+    //   value: 0
+    // },
+    // ICE_IN_VEINS: {
+    //   name: "Ice in Veins",
+    //   desc:
+    //     "Free throws taken in the second half of close games or overtime periods are given a boost. Also, the timing window for free throws becomes larger.",
+    //   value: 0
+    // },
+    GIANT_SLAYER: {
+      name: "Mini Marksman",
+      desc: "Elevates the likelihood of making shots over taller defenders.",
       value: 1
     },
-    GREEN_MACHINE: {
-      name: "Green Machine",
-      desc: "Gives an additional shot boost when consecutively achieving excellent releases on jump shots. ",
-      value: 1
-    },
-    HOT_START: {
-      name: "Hot Start",
-      desc: "For every made shot from the beginning of the game, players receives a shot attribute bonus that lasts until the first missed shot attempt",
-      value: 1
-    },
-    HOT_ZONE_HUNTER: {
-      name: "Hot Zone Hunter",
-      desc: "Shots that are taken in a player’s hot zone(s) are given a boost",
-      value: 1
-    },
-    ICE_IN_VEINS: {
-      name: "Ice in Veins",
-      desc: "Free throws taken in the second half of close games or overtime periods are given a boost. Also, the timing window for free throws becomes larger.",
-      value: 1
-    },
-    PICK_POPPER: {
-      name: "Pick & Popper",
-      desc: "Shot attempts that come after setting a screen are given a boost if the shot happens far enough from the rim and within a few seconds after the screen has been set.",
-      value: 1
-    },
-    PUMP_FAKE_MAESTRO: {
-      name: "Pump Fake Maestro",
-      desc: "Shortens the timer that determines how long after a pump fake a player can shoot without incurring a shot percentage penalty.",
-      value: 1
-    },
-    QUICK_DRAW: {
-      name: "Quick Draw",
-      desc: "The higher the badge level, the faster a player will be able to release all jump shots.",
-      value: 1
-    },
+    // PICK_POPPER: {
+    //   name: "Pick & Popper",
+    //   desc:
+    //     "Shot attempts that come after setting a screen are given a boost if the shot happens far enough from the rim and within a few seconds after the screen has been set.",
+    //   value: 0
+    // },
+    // PUMP_FAKE_MAESTRO: {
+    //   name: "Pump Fake Maestro",
+    //   desc:
+    //     "Shortens the timer that determines how long after a pump fake a player can shoot without incurring a shot percentage penalty.",
+    //   value: 0
+    // },
+    // QUICK_DRAW: {
+    //   name: "Quick Draw",
+    //   desc:
+    //     "The higher the badge level, the faster a player will be able to release all jump shots.",
+    //   value: 0
+    // },
     RANGE_EXTENDER: {
-      name: "Range Extender",
-      desc: "Adds extra distance to a player’s given shot range for both mid-range and 3pt shots.",
+      name: "Limitless Range",
+      desc: "Extends the range from which a player can shoot three-pointers effectively from deep",
       value: 1
     },
     "SLIPPERY_OFF-BALL": {
       name: "Slippery Off-Ball",
-      desc: "When attempting to get open off screens, the player more effectively navigates through traffic.",
-      value: 1
-    },
-    STEADY_SHOOTER: {
-      name: "Steady Shooter",
-      desc: "Shot attempts that are contested receive less of a penalty, however shot attempts that are open do not receive as much of a bonus.",
-      value: 1
-    },
-    TIRELESS_SCORER: {
-      name: "Tireless Shooter",
-      desc: "Shot attributes on jump shots suffer a smaller penalty than normal when tired.",
-      value: 1
-    },
-    VOLUME_SHOOTER: {
-      name: "Volume Shooter",
-      desc: "After a player has taken a small handful of shots, an additional boost to shot attributes is given for ever subsequent shot, whether it’s a make or a miss.",
+      desc: "When attempting to get open off screens, the player more effectively navigates through traffic",
       value: 1
     }
+    // STEADY_SHOOTER: {
+    //   name: "Steady Shooter",
+    //   desc:
+    //     "Shot attempts that are contested receive less of a penalty, however shot attempts that are open do not receive as much of a bonus.",
+    //   value: 0
+    // },
+    // TIRELESS_SCORER: {
+    //   name: "Tireless Shooter",
+    //   desc:
+    //     "Shot attributes on jump shots suffer a smaller penalty than normal when tired.",
+    //   value: 0
+    // },
+    // VOLUME_SHOOTER: {
+    //   name: "Volume Shooter",
+    //   desc:
+    //     "After a player has taken a small handful of shots, an additional boost to shot attributes is given for ever subsequent shot, whether it’s a make or a miss.",
+    //   value: 0
+    // }
   },
   Playmaking: {
     ANKLE_BREAKER: {
-      name: "Ankle Breaker",
+      name: "Ankle Assassin",
       desc: "Improves the likelihood of freezing or dropping a defender during dribble moves, especially stepback moves or certain chains of dribble moves.",
       value: 1
     },
@@ -930,69 +960,71 @@ const badges = {
       desc: "Gives a shooting boost to receivers in catch-and-shoot oppurtunities.",
       value: 1
     },
-    DOWNHILL: {
-      name: "Downhill",
-      desc: " Increases your player’s speed with ball rating on fastbreak opportunities",
-      value: 1
-    },
-    DREAM_SHAKE: {
-      name: "Dream Shake",
-      desc: "Increases the chances that a defender falls for a pump fake in the post. In addition, your player’s shooting attributes increase after post moves or pump fakes.",
-      value: 1
-    },
-    FLASHY_PASSER: {
-      name: "Flashy Passer",
-      desc: "Gives a Takeover boost to the passer and receiver after following a made shot off a flashy pass.",
-      value: 1
-    },
-    FLOOR_GENERAL: {
-      name: "Floor General",
-      desc: "Boosts your teammates’ offensive attributes when on the floor.",
-      value: 1
-    },
+    // DOWNHILL: {
+    //   name: "Downhill",
+    //   desc:
+    //     " Increases your player’s speed with ball rating on fastbreak opportunities",
+    //   value: 0
+    // },
+    // DREAM_SHAKE: {
+    //   name: "Dream Shake",
+    //   desc:
+    //     "Increases the chances that a defender falls for a pump fake in the post. In addition, your player’s shooting attributes increase after post moves or pump fakes.",
+    //   value: 0
+    // },
+    // FLASHY_PASSER: {
+    //   name: "Flashy Passer",
+    //   desc:
+    //     "Gives a Takeover boost to the passer and receiver after following a made shot off a flashy pass.",
+    //   value: 0
+    // },
+    // FLOOR_GENERAL: {
+    //   name: "Floor General",
+    //   desc: "Boosts your teammates’ offensive attributes when on the floor.",
+    //   value: 0
+    // },
     HANDLES_FOR_DAYS: {
       name: "Handles For Days",
       desc: "Allows playmakers and dribbling builds to lose less stamina when chaining dribble moves.",
       value: 1
     },
-    LOB_CITY_PASSER: {
-      name: "Lob City Passer",
-      desc: "Increases the chances of a successful alley-oop pass and finish. It boosts both your player’s passing attribute and the finishing attributes of your receiver.",
-      value: 1
-    },
+    // LOB_CITY_PASSER: {
+    //   name: "Lob City Passer",
+    //   desc:
+    //     "Increases the chances of a successful alley-oop pass and finish. It boosts both your player’s passing attribute and the finishing attributes of your receiver.",
+    //   value: 0
+    // },
     NEEDLE_THREADER: {
-      name: "Needle Threader",
-      desc: "Increases the success of tough passes between defenders. When activated, this badge will boost your passing attributes and help deliver a crisp pass.",
+      name: "Versatile Visionary",
+      desc: "Improves a player's ability to thread and fit tight passes, including alley-oops, quickly and on time.",
       value: 1
     },
-    PASS_FAKE_MAESTRO: {
-      name: "Pass Fake Maestro",
-      desc: "Increases the effectiveness of fake passes by making them quicker and tighter.",
-      value: 1
-    },
-    POST_SPIN_TECHNICIAN: {
-      name: "Post Spin Technician",
-      desc: "Boosts a player’s post spin or post drive",
-      value: 1
-    },
+    // PASS_FAKE_MAESTRO: {
+    //   name: "Pass Fake Maestro",
+    //   desc:
+    //     "Increases the effectiveness of fake passes by making them quicker and tighter.",
+    //   value: 0
+    // },
     QUICK_FIRST_STEP: {
-      name: "Quick First Step",
-      desc: "Allows players to get more explosive first steps out of the triple threat or size up.",
+      name: "Lightning Launch",
+      desc: "Speeds up launches when attacking from the perimeter.",
       value: 1
     },
-    SPACE_CREATOR: {
-      name: "Space Creator",
-      desc: "Boosts your player’s ability to create space from a defender on a step back move or shot.",
-      value: 1
-    },
-    STOP_GO: {
-      name: "Stop & Go",
-      desc: "Allows ball handlers to quickly stop-and-go while dribbling. You also get unique launch animations on stop-and-gos with this badge.",
-      value: 1
-    },
+    // SPACE_CREATOR: {
+    //   name: "Space Creator",
+    //   desc:
+    //     "Boosts your player’s ability to create space from a defender on a step back move or shot.",
+    //   value: 0
+    // },
+    // STOP_GO: {
+    //   name: "Stop & Go",
+    //   desc:
+    //     "Allows ball handlers to quickly stop-and-go while dribbling. You also get unique launch animations on stop-and-gos with this badge.",
+    //   value: 0
+    // },
     TIGHT_HANDLES: {
-      name: "Tight Handles",
-      desc: "Boosts your player’s ball handling in one-on-one situations.",
+      name: "Strong Handle",
+      desc: "Reduces the likelihood of being bothered by defenders when dribbling.",
       value: 1
     },
     UNPLUCKABLE: {
@@ -1003,8 +1035,8 @@ const badges = {
   },
   "Defense/Rebounding": {
     BOX: {
-      name: "Box",
-      desc: "Strengthens a player’s ability to effectively box out opponents in anticipation of a rebound.",
+      name: "Boxout Beast",
+      desc: "Improves a player's ability to box out and fight for good rebounding position",
       value: 1
     },
     BRICK_WALL: {
@@ -1013,47 +1045,51 @@ const badges = {
       value: 1
     },
     CHASE_DOWN_ARTIST: {
-      name: "Chase Down Artist",
+      name: "High Flying Denier",
       desc: "Boosts the speed and leaping ability of a player when he is chasing down an offensive player in anticipation of a block attempt.",
       value: 1
     },
     CLAMPS: {
-      name: "Clamps",
-      desc: "Defenders have access to quicker cut off moves and are more successful when bumping or hip riding riding the ball handler.",
+      name: "Challenger",
+      desc: "Improves the effectiveness of well-timed contests against perimeter shooters",
       value: 1
     },
-    DEFENSIVE_STOPPER: {
-      name: "Defensive Leader",
-      desc: "Lifts the defensive ability of teammates when on the court. Also, at the Hall of Fame level, can see potential shot percentages of opposing players.",
-      value: 1
-    },
-    HEART_CRUSHER: {
-      name: "Heart Crusher",
-      desc: "After successfully blocking or stealing the ball from an opponent, an additional penalty is given to the opposing player’s takeover meter.",
-      value: 1
-    },
+    // DEFENSIVE_STOPPER: {
+    //   name: "Defensive Leader",
+    //   desc:
+    //     "Lifts the defensive ability of teammates when on the court. Also, at the Hall of Fame level, can see potential shot percentages of opposing players.",
+    //   value: 0
+    // },
+    // HEART_CRUSHER: {
+    //   name: "Heart Crusher",
+    //   desc:
+    //     "After successfully blocking or stealing the ball from an opponent, an additional penalty is given to the opposing player’s takeover meter.",
+    //   value: 0
+    // },
     INTERCEPTOR: {
       name: "Interceptor",
       desc: "The frequency of successfully tipped or intercepted passes greatly increases.",
       value: 1
     },
     INTIMIDATOR: {
-      name: "Intimidator",
-      desc: "Offensive players have less success shooting when contested by players with this badge. Also boosts the shot defense rating when tightly guarding an opponent.",
+      name: "Immovable Enforcer",
+      desc: "Improves a defensive player's strength when defending ball handlers and finishers",
       value: 1
     },
     // LIGHTNING_REFLEXES: {
     //   name: "Lightning Reflexes",
-    //   desc: "Gives the defender an advantage to read where the ball handler is going in the Read and React System.",
-    //   value: 1
+    //   desc:
+    //     "Gives the defender an advantage to read where the ball handler is going in the Read and React System.",
+    //   value: 0
     // },
-    MOVING_TRUCK: {
-      name: "Moving Truck",
-      desc: "Players are more effective pushing opponents out of the post while playing defense.",
-      value: 1
-    },
+    // MOVING_TRUCK: {
+    //   name: "Moving Truck",
+    //   desc:
+    //     "Players are more effective pushing opponents out of the post while playing defense.",
+    //   value: 0
+    // },
     "OFF-BALL_PEST": {
-      name: "Off Ball Pest",
+      name: "Off-Ball Pest",
       desc: "Makes players more difficult to get past when playing off-ball, as they can grab and hold their matchup and don’t get their ankles broken as often.",
       value: 1
     },
@@ -1063,18 +1099,18 @@ const badges = {
       value: 1
     },
     PICK_POCKET: {
-      name: "Pick Pocket",
-      desc: "Increases the chances of a steal and reduces the chances of a foul when attempting to strip the ball from a ball handler. Also improves the chances of successful layup strips.",
+      name: "Glove",
+      desc: "	Increases the ability to successfully steal from ball-handlers, or strip layup attempts",
       value: 1
     },
     POGO_STICK: {
       name: "Pogo Stick",
       desc: "Allows players to quickly go back for another block attempt upon landing.",
-      value: 1
+      value: 0
     },
     POST_MOVE_LOCKDOWN: {
-      name: "Post Move Lockdown",
-      desc: "Increases the chances of a defender preventing an offensive post move from succeeding.",
+      name: "Post Lockdown",
+      desc: "Strengthens a player's ability to effectively defend moves in the post, with an increased chance at stripping the opponent",
       value: 1
     },
     REBOUND_CHASER: {
@@ -1083,25 +1119,27 @@ const badges = {
       value: 1
     },
     RIM_PROTECTOR: {
-      name: "Rim Protector",
-      desc: "Improves player’s ability to block shots, unlocks special animations and gives a boost to the Takeover meter for the blocker and blocker’s teammates following a block.",
+      name: "Paint Patroller",
+      desc: "Increases a player's ability to block or contest shots at the rim.",
       value: 1
     },
-    TIRELESS_DEFENDER: {
-      name: "Tireless Defender",
-      desc: "Allows defenders to play defense more aggressively without losing energy at the same rate as a normal player.",
-      value: 1
-    },
+    // TIRELESS_DEFENDER: {
+    //   name: "Tireless Defender",
+    //   desc:
+    //     "Allows defenders to play defense more aggressively without losing energy at the same rate as a normal player.",
+    //   value: 0
+    // },
     TRAPPER: {
-      name: "Trapper",
-      desc: "When trapping offensive players, defenders are more effective at forcing pickups and turnovers than normal.",
-      value: 1
-    },
-    WORM: {
-      name: "Worm",
-      desc: "When boxed out, rebounders have more success swimming around and getting into successful rebound position.",
+      name: "On-Ball Menace",
+      desc: "Hounds and bodies up while defending on the perimeter.",
       value: 1
     }
+    // WORM: {
+    //   name: "Worm",
+    //   desc:
+    //     "When boxed out, rebounders have more success swimming around and getting into successful rebound position.",
+    //   value: 0
+    // }
   }
 };
 

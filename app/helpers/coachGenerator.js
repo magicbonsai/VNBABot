@@ -105,7 +105,9 @@ function generateCoach() {
         "Offensive Focus": _.sample(offensiveFocus),
         "Offensive Rebounding": _.sample(oRebounding),
         "Defensive Rebounding": _.sample(dRebounding),
-        "Offensive Tempo": _.sample(oTempo)
+        "Offensive Tempo": _.sample(oTempo),
+        "Bench Utilization": getRandomInt(1, 100),
+        "Help Defense": getRandomInt(1, 100)
       });
     })();
   })();
@@ -137,6 +139,7 @@ const defensiveFocus = [
 
 const offensiveFocus = [
   "No Preference",
+  "Get To The Basket",
   "Get Shooters Open",
   "Pick and Roll",
   "Play Through Stars",
@@ -229,7 +232,7 @@ const nbaTeams = [
   "Mavericks",
   "Nuggets",
   "Pistons",
-  "State Warriors",
+  "Warriors",
   "Rockets",
   "Pacers",
   "Clippers",
@@ -249,12 +252,7 @@ const nbaTeams = [
   "Spurs",
   "Raptors",
   "Jazz",
-  "Wizards",
-  "Heat 13",
-  "Celtics 08",
-  "Celtics 86",
-  "Bulls 96",
-  "Lakers 08"
+  "Wizards"
 ];
 
 const cyberFaces = [

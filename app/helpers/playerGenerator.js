@@ -89,7 +89,6 @@ const keys = [
   "SHOT_CONTEST",
   "REACTION_TIME",
   "ON-BALL_DEFENSE_IQ",
-  "LATERAL_QUICKNESS",
   "SPEED",
   "SPEED_WITH_BALL",
   "ACCELERATION",
@@ -138,80 +137,80 @@ const bigKeys = [
 const badges = [
   "ACROBAT",
   "TEAR_DROPPER",
-  "RELENTLESS_FINISHER",
-  "POST_SPIN_TECHNICIAN",
+  // "RELENTLESS_FINISHER",
+  // "POST_SPIN_TECHNICIAN",
   "DROP-STEPPER",
   "PUTBACK_BOSS",
   "BACKDOWN_PUNISHER",
   "CONSISTENT_FINISHER",
   "CONTACT_FINISHER",
-  "CROSS-KEY_SCORER",
+  // "CROSS-KEY_SCORER",
   "DEEP_HOOKS",
-  "PICK_ROLLER",
-  "FANCY_FOOTWORK",
-  "FASTBREAK_FINISHER",
+  // "PICK_ROLLER",
+  // "FANCY_FOOTWORK",
+  // "FASTBREAK_FINISHER",
   "GIANT_SLAYER",
-  "PRO_TOUCH",
-  "SHOWTIME",
-  "SLITHERY_FINISHER",
+  // "PRO_TOUCH",
+  // "SHOWTIME",
+  // "SLITHERY_FINISHER",
   "CATCH_SHOOT",
-  "CORNER_SPECIALIST",
+  // "CORNER_SPECIALIST",
   "DIFFICULT_SHOTS",
-  "PICK_POPPER",
-  "CLUTCH_SHOOTER",
+  // "PICK_POPPER",
+  // "CLUTCH_SHOOTER",
   "DEADEYE",
   "DEEP_FADES",
-  "FLEXIBLE_RELEASE",
-  "GREEN_MACHINE",
-  "HOT_ZONE_HUNTER",
-  "HOT_START",
-  "ICE_IN_VEINS",
-  "PUMP_FAKE_MAESTRO",
-  "QUICK_DRAW",
+  // "FLEXIBLE_RELEASE",
+  // "GREEN_MACHINE",
+  // "HOT_ZONE_HUNTER",
+  // "HOT_START",
+  // "ICE_IN_VEINS",
+  // "PUMP_FAKE_MAESTRO",
+  // "QUICK_DRAW",
   "RANGE_EXTENDER",
   "SLIPPERY_OFF-BALL",
-  "STEADY_SHOOTER",
-  "TIRELESS_SCORER",
-  "VOLUME_SHOOTER",
+  // "STEADY_SHOOTER",
+  // "TIRELESS_SCORER",
+  // "VOLUME_SHOOTER",
   "ANKLE_BREAKER",
-  "FLASHY_PASSER",
+  // "FLASHY_PASSER",
   "BREAK_STARTER",
-  "LOB_CITY_PASSER",
+  // "LOB_CITY_PASSER",
   "DIMER",
   "BAIL_OUT",
-  "DOWNHILL",
-  "DREAM_SHAKE",
+  // "DOWNHILL",
+  // "DREAM_SHAKE",
   "HANDLES_FOR_DAYS",
   "NEEDLE_THREADER",
-  "PASS_FAKE_MAESTRO",
+  // "PASS_FAKE_MAESTRO",
   "QUICK_FIRST_STEP",
-  "SPACE_CREATOR",
-  "STOP_GO",
+  // "SPACE_CREATOR",
+  // "STOP_GO",
   "TIGHT_HANDLES",
   "UNPLUCKABLE",
-  "FLOOR_GENERAL",
+  // "FLOOR_GENERAL",
   "PICK_POCKET",
   "RIM_PROTECTOR",
   "PICK_DODGER",
   "CHASE_DOWN_ARTIST",
   "CLAMPS",
-  "DEFENSIVE_STOPPER",
-  "HEART_CRUSHER",
+  // "DEFENSIVE_STOPPER",
+  // "HEART_CRUSHER",
   "INTERCEPTOR",
   "INTIMIDATOR",
-  "LIGHTNING_REFLEXES",
-  "MOVING_TRUCK",
+  // "LIGHTNING_REFLEXES",
+  // "MOVING_TRUCK",
   "OFF-BALL_PEST",
   "POGO_STICK",
   "POST_MOVE_LOCKDOWN",
-  "TIRELESS_DEFENDER",
+  // "TIRELESS_DEFENDER",
   "TRAPPER",
   "LOB_CITY_FINISHER",
   "BRICK_WALL",
   "BOX",
-  "REBOUND_CHASER",
-  "WORM"
-];
+  "REBOUND_CHASER"
+  // "WORM"
+]; //75
 // WIP: remove controverersial badges in future discussion
 const personalityBadges = [
   "ALPHA_DOG",
@@ -317,9 +316,9 @@ const generateHotzones = () => {
 
 const bigKeysForBias = [
   "SPEED",
-  "SPEED_WITH_BALL",
   "ACCELERATION",
-  "LATERAL_QUICKNESS"
+  "SPEED_WITH_BALL",
+  "BALL_CONTROL"
 ];
 
 const guardKeysForBias = [
@@ -331,7 +330,8 @@ const guardKeysForBias = [
   "PASSING_ACCURACY",
   "PASSING_VISION",
   "SPEED",
-  "SPEED_WITH_BALL"
+  "SPEED_WITH_BALL",
+  "ACCELERATION"
 ];
 
 const initialBiasedDelta = (data, delta, keys) => {
@@ -350,6 +350,18 @@ const initialBiasedDelta = (data, delta, keys) => {
       222
     )}`;
   });
+
+  // make speed faster than speed w/ball
+  const speed = newAttributes["SPEED"];
+  const speedBall = newAttributes["SPEED_WITH_BALL"];
+  if (
+    parseInt(newAttributes["SPEED"]) <
+    parseInt(newAttributes["SPEED_WITH_BALL"])
+  ) {
+    newAttributes["SPEED"] = speedBall;
+    newAttributes["SPEED_WITH_BALL"] = speed;
+  }
+
   return {
     newValues: {
       module: "PLAYER",
@@ -387,7 +399,7 @@ function generateAttributes(playerType) {
   for (let step = 0; step < 5; step++) {
     values.push(_.random(40, 89));
   }
-  for (let step = 0; step < 3; step++) {
+  for (let step = 0; step < 2; step++) {
     values.push(_.random(30, 79));
   }
   // durability
@@ -529,7 +541,7 @@ const classes = {
     wDeviation: 20
   },
   big: {
-    height: 208,
+    height: 209,
     weight: 255,
     hDeviation: 5,
     wDeviation: 25
@@ -669,7 +681,7 @@ const updateValues = (name, values, delta) => {
   }));
 
   const badgeKeys = delta == "up" ? badges : filteredBadgeKeys;
-  const badgeSampleSize = delta == "up" ? 5 : 2;
+  const badgeSampleSize = delta == "up" ? 5 : 1;
   const badgeDelta = _.sampleSize(badgeKeys, badgeSampleSize).map(key => ({
     key,
     value: deltas[delta]
@@ -689,6 +701,9 @@ const updateValues = (name, values, delta) => {
     { data: badgesTab.data },
     hotzoneTab
   );
+
+  newAttributes["STAMINA"] = _.random(90, 222);
+
   const newValues = [
     {
       module: "PLAYER",

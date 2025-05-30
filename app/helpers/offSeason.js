@@ -176,7 +176,7 @@ const boostPlayer = (player, numBoosts) => {
     },
     {
       id: "HOTZONE",
-      weight: 24
+      weight: 10
     },
     {
       id: "VITALS",
