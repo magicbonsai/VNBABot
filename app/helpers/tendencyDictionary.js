@@ -662,16 +662,18 @@ const tendencyDictionary = {
     attrKeys: ["PASS_PERCEPTION"],
     badgeKeys: ["INTERCEPTOR", "HEART_CRUSHER"]
   }),
-  TAKE_CHARGE_TENDENCY: () => {
-    return "0";
-  },
+  TAKE_CHARGE_TENDENCY: toTendencyRNormal({
+    attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "HUSTLE"],
+    badgeKeys: ["INTIMIDATOR", "CLAMPS", "TIRELESS_DEFENDER"],
+    meanDelta: 5
+  }),
   "ON-BALL_STEAL_TENDENCY": toTendencyRNormal({
     attrKeys: ["STEAL"],
     badgeKeys: ["PICK_POCKET", "HEART_CRUSHER"],
     meanDelta: 10
   }),
   CONTEST_SHOT_TENDENCY: toTendencyRNormal({
-    attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "LATERAL_QUICKNESS"],
+    attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE"],
     badgeKeys: ["INTIMIDATOR", "CLAMPS", "TIRELESS_DEFENDER"],
     meanDelta: 5
   }),
@@ -686,12 +688,12 @@ const tendencyDictionary = {
     meanDelta: 10
   }),
   FOUL_TENDENCY: toTendencyRNormalInverse({
-    attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "LATERAL_QUICKNESS"],
+    attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE"],
     badgeKeys: ["INTIMIDATOR", "CLAMPS"],
     meanScalar: 0.6
   }),
   HARD_FOUL_TENDENCY: toTendencyRNormalInverse({
-    attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE", "LATERAL_QUICKNESS"],
+    attrKeys: ["INTERIOR_DEFENSE", "PERIMETER_DEFENSE"],
     badgeKeys: ["INTIMIDATOR", "CLAMPS"]
   })
 };

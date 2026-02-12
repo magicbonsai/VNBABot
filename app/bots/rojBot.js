@@ -16,12 +16,15 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
     return data;
   }
   const { key, value } = updateKey;
+  console.log(updateKey)
   const { multiplier = 1, upperBound } = tabMap[tabKey] || {};
   const valuesFromJSON = JSON.parse(data);
   const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
   const selectedIndex = valuesFromJSON.findIndex(page => page.tab === tabKey);
   let newData = selectedTab.data;
-  const newKeyValue = parseInt(selectedTab.data[key]) + value * multiplier;
+  const currentKey = selectedTab.data[key] === "NaN" ? 0 : selectedTab.data[key];
+  const newKeyValue = parseInt(currentKey) + value * multiplier;
+
   const clampedNewValue = _.clamp(newKeyValue, 0, upperBound);
   newData[key] = `${clampedNewValue}`;
 
@@ -68,10 +71,10 @@ async function updatePlayerObject(playerRow, doc, type, updateKey) {
   const { Name: playerName } = playerRow;
   await doc.loadInfo();
   const sheets = doc.sheetsById;
-  const requestQueue = sheets[sheetIds.requestQueue];
+  // const requestQueue = sheets[sheetIds.requestQueue];
   const players = sheets[sheetIds.players];
   const playerRows = await players.getRows();
-  const requestQueueRows = await requestQueue.getRows();
+  // const requestQueueRows = await requestQueue.getRows();
   // updating the player list
   // Find the most update to date info on the player
   let playerRowToUpdate = playerRows.find(row => row.Name === playerName);
@@ -81,32 +84,32 @@ async function updatePlayerObject(playerRow, doc, type, updateKey) {
   await playerRowToUpdate.save();
 
   //updating the request queue
-  const requestRowToUpdate = requestQueueRows.find(
-    row => row.Player === playerName && !row["Done?"]
-  );
-  if (requestRowToUpdate) {
-    const { Description: existingJSON } = requestRowToUpdate;
-    const changeListJSON = createChangeListJSON(type, updateKey, existingJSON);
-    // There is an existing row so update the data that already exists
-    requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
-    requestRowToUpdate["Data"] = newJSON;
-    requestRowToUpdate[
-      "Team"
-    ] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
-    requestRowToUpdate["Description"] = changeListJSON;
-    await requestRowToUpdate.save();
-  } else {
-    // push up a new Row
-    const newRow = {
-      Date: new Date().toLocaleString().split(",")[0],
-      Player: playerName,
-      Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
-      Description: createChangeListJSON(type, updateKey),
-      Data: newJSON,
-      "Done?": undefined
-    };
-    await requestQueue.addRow(newRow);
-  }
+  // const requestRowToUpdate = requestQueueRows.find(
+  //   row => row.Player === playerName && !row["Done?"]
+  // );
+  // if (requestRowToUpdate) {
+  //   const { Description: existingJSON } = requestRowToUpdate;
+  //   const changeListJSON = createChangeListJSON(type, updateKey, existingJSON);
+  //   // There is an existing row so update the data that already exists
+  //   requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
+  //   requestRowToUpdate["Data"] = newJSON;
+  //   requestRowToUpdate[
+  //     "Team"
+  //   ] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
+  //   requestRowToUpdate["Description"] = changeListJSON;
+  //   await requestRowToUpdate.save();
+  // } else {
+  //   // push up a new Row
+  //   const newRow = {
+  //     Date: new Date().toLocaleString().split(",")[0],
+  //     Player: playerName,
+  //     Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
+  //     Description: createChangeListJSON(type, updateKey),
+  //     Data: newJSON,
+  //     "Done?": undefined
+  //   };
+  //   await requestQueue.addRow(newRow);
+  // }
   return;
 }
 
@@ -623,11 +626,51 @@ const capSpeedWithHeight = () => {
   })();
 };
 
+const fixNanValue = async (player, doc) => {
+  const { Data } = player;
+  const parsedData = JSON.parse(Data);
+  const tendencies = parsedData.find(page => page.tab === "TENDENCIES").data;
+
+  for (const tkey of _.keys(tendencies)) {
+    if (tendencies[tkey] === "NaN") {
+      console.log(tkey);
+      const newNum = _.random(1, 99);
+      await updatePlayerObject(player, doc, "TENDENCIES", {
+        key: tkey,
+        value: _.random(1, 99)
+      });
+    }
+  }
+};
+
+const fixNanValues = () => {
+  (async function main() {
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    });
+    await doc.loadInfo();
+
+    const sheets = doc.sheetsById;
+    const players = sheets[sheetIds.players];
+
+    const playerRows = await players.getRows();
+
+    for (playerRow of playerRows) {
+      console.log(playerRow.Name);
+      await fixNanValue(playerRow, doc);
+    }
+
+    console.log("NaN fixed");
+  })();
+};
+
 module.exports = {
   runReportWith,
   runDevReportWith,
   runDeclineReportWith,
   createChangeListJSON,
   capSpeedWithHeight,
+  fixNanValues,
   updateJSON
 };

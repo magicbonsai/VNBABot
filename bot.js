@@ -42,7 +42,8 @@ const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 const {
   runDevReportWith,
   runDeclineReportWith,
-  capSpeedWithHeight
+  capSpeedWithHeight,
+  fixNanValues
 } = require("./app/bots/rojBot");
 const {
   postRojTweet,
@@ -89,6 +90,9 @@ const dedueCommand = (prompt, msg) => {
       break;
     case "capathleticism":
       capSpeedWithHeight();
+      break;
+    case "fixnan":
+      fixNanValues();
       break;
     case "devreport2":
       runDevReport(words[1]);
