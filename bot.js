@@ -8,7 +8,7 @@ const { generatePlayers, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
 const {
   generateInjuriesWith,
-  removeInjuries
+  removeInjuries,
 } = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const { offSeasonPaperWork } = require("./app/helpers/offSeason");
@@ -19,7 +19,7 @@ const router = express.Router();
 const {
   postToChannelWith,
   postToTeamWith,
-  updatePlayers
+  updatePlayers,
 } = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
 const { sheetIds } = require("./app/helpers/sheetHelper");
@@ -32,10 +32,10 @@ const client = new Client({
     "GUILD_MESSAGES",
     "GUILD_MESSAGE_REACTIONS",
     "GUILDS",
-    "GUILD_MEMBERS"
+    "GUILD_MEMBERS",
   ],
   partials: ["MESSAGE", "CHANNEL", "REACTION"],
-  fetchAllMembers: true
+  fetchAllMembers: true,
 });
 const { help: docs, devHelp: devDocs } = require("./docs/help.js");
 
@@ -43,12 +43,12 @@ const {
   runDevReportWith,
   runDeclineReportWith,
   capSpeedWithHeight,
-  fixNanValues
+  fixNanValues,
 } = require("./app/bots/rojBot");
 const {
   postRojTweet,
   postSmithyTweet,
-  getRandomTweet
+  getRandomTweet,
 } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
@@ -75,6 +75,11 @@ app.use("/", router);
 
 app.listen(PORT, () => {
   console.log(`server running on port ${PORT}`);
+
+  console.log("Attempting Discord login...");
+  client.login(process.env.BOT_TOKEN).catch((err) => {
+    console.error("Discord login failed:", err);
+  });
 });
 
 // Main discord bot setup
@@ -164,7 +169,7 @@ const dedueCommand = (prompt, msg) => {
         "Denver Nuggets",
         "Golden State Warriors",
         "Los Angeles Lakers",
-        "Washington Wizards"
+        "Washington Wizards",
       ]);
 
       console.log(schedule.flat(2));
@@ -216,7 +221,7 @@ client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on("messageCreate", msg => {
+client.on("messageCreate", (msg) => {
   const { author, content } = msg;
   console.log(content);
   if (author.bot) return;
@@ -228,7 +233,7 @@ client.on("messageCreate", msg => {
 
 //Main bot loop
 
-client.login(process.env.BOT_TOKEN);
+// client.login(process.env.BOT_TOKEN);
 
 /**
  * TODO: Augment this cronjob for the bot to do more daily tasks like:
@@ -264,7 +269,7 @@ const dailyInjuryReportJob = new CronJob("0 11 * * *", function () {
     const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
 
     await doc.loadInfo();
@@ -273,7 +278,7 @@ const dailyInjuryReportJob = new CronJob("0 11 * * *", function () {
 
     const doInjuriesVar = await globalsSheet
       .getRows()
-      .then(rows => rows.find(row => row.Global == "doInjuries"));
+      .then((rows) => rows.find((row) => row.Global == "doInjuries"));
     console.log("daily injury job", doInjuriesVar);
     if (doInjuriesVar.Status == "FALSE") {
       return;
@@ -287,12 +292,12 @@ const dailyRemoveInjuryJob = new CronJob("15 11 * * *", function () {
   removeInjuries();
 });
 
-const runReportWithCheck = isWeekend => {
+const runReportWithCheck = (isWeekend) => {
   (async () => {
     const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
 
     await doc.loadInfo();
@@ -301,7 +306,7 @@ const runReportWithCheck = isWeekend => {
 
     const doBoostsVar = await globalsSheet
       .getRows()
-      .then(rows => rows.find(row => row.Global == "doBoosts"));
+      .then((rows) => rows.find((row) => row.Global == "doBoosts"));
     console.log("daily injury job", doBoostsVar);
     if (doBoostsVar.Status == "FALSE") {
       return;
@@ -333,7 +338,7 @@ const generateSocialTweet = () => {
     const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
 
     await doc.loadInfo();
@@ -342,20 +347,20 @@ const generateSocialTweet = () => {
     const teamAssets = sheets[sheetIds.teamAssets];
 
     const teamAssetsRows = (await teamAssets.getRows()).filter(
-      team => team.Frozen !== "TRUE"
+      (team) => team.Frozen !== "TRUE",
     );
 
     const playerListRows = (await players.getRows()).filter(
-      player =>
+      (player) =>
         player.Team !== "Rookie" &&
         player.Team !== "FA" &&
-        teamAssetsRows.map(t => t.Team).includes(player.Team)
+        teamAssetsRows.map((t) => t.Team).includes(player.Team),
     );
 
     await getRandomTweet(
       client.channels.cache.get(CHANNEL_IDS.vtwitter),
       playerListRows,
-      teamAssetsRows
+      teamAssetsRows,
     );
   })();
 };
@@ -368,7 +373,7 @@ const triKovAnalysis = () => {
         const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
         await doc.useServiceAccountAuth({
           client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
         });
         await doc.loadInfo();
         const sheets = doc.sheetsByTitle;
@@ -394,77 +399,80 @@ const triKovAnalysis = () => {
         await players.loadCells();
         await teamAssets.loadCells();
 
-        playerListRows.forEach(row => {
-          const meanCVs = [0, 1, 2].map(num =>
-            _.mean(_.values(cashValues).map(p => p[num].Cash_Value))
+        playerListRows.forEach((row) => {
+          const meanCVs = [0, 1, 2].map((num) =>
+            _.mean(_.values(cashValues).map((p) => p[num].Cash_Value)),
           );
-          const meanKNNs = [0, 1, 2].map(num =>
-            _.mean(_.values(knnCashValues).map(p => p[num].continuous_target))
+          const meanKNNs = [0, 1, 2].map((num) =>
+            _.mean(
+              _.values(knnCashValues).map((p) => p[num].continuous_target),
+            ),
           );
           players.getCell(row.rowNumber - 1, 23).value = cashValues[row.Name]
             ? _.mean(
                 cashValues[row.Name].map(
                   (cr, index) =>
-                    (cr.Cash_Value / meanCVs[index]) * _.mean(meanCVs)
-                )
+                    (cr.Cash_Value / meanCVs[index]) * _.mean(meanCVs),
+                ),
               )
             : knnCashValues[row.Name]
-            ? _.mean(
-                knnCashValues[row.Name].map(
-                  (knn, index) =>
-                    (knn.continuous_target / meanKNNs[index]) * _.mean(meanKNNs)
+              ? _.mean(
+                  knnCashValues[row.Name].map(
+                    (knn, index) =>
+                      (knn.continuous_target / meanKNNs[index]) *
+                      _.mean(meanKNNs),
+                  ),
                 )
-              )
-            : 0;
+              : 0;
 
           players.getCell(row.rowNumber - 1, 27).value = cashValues[row.Name]
             ? cashValues[row.Name][0].Cash_Value
             : knnCashValues[row.Name]
-            ? knnCashValues[row.Name][0].continuous_target
-            : 0;
+              ? knnCashValues[row.Name][0].continuous_target
+              : 0;
 
           players.getCell(row.rowNumber - 1, 28).value = cashValues[row.Name]
             ? cashValues[row.Name][1].Cash_Value
             : knnCashValues[row.Name]
-            ? knnCashValues[row.Name][1].continuous_target
-            : 0;
+              ? knnCashValues[row.Name][1].continuous_target
+              : 0;
 
           players.getCell(row.rowNumber - 1, 29).value = cashValues[row.Name]
             ? cashValues[row.Name][2].Cash_Value
             : knnCashValues[row.Name]
-            ? knnCashValues[row.Name][2].continuous_target
-            : 0;
+              ? knnCashValues[row.Name][2].continuous_target
+              : 0;
 
           players.getCell(row.rowNumber - 1, 30).value = knnCashValues[row.Name]
             ? _.uniq([
                 knnCashValues[row.Name][0]["neighbor1"],
                 knnCashValues[row.Name][1]["neighbor1"],
-                knnCashValues[row.Name][2]["neighbor1"]
+                knnCashValues[row.Name][2]["neighbor1"],
               ]).join(", ")
             : 0;
         });
 
-        teamAssetsRows.forEach(row => {
+        teamAssetsRows.forEach((row) => {
           const picks = row["Draft Picks"]
             .split(", ")
-            .map(str => str.replace(/\s+/g, ""));
+            .map((str) => str.replace(/\s+/g, ""));
 
           const miscPicks = row["Misc Draft Picks"]
             .split(", ")
-            .map(str => str.replace(/\s+/g, ""));
+            .map((str) => str.replace(/\s+/g, ""));
 
           teamAssets.getCell(row.rowNumber - 1, 6).value = picks
-            .map(pick => {
+            .map((pick) => {
               return cashValues[pick]
-                ? _.mean(cashValues[pick].map(cr => cr.Cash_Value))
+                ? _.mean(cashValues[pick].map((cr) => cr.Cash_Value))
                 : 0;
             })
             .join(", ");
 
           teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
-            .map(pick => {
+            .map((pick) => {
               return cashValues[pick]
-                ? _.mean(cashValues[pick].map(cr => cr.Cash_Value))
+                ? _.mean(cashValues[pick].map((cr) => cr.Cash_Value))
                 : 0;
             })
             .join(", ");
