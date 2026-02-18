@@ -76,10 +76,6 @@ app.use("/", router);
 app.listen(PORT, () => {
   console.log(`server running on port ${PORT}`);
 
-  client.on("debug", (d) => console.log(`[DEBUG] ${d}`));
-  client.on("warn", (w) => console.log(`[WARN] ${w}`));
-  client.on("error", (e) => console.error(`[ERROR] ${e}`));
-
   console.log("Attempting Discord login...");
   client.login(process.env.BOT_TOKEN).catch((err) => {
     console.error("Discord login failed:", err);
