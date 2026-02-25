@@ -10,9 +10,9 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
 }
 
-const getMax = object => {
+const getMax = (object) => {
   let max = Math.max(...Object.values(object));
-  return Object.keys(object).filter(key => object[key] == max);
+  return Object.keys(object).filter((key) => object[key] == max);
 };
 
 function generateCoach() {
@@ -21,23 +21,26 @@ function generateCoach() {
   return (async function main() {
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
     await doc.loadInfo();
     const sheets = doc.sheetsById;
     const retiredPlayersSheet = sheets[rPlayersId];
     const coachesSheet = sheets[coachesId];
     const retiredPlayers = await retiredPlayersSheet.getRows();
-    const chosenPlayer = _.sample(retiredPlayers);
+    const chosenPlayer = _.sample(
+      retiredPlayers.filter((player) => !!player.FaceID),
+    );
     const name = chosenPlayer.Name;
+    const faceID = chosenPlayer.FaceID;
     const filteredFaces = [...cyberFaces];
     _.remove(
       [...cyberFaces],
-      face =>
+      (face) =>
         face.includes("girl") ||
         face.includes("woman") ||
         face.includes("kid") ||
-        face.includes("female")
+        face.includes("female"),
     );
     const vitals = {
       module: "STAFF",
@@ -45,8 +48,8 @@ function generateCoach() {
       data: {
         FIRSTNAME: name.split(" ")[0],
         LASTNAME: name.split(" ")[1],
-        FACEID: _.sample(filteredFaces).slice(0, 4)
-      }
+        FACEID: faceID,
+      },
     };
     const offense = getRandomInt(6, 13);
     const attributes = {
@@ -54,8 +57,8 @@ function generateCoach() {
       tab: "ATTRIBUTES",
       data: {
         OFFENSE: offense.toString(),
-        DEFENSE: (18 - offense).toString()
-      }
+        DEFENSE: (18 - offense).toString(),
+      },
     };
 
     const prof = {
@@ -66,7 +69,7 @@ function generateCoach() {
       "Post Centric": getRandomInt(50, 100),
       Triangle: getRandomInt(50, 100),
       "Seven Seconds": getRandomInt(50, 100),
-      Defense: getRandomInt(50, 100)
+      Defense: getRandomInt(50, 100),
     };
 
     const system = systems.indexOf(getMax(prof)[0]);
@@ -89,8 +92,8 @@ function generateCoach() {
         POST_CENTRIC_PROFICIENCY: prof["Post Centric"].toString(),
         TRIANGLE_PROFICIENCY: prof.Triangle.toString(),
         SEVEN_SECONDS_PROFICIENCY: prof["Seven Seconds"].toString(),
-        DEFENSE_PROFICIENCY: prof.Defense.toString()
-      }
+        DEFENSE_PROFICIENCY: prof.Defense.toString(),
+      },
     };
     (async () => {
       await coachesSheet.addRow({
@@ -107,7 +110,8 @@ function generateCoach() {
         "Defensive Rebounding": _.sample(dRebounding),
         "Offensive Tempo": _.sample(oTempo),
         "Bench Utilization": getRandomInt(1, 100),
-        "Help Defense": getRandomInt(1, 100)
+        "Help Defense": getRandomInt(1, 100),
+        FaceID: faceID,
       });
     })();
   })();
@@ -121,20 +125,20 @@ const systems = [
   "Post Centric",
   "Triangle",
   "Seven Seconds",
-  "Defense"
+  "Defense",
 ];
 
 const defensiveAggression = [
   "Conservative Defense",
   "Neutral Defensive Aggression",
-  "Play Physical Defense"
+  "Play Physical Defense",
 ];
 
 const defensiveFocus = [
   "No Preference",
   "Protect the Paint",
   "Neutral Defensive Focus",
-  "Limt Perimeter Shots"
+  "Limt Perimeter Shots",
 ];
 
 const offensiveFocus = [
@@ -144,28 +148,28 @@ const offensiveFocus = [
   "Pick and Roll",
   "Play Through Stars",
   "Neutral Offensive Focus",
-  "Feed the Post"
+  "Feed the Post",
 ];
 
 const oRebounding = [
   "No Preference",
   "Limit Transition",
   "Some Crash, Others Run",
-  "Crash Offensive Boards"
+  "Crash Offensive Boards",
 ];
 
 const dRebounding = [
   "No Preference",
   "Run in Transition",
   "Some Crash, Others Run",
-  "Crash Defensive Boards"
+  "Crash Defensive Boards",
 ];
 
 const oTempo = [
   "No Preference",
   "Patient Offense",
   "Average Tempo",
-  "Shoot at Will"
+  "Shoot at Will",
 ];
 
 const levels = {
@@ -175,7 +179,7 @@ const levels = {
   "B+": 9,
   B: 8,
   "B-": 7,
-  "C+": 6
+  "C+": 6,
 };
 
 const styles = [
@@ -192,7 +196,7 @@ const styles = [
   "Skills",
   "Toughness",
   "Transition",
-  "Two Way"
+  "Two Way",
 ];
 
 const insideVsOutsideStyles = [
@@ -201,7 +205,7 @@ const insideVsOutsideStyles = [
   "Balanced",
   "Balanced",
   "More Outside",
-  "Everything Outside"
+  "Everything Outside",
 ];
 
 const offenseVsDefenseStyles = [
@@ -210,7 +214,7 @@ const offenseVsDefenseStyles = [
   "Balanced",
   "Balanced",
   "Leans Defense",
-  "Heavily Defense"
+  "Heavily Defense",
 ];
 
 const guardsVsForwardsStyles = [
@@ -219,7 +223,7 @@ const guardsVsForwardsStyles = [
   "Balanced",
   "Balanced",
   "Leans to Forwards",
-  "Heavily to Guards"
+  "Heavily to Guards",
 ];
 
 const nbaTeams = [
@@ -252,7 +256,7 @@ const nbaTeams = [
   "Spurs",
   "Raptors",
   "Jazz",
-  "Wizards"
+  "Wizards",
 ];
 
 const cyberFaces = [
@@ -2277,7 +2281,7 @@ const cyberFaces = [
   "9038 -  - 0G",
   "9040 -  - 0G",
   "9041 -  - 0G",
-  "9045 -  - 0G"
+  "9045 -  - 0G",
 ];
 
 module.exports = { generateCoach };
