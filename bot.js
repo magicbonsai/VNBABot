@@ -16,6 +16,7 @@ const {
   getSeasonFlag,
   getValidTeams,
   getPlayerSeasons,
+  saveTrikov,
 } = require("./app/helpers/dbHelper");
 const express = require("express");
 const cors = require("cors");
@@ -343,126 +344,59 @@ const generateSocialTweet = () => {
   })();
 };
 
-// NOTE: still Sheets-based. The TriKov R pipeline (ex-sync.R) reads the Google
-// Sheet directly and writes values back by column index, so it's a coupled
-// read+write unit. Migrating it to the DB requires porting ex-sync.R to read
-// from Postgres and writing results to player_seasons.trikov_value /
-// trikov_detail and draft_picks.trikov_value (a separate, R-side task).
+// TriKov player valuations. The R pipeline (ex-sync.R) still READS the Google
+// Sheets to compute (a separate, R-side migration: point ex-sync.R at Postgres —
+// League Leaders -> player_advanced_stats, Player List -> player_seasons +
+// player_attributes, Team Assets -> team_seasons/draft_picks). The WRITE side is
+// migrated here: results now go to player_seasons.trikov_value + trikov_detail
+// (keyed by player), not Sheet cells. The Team Assets pick valuations
+// (-> draft_picks.trikov_value) are deferred with the draft-pick refinement.
 const triKovAnalysis = () => {
   R("ex-sync.R")
     .data({})
     .call({ warn: -1 }, (err, d) => {
       (async function main() {
-        const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-        await doc.useServiceAccountAuth({
-          client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-        });
-        await doc.loadInfo();
-        const sheets = doc.sheetsByTitle;
-        const players = sheets["Player List"];
-        const teamAssets = sheets["Team Assets"];
-
-        const teamAssetsRows = await teamAssets.getRows();
-        const playerListRows = await players.getRows();
-
-        const cashValues = {};
-        const knnCashValues = {};
-        console.log(err);
-        console.log(d);
-
-        for (let i = 0; i < d[0].length; i++) {
-          cashValues[d[0][i].Name] = [d[0][i], d[2][i], d[4][i]];
-        }
-
-        for (let i = 0; i < d[1].length; i++) {
-          knnCashValues[d[1][i].Player] = [d[1][i], d[3][i], d[5][i]];
-        }
-
-        await players.loadCells();
-        await teamAssets.loadCells();
-
-        playerListRows.forEach((row) => {
+        try {
+          if (err) console.log("triKov R error:", err);
+          const cashValues = {};
+          const knnCashValues = {};
+          for (let i = 0; i < d[0].length; i++) {
+            cashValues[d[0][i].Name] = [d[0][i], d[2][i], d[4][i]];
+          }
+          for (let i = 0; i < d[1].length; i++) {
+            knnCashValues[d[1][i].Player] = [d[1][i], d[3][i], d[5][i]];
+          }
           const meanCVs = [0, 1, 2].map((num) =>
             _.mean(_.values(cashValues).map((p) => p[num].Cash_Value)),
           );
           const meanKNNs = [0, 1, 2].map((num) =>
-            _.mean(
-              _.values(knnCashValues).map((p) => p[num].continuous_target),
-            ),
+            _.mean(_.values(knnCashValues).map((p) => p[num].continuous_target)),
           );
-          players.getCell(row.rowNumber - 1, 23).value = cashValues[row.Name]
-            ? _.mean(
-                cashValues[row.Name].map(
-                  (cr, index) =>
-                    (cr.Cash_Value / meanCVs[index]) * _.mean(meanCVs),
-                ),
-              )
-            : knnCashValues[row.Name]
-              ? _.mean(
-                  knnCashValues[row.Name].map(
-                    (knn, index) =>
-                      (knn.continuous_target / meanKNNs[index]) *
-                      _.mean(meanKNNs),
-                  ),
-                )
-              : 0;
 
-          players.getCell(row.rowNumber - 1, 27).value = cashValues[row.Name]
-            ? cashValues[row.Name][0].Cash_Value
-            : knnCashValues[row.Name]
-              ? knnCashValues[row.Name][0].continuous_target
-              : 0;
-
-          players.getCell(row.rowNumber - 1, 28).value = cashValues[row.Name]
-            ? cashValues[row.Name][1].Cash_Value
-            : knnCashValues[row.Name]
-              ? knnCashValues[row.Name][1].continuous_target
-              : 0;
-
-          players.getCell(row.rowNumber - 1, 29).value = cashValues[row.Name]
-            ? cashValues[row.Name][2].Cash_Value
-            : knnCashValues[row.Name]
-              ? knnCashValues[row.Name][2].continuous_target
-              : 0;
-
-          players.getCell(row.rowNumber - 1, 30).value = knnCashValues[row.Name]
-            ? _.uniq([
-                knnCashValues[row.Name][0]["neighbor1"],
-                knnCashValues[row.Name][1]["neighbor1"],
-                knnCashValues[row.Name][2]["neighbor1"],
-              ]).join(", ")
-            : 0;
-        });
-
-        teamAssetsRows.forEach((row) => {
-          const picks = row["Draft Picks"]
-            .split(", ")
-            .map((str) => str.replace(/\s+/g, ""));
-
-          const miscPicks = row["Misc Draft Picks"]
-            .split(", ")
-            .map((str) => str.replace(/\s+/g, ""));
-
-          teamAssets.getCell(row.rowNumber - 1, 6).value = picks
-            .map((pick) => {
-              return cashValues[pick]
-                ? _.mean(cashValues[pick].map((cr) => cr.Cash_Value))
+          const roster = await getPlayerSeasons();
+          for (const player of roster) {
+            const name = player.fullName;
+            const cv = cashValues[name];
+            const knn = knnCashValues[name];
+            const blended = cv
+              ? _.mean(cv.map((cr, i) => (cr.Cash_Value / meanCVs[i]) * _.mean(meanCVs)))
+              : knn
+                ? _.mean(knn.map((k, i) => (k.continuous_target / meanKNNs[i]) * _.mean(meanKNNs)))
                 : 0;
-            })
-            .join(", ");
-
-          teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
-            .map((pick) => {
-              return cashValues[pick]
-                ? _.mean(cashValues[pick].map((cr) => cr.Cash_Value))
-                : 0;
-            })
-            .join(", ");
-        });
-
-        await players.saveUpdatedCells();
-        await teamAssets.saveUpdatedCells();
+            const model = (i) =>
+              cv ? cv[i].Cash_Value : knn ? knn[i].continuous_target : 0;
+            const neighbors = knn
+              ? _.uniq([knn[0].neighbor1, knn[1].neighbor1, knn[2].neighbor1]).join(", ")
+              : null;
+            await saveTrikov(player.playerSeasonId, {
+              value: blended,
+              detail: { model1: model(0), model2: model(1), model3: model(2), neighbors },
+            });
+          }
+          console.log("triKov valuations written to DB");
+        } catch (e) {
+          console.error("triKov write failed", e);
+        }
       })();
     });
 };

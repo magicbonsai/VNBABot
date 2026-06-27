@@ -6,7 +6,7 @@
  */
 const test = require("node:test");
 const assert = require("node:assert");
-const { eq, and } = require("drizzle-orm");
+const { eq, and, sql } = require("drizzle-orm");
 
 const {
   getDb,
@@ -16,6 +16,8 @@ const {
   addTeamCash,
   getValidTeams,
   signFreeAgent,
+  createRookie,
+  saveTrikov,
 } = require("../dbHelper");
 
 const hasDb = !!process.env.DATABASE_URL;
@@ -144,6 +146,77 @@ test("signFreeAgent moves the player to the team + debits cash atomically (rolle
   // confirm prod unchanged
   const teamAfter = (await getValidTeams()).find((t) => t.teamId === team.teamId);
   assert.strictEqual(teamAfter.cash, cashBefore, "team cash rolled back");
+});
+
+test("createRookie creates player + ROOKIE season + attributes (rolled back)", async () => {
+  if (!hasDb) return;
+  const { db, schema } = getDb();
+  const name = "Zztest Rookie Qwerty";
+  const blob = [
+    { module: "PLAYER", tab: "VITALS", data: { POSITION: "0", HEIGHT_CM: "190" } },
+    { module: "PLAYER", tab: "ATTRIBUTES", data: { "3PT_SHOT": "150", SPEED: "180" } },
+    { module: "PLAYER", tab: "BADGES", data: { CLAMPS: "2" } },
+    { module: "PLAYER", tab: "HOTZONE", data: { LEFT_3: "1" } },
+    { module: "PLAYER", tab: "TENDENCIES", data: { SHOT_TENDENCY: "50" } },
+  ];
+  const staged = { Name: name, Values: JSON.stringify(blob) };
+
+  let insideRan = false;
+  await assert.rejects(
+    db.transaction(async (tx) => {
+      const r = await createRookie(staged, { exec: tx });
+      assert.strictEqual(r.skipped, false, "should create a new rookie");
+
+      const ps = await tx
+        .select({ status: schema.playerSeasons.teamStatus, age: schema.playerSeasons.age, tendencies: schema.playerSeasons.tendencies })
+        .from(schema.playerSeasons)
+        .where(eq(schema.playerSeasons.id, r.playerSeasonId));
+      assert.strictEqual(ps[0].status, "ROOKIE", "season is ROOKIE");
+      assert.strictEqual(Number(ps[0].age), 0, "age 0");
+      assert.strictEqual(Number(ps[0].tendencies.SHOT_TENDENCY), 50, "tendencies set");
+
+      const attrs = await tx
+        .select({ code: schema.playerAttributes.attrCode, value: schema.playerAttributes.value })
+        .from(schema.playerAttributes)
+        .where(eq(schema.playerAttributes.playerSeasonId, r.playerSeasonId));
+      assert.ok(attrs.length >= 2, "attributes written");
+
+      insideRan = true;
+      throw new Error("ROLLBACK_SENTINEL");
+    }),
+    /ROLLBACK_SENTINEL/
+  );
+  assert.ok(insideRan, "transaction body executed");
+
+  // confirm no leftover player identity in prod
+  const after = await db
+    .select({ id: schema.players.id })
+    .from(schema.players)
+    .where(sql`lower(${schema.players.fullName}) = lower(${name})`);
+  assert.strictEqual(after.length, 0, "rookie identity rolled back");
+});
+
+test("saveTrikov writes trikov_value + trikov_detail (rolled back)", async () => {
+  if (!hasDb) return;
+  const { db, schema } = getDb();
+  const p = (await loadPlayersWithData({ teamStatuses: ["ROSTERED"] }))[0];
+
+  let insideRan = false;
+  await assert.rejects(
+    db.transaction(async (tx) => {
+      await saveTrikov(p.playerSeasonId, { value: 42.5, detail: { model1: 10, neighbors: "X, Y" } }, { exec: tx });
+      const row = await tx
+        .select({ v: schema.playerSeasons.trikovValue, d: schema.playerSeasons.trikovDetail })
+        .from(schema.playerSeasons)
+        .where(eq(schema.playerSeasons.id, p.playerSeasonId));
+      assert.strictEqual(Number(row[0].v), 42.5, "trikov_value set");
+      assert.strictEqual(row[0].d.neighbors, "X, Y", "trikov_detail set");
+      insideRan = true;
+      throw new Error("ROLLBACK_SENTINEL");
+    }),
+    /ROLLBACK_SENTINEL/
+  );
+  assert.ok(insideRan, "transaction body executed");
 });
 
 test.after(async () => {

@@ -58,7 +58,16 @@ const MISC_SHEETS = {
   updates: "Roj Updates",
   requestQueue: "Request Queue",
   reportArchive: "Report Archive",
+  generatedPlayers: "Generated Players", // rookie-generation staging buffer
 };
+
+/** "Leah James" -> "L. James" (display initial for new identities). */
+function nameToInitial(name) {
+  if (!name) return null;
+  const parts = String(name).trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0][0]}. ${parts.slice(1).join(" ")}`;
+}
 
 /** Lenient truthiness for the stringly-typed sheet values ("TRUE"/"true"/"1"). */
 function parseBool(v) {
@@ -116,6 +125,22 @@ async function getMiscRows(sheet, { seasonId } = {}) {
     )
     .orderBy(miscSheetRows.rowIndex);
   return rows.map((r) => r.raw);
+}
+
+/** Like getMiscRows but keeps each row's id/rowIndex (for update/delete). */
+async function getMiscRowsWithMeta(sheet, { seasonId } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  const sheetName = MISC_SHEETS[sheet] || sheet;
+  return db
+    .select({ id: miscSheetRows.id, rowIndex: miscSheetRows.rowIndex, raw: miscSheetRows.raw })
+    .from(miscSheetRows)
+    .where(and(eq(miscSheetRows.seasonId, sid), eq(miscSheetRows.sheet, sheetName)))
+    .orderBy(miscSheetRows.rowIndex);
+}
+
+/** Delete a misc_sheet_rows row by id (e.g. a consumed staging row). */
+async function deleteMiscRowById(id, { exec = db } = {}) {
+  await exec.delete(miscSheetRows).where(eq(miscSheetRows.id, id));
 }
 
 /**
@@ -418,6 +443,57 @@ async function signFreeAgent(
   return exec ? run(exec) : db.transaction(run);
 }
 
+// ---- rookie promotion ------------------------------------------------------
+
+/**
+ * Promote one generated/staged rookie into real rows: players (new identity) +
+ * player_seasons (ROOKIE, age 0) + player_attributes/JSONB (via savePlayerBlob),
+ * all in one transaction. Deduped by name within the season so re-running won't
+ * create duplicate identities. `staged` is a Generated Players staging row; its
+ * Values field is the standard {module,tab,data}[] blob.
+ */
+async function createRookie(staged, { seasonId, exec } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  const name = staged.Name;
+  const blob =
+    typeof staged.Values === "string" ? JSON.parse(staged.Values) : staged.Values;
+  const vitals = (blob.find((t) => t.tab === "VITALS") || {}).data || {};
+
+  const run = async (tx) => {
+    const existing = await tx
+      .select({ id: playerSeasons.id })
+      .from(playerSeasons)
+      .innerJoin(players, eq(players.id, playerSeasons.playerId))
+      .where(
+        and(
+          eq(playerSeasons.seasonId, sid),
+          sql`lower(${players.fullName}) = lower(${name})`
+        )
+      )
+      .limit(1);
+    if (existing.length) return { skipped: true, name };
+
+    const [p] = await tx
+      .insert(players)
+      .values({ fullName: name, displayInitial: nameToInitial(name) })
+      .returning({ id: players.id });
+    const [ps] = await tx
+      .insert(playerSeasons)
+      .values({
+        seasonId: sid,
+        playerId: p.id,
+        teamStatus: "ROOKIE",
+        age: 0,
+        position: vitals.POSITION ?? null,
+        secondaryPosition: vitals.SECONDARY_POSITION ?? null,
+      })
+      .returning({ id: playerSeasons.id });
+    await savePlayerBlob(ps.id, blob, { exec: tx });
+    return { skipped: false, name, playerId: p.id, playerSeasonId: ps.id };
+  };
+  return exec ? run(exec) : db.transaction(run);
+}
+
 // ---- injuries --------------------------------------------------------------
 
 /** Record an injury (injuries table) and mark the player_season's status. */
@@ -540,6 +616,22 @@ async function updatePlayerSeasonFields(playerSeasonId, fields, { exec = db } = 
     .where(eq(playerSeasons.id, playerSeasonId));
 }
 
+/**
+ * Write a player's TriKov valuation: the blended value to player_seasons.
+ * trikov_value and the component model values + KNN neighbors to trikov_detail
+ * (was Player List cols 23 + 27-30). Keyed by player_season.
+ */
+async function saveTrikov(playerSeasonId, { value, detail }, { exec = db } = {}) {
+  await exec
+    .update(playerSeasons)
+    .set({
+      trikovValue: value != null ? String(value) : null,
+      trikovDetail: detail ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(playerSeasons.id, playerSeasonId));
+}
+
 /** Atomic team-cash delta for the season (was: Team Assets Cash cell math). */
 async function addTeamCash(teamId, delta, { seasonId, exec = db } = {}) {
   const sid = seasonId || (await getCurrentSeasonId());
@@ -562,6 +654,7 @@ module.exports = {
   savePlayerKey,
   savePlayerBlob,
   updatePlayerSeasonFields,
+  saveTrikov,
   addTeamCash,
   appendMiscRow,
   addInjury,
@@ -570,6 +663,10 @@ module.exports = {
   countTeamGamesSince,
   getFreeAgentsWithOffers,
   signFreeAgent,
+  getMiscRowsWithMeta,
+  deleteMiscRowById,
+  createRookie,
+  nameToInitial,
   parseBool,
   MISC_SHEETS,
 };
