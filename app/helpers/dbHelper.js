@@ -32,6 +32,8 @@ const {
   teamSeasons,
   injuries,
   games,
+  playerAdvancedStats,
+  draftPicks,
 } = schema;
 
 // The bot's rich-data tabs map to different DB stores: ATTRIBUTES is the
@@ -632,6 +634,191 @@ async function saveTrikov(playerSeasonId, { value, detail }, { exec = db } = {})
     .where(eq(playerSeasons.id, playerSeasonId));
 }
 
+/**
+ * Assemble the input the TriKov R pipeline (ex-sync.R) needs, FROM the DB instead
+ * of Google Sheets: playerList + League Leaders stats for the current + 2 prior
+ * seasons (reconstructed from player_advanced_stats.extra, which preserves the
+ * original sheet columns) + teamAssets. Pass this to R via r-script `.data()`.
+ * Column names match the old sheets so the R's transforms apply unchanged.
+ */
+async function assembleTrikovInput({ seasonId } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  const seasonRows = await db
+    .select({ id: seasons.id, num: seasons.seasonNumber })
+    .from(seasons);
+  const byNum = new Map(seasonRows.map((s) => [s.num, s.id]));
+  const cur = seasonRows.find((s) => s.id === sid);
+  const curNum = cur ? cur.num : null;
+  const toInches = (cm) => (cm == null ? null : Math.round(Number(cm) / 2.54));
+  const num = (v) => (v == null || v === "" ? null : Number(v));
+
+  // playerList — current-season roster (incl FA/Rookie), shaped like Player List.
+  const plRows = await db
+    .select({
+      fullName: players.fullName,
+      displayInitial: players.displayInitial,
+      teamName: teams.name,
+      teamStatus: playerSeasons.teamStatus,
+      overall: playerSeasons.overall,
+      position: playerSeasons.position,
+      heightCm: playerSeasons.heightCm,
+      weightLbs: playerSeasons.weightLbs,
+      contractLength: playerSeasons.contractLength,
+      age: playerSeasons.age,
+      salary: playerSeasons.salary,
+      playerType: playerSeasons.playerType,
+      draftPosition: playerSeasons.draftPosition,
+    })
+    .from(playerSeasons)
+    .innerJoin(players, eq(players.id, playerSeasons.playerId))
+    .leftJoin(teams, eq(teams.id, playerSeasons.teamId))
+    .where(eq(playerSeasons.seasonId, sid));
+  const playerList = plRows.map((r) => ({
+    Player: r.displayInitial,
+    Name: r.fullName,
+    Team: r.teamStatus === "FA" ? "FA" : r.teamStatus === "ROOKIE" ? "Rookie" : r.teamName,
+    Overall: r.overall,
+    Position: r.position,
+    Height: toInches(r.heightCm),
+    Weight: num(r.weightLbs),
+    Contract_Length: r.contractLength,
+    Age: r.age,
+    Salary: num(r.salary),
+    Type: r.playerType,
+    Draft_Position: r.draftPosition,
+  }));
+
+  // League Leaders per season, reconstructed from the typed cols + extra JSONB.
+  const statsForNum = async (n) => {
+    const ssid = byNum.get(n);
+    if (!ssid) return [];
+    const rows = await db
+      .select({
+        displayInitial: players.displayInitial,
+        teamName: teams.name,
+        minutes: playerAdvancedStats.minutes,
+        gamesPlayed: playerAdvancedStats.gamesPlayed,
+        extra: playerAdvancedStats.extra,
+      })
+      .from(playerAdvancedStats)
+      .innerJoin(players, eq(players.id, playerAdvancedStats.playerId))
+      .leftJoin(teams, eq(teams.id, playerAdvancedStats.teamId))
+      .where(eq(playerAdvancedStats.seasonId, ssid));
+    return rows.map((r) => ({
+      Player: r.displayInitial,
+      Team: r.teamName,
+      Minutes: num(r.minutes),
+      Games_Played: r.gamesPlayed,
+      ...(r.extra || {}),
+    }));
+  };
+  const playerStats = await statsForNum(curNum);
+  const playerStatsOld = await statsForNum(curNum - 1);
+  const playerStatsOld2 = await statsForNum(curNum - 2);
+
+  // teamAssets — Team/Frozen/Cash/Cash_Next_Season/Draft_Picks/Record/Real.
+  const taRows = await db
+    .select({
+      teamId: teams.id,
+      name: teams.name,
+      isReal: teams.isReal,
+      isFrozen: teamSeasons.isFrozen,
+      cash: teamSeasons.cash,
+      cashNextSeason: teamSeasons.cashNextSeason,
+      wins: teamSeasons.wins,
+      losses: teamSeasons.losses,
+    })
+    .from(teamSeasons)
+    .innerJoin(teams, eq(teams.id, teamSeasons.teamId))
+    .where(eq(teamSeasons.seasonId, sid));
+  const picks = await db
+    .select({ ownerTeamId: draftPicks.ownerTeamId, label: draftPicks.label })
+    .from(draftPicks)
+    .where(and(eq(draftPicks.seasonId, sid), eq(draftPicks.isMisc, false)));
+  const picksByTeam = new Map();
+  for (const p of picks) {
+    if (p.ownerTeamId == null || !p.label) continue;
+    if (!picksByTeam.has(p.ownerTeamId)) picksByTeam.set(p.ownerTeamId, []);
+    picksByTeam.get(p.ownerTeamId).push(p.label);
+  }
+  const teamAssets = taRows.map((t) => ({
+    Team: t.name,
+    Frozen: !!t.isFrozen,
+    Cash: num(t.cash),
+    Cash_Next_Season: num(t.cashNextSeason),
+    Draft_Picks: (picksByTeam.get(t.teamId) || []).join(", "),
+    Record: `${t.wins || 0} - ${t.losses || 0}`,
+    Real: !!t.isReal,
+  }));
+
+  // playerAttributes — pivoted attributes + badges + vitals, REPLACING the R's
+  // getPlayerAttributes (which read the Data blob by positional index, which our
+  // normalized reconstruction can't match). Same key-exclusion filters as the R.
+  const ATTR_EXCLUDE = /DURABILITY|POTENTIAL|EMOTION|PICK_AND_ROLL|SHOT_CONTEST/;
+  const BADGE_EXCLUDE = /RESERVED|FRIENDLY|WORK_ETHIC|KEEP_IT_REAL|PAT_MY_BACK|EXPRESSIVE|UNPREDICTAVLE|LAID_BACK|RINGMASTER|WARM_WEATHER|FINANCE|CAREER_GYM|ON_COURT_COACH/;
+  const paBase = await db
+    .select({
+      playerSeasonId: playerSeasons.id,
+      name: players.fullName,
+      teamName: teams.name,
+      teamStatus: playerSeasons.teamStatus,
+      playerType: playerSeasons.playerType,
+      position: playerSeasons.position,
+      overall: playerSeasons.overall,
+      vitals: playerSeasons.vitals,
+      badges: playerSeasons.badges,
+    })
+    .from(playerSeasons)
+    .innerJoin(players, eq(players.id, playerSeasons.playerId))
+    .leftJoin(teams, eq(teams.id, playerSeasons.teamId))
+    .where(eq(playerSeasons.seasonId, sid));
+  const psIds = paBase.map((r) => r.playerSeasonId);
+  const attrRows = psIds.length
+    ? await db
+        .select({
+          psId: playerAttributes.playerSeasonId,
+          code: playerAttributes.attrCode,
+          value: playerAttributes.value,
+        })
+        .from(playerAttributes)
+        .where(inArray(playerAttributes.playerSeasonId, psIds))
+    : [];
+  const attrByPs2 = new Map();
+  for (const a of attrRows) {
+    if (ATTR_EXCLUDE.test(a.code)) continue;
+    if (!attrByPs2.has(a.psId)) attrByPs2.set(a.psId, {});
+    attrByPs2.get(a.psId)[a.code] = a.value;
+  }
+  const playerAttributesOut = paBase.map((r) => {
+    const v = r.vitals || {};
+    const badges = {};
+    for (const [k, val] of Object.entries(r.badges || {})) {
+      if (!BADGE_EXCLUDE.test(k)) badges[k] = val;
+    }
+    return {
+      Name: r.name,
+      Team: r.teamStatus === "FA" ? "FA" : r.teamStatus === "ROOKIE" ? "Rookie" : r.teamName,
+      Type: r.playerType,
+      Position: r.position,
+      Overall: r.overall,
+      HEIGHT_CM: num(v.HEIGHT_CM),
+      WEIGHT_LBS: num(v.WEIGHT_LBS),
+      WINGSPAN_CM: num(v.WINGSPAN_CM),
+      ...(attrByPs2.get(r.playerSeasonId) || {}),
+      ...badges,
+    };
+  });
+
+  return {
+    playerList,
+    playerStats,
+    playerStatsOld,
+    playerStatsOld2,
+    teamAssets,
+    playerAttributes: playerAttributesOut,
+  };
+}
+
 /** Atomic team-cash delta for the season (was: Team Assets Cash cell math). */
 async function addTeamCash(teamId, delta, { seasonId, exec = db } = {}) {
   const sid = seasonId || (await getCurrentSeasonId());
@@ -655,6 +842,7 @@ module.exports = {
   savePlayerBlob,
   updatePlayerSeasonFields,
   saveTrikov,
+  assembleTrikovInput,
   addTeamCash,
   appendMiscRow,
   addInjury,

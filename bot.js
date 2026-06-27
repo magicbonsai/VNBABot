@@ -16,6 +16,7 @@ const {
   getValidTeams,
   getPlayerSeasons,
   saveTrikov,
+  assembleTrikovInput,
 } = require("./app/helpers/dbHelper");
 const express = require("express");
 const cors = require("cors");
@@ -27,7 +28,6 @@ const {
   updatePlayers,
 } = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
-const { sheetIds } = require("./app/helpers/sheetHelper");
 const { CHANNEL_IDS } = require("./consts");
 require("dotenv").config();
 const client = new Client({
@@ -56,7 +56,6 @@ const {
   getRandomTweet,
 } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
-const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const runDevReport = runDevReportWith(client);
 const runDeclineReport = runDeclineReportWith(client);
@@ -339,17 +338,25 @@ const generateSocialTweet = () => {
   })();
 };
 
-// TriKov player valuations. The R pipeline (ex-sync.R) still READS the Google
-// Sheets to compute (a separate, R-side migration: point ex-sync.R at Postgres —
-// League Leaders -> player_advanced_stats, Player List -> player_seasons +
-// player_attributes, Team Assets -> team_seasons/draft_picks). The WRITE side is
-// migrated here: results now go to player_seasons.trikov_value + trikov_detail
-// (keyed by player), not Sheet cells. The Team Assets pick valuations
-// (-> draft_picks.trikov_value) are deferred with the draft-pick refinement.
+// TriKov player valuations. The bot now assembles the R pipeline's input FROM
+// the DB (dbHelper.assembleTrikovInput: playerList, 3-season League Leaders,
+// teamAssets, playerAttributes) and passes it to ex-sync.R via .data(); the R
+// only reads the feature-weights CONFIG sheet now (bot ML config). Results are
+// written back to player_seasons.trikov_value + trikov_detail. (The R changes
+// need verification in an R runtime; the Team Assets pick valuations ->
+// draft_picks.trikov_value are deferred with the draft-pick refinement.)
 const triKovAnalysis = () => {
-  R("ex-sync.R")
-    .data({})
-    .call({ warn: -1 }, (err, d) => {
+  return (async () => {
+    let input;
+    try {
+      input = await assembleTrikovInput();
+    } catch (e) {
+      console.error("triKov: failed to assemble input from DB", e);
+      return;
+    }
+    R("ex-sync.R")
+      .data(input)
+      .call({ warn: -1 }, (err, d) => {
       (async function main() {
         try {
           if (err) console.log("triKov R error:", err);
@@ -394,4 +401,5 @@ const triKovAnalysis = () => {
         }
       })();
     });
+  })();
 };
