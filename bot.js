@@ -12,7 +12,11 @@ const {
 } = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const { offSeasonPaperWork } = require("./app/helpers/offSeason");
-const { getSeasonFlag } = require("./app/helpers/dbHelper");
+const {
+  getSeasonFlag,
+  getValidTeams,
+  getPlayerSeasons,
+} = require("./app/helpers/dbHelper");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -315,28 +319,21 @@ dailyRemoveInjuryJob.start();
 // vtwitter.start();
 
 const generateSocialTweet = () => {
-  (async () => {
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    });
+  return (async () => {
+    // Reads from the DB now: non-frozen real teams + their rostered players,
+    // shaped into the fields getRandomTweet expects (Name/Team/Image, colors/Logo).
+    const validTeams = await getValidTeams();
+    const teamNames = new Set(validTeams.map((t) => t.name));
+    const roster = await getPlayerSeasons({ teamStatuses: ["ROSTERED"] });
 
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const players = sheets[sheetIds.players];
-    const teamAssets = sheets[sheetIds.teamAssets];
-
-    const teamAssetsRows = (await teamAssets.getRows()).filter(
-      (team) => team.Frozen !== "TRUE",
-    );
-
-    const playerListRows = (await players.getRows()).filter(
-      (player) =>
-        player.Team !== "Rookie" &&
-        player.Team !== "FA" &&
-        teamAssetsRows.map((t) => t.Team).includes(player.Team),
-    );
+    const playerListRows = roster
+      .filter((p) => teamNames.has(p.teamName))
+      .map((p) => ({ Team: p.teamName, Name: p.fullName, Image: p.imageUrl }));
+    const teamAssetsRows = validTeams.map((t) => ({
+      Team: t.name,
+      "Primary Color": t.primaryColor,
+      Logo: t.logo,
+    }));
 
     await getRandomTweet(
       client.channels.cache.get(CHANNEL_IDS.vtwitter),
@@ -346,6 +343,11 @@ const generateSocialTweet = () => {
   })();
 };
 
+// NOTE: still Sheets-based. The TriKov R pipeline (ex-sync.R) reads the Google
+// Sheet directly and writes values back by column index, so it's a coupled
+// read+write unit. Migrating it to the DB requires porting ex-sync.R to read
+// from Postgres and writing results to player_seasons.trikov_value /
+// trikov_detail and draft_picks.trikov_value (a separate, R-side task).
 const triKovAnalysis = () => {
   R("ex-sync.R")
     .data({})
