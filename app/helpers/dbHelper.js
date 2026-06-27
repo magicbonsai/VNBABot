@@ -276,6 +276,8 @@ async function loadPlayersWithData({ seasonId, teamStatuses } = {}) {
       teamName: teams.name,
       teamStatus: playerSeasons.teamStatus,
       age: playerSeasons.age,
+      contractLength: playerSeasons.contractLength,
+      retiring: playerSeasons.retiring,
       badges: playerSeasons.badges,
       hotzones: playerSeasons.hotzones,
       tendencies: playerSeasons.tendencies,
@@ -312,6 +314,8 @@ async function loadPlayersWithData({ seasonId, teamStatuses } = {}) {
         ? "Rookie"
         : r.teamName,
     Age: r.age,
+    ContractLength: r.contractLength,
+    Retiring: r.retiring,
     playerSeasonId: r.playerSeasonId,
     playerId: r.playerId,
     teamId: r.teamId,
@@ -359,6 +363,59 @@ async function savePlayerKey(playerSeasonId, tab, key, value, exec = db) {
       updatedAt: new Date(),
     })
     .where(eq(playerSeasons.id, playerSeasonId));
+}
+
+// ---- free agency -----------------------------------------------------------
+
+/** Current-season free agents that carry a contract_offer JSONB. */
+async function getFreeAgentsWithOffers({ seasonId } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  return db
+    .select({
+      playerSeasonId: playerSeasons.id,
+      playerId: players.id,
+      fullName: players.fullName,
+      contractOffer: playerSeasons.contractOffer,
+    })
+    .from(playerSeasons)
+    .innerJoin(players, eq(players.id, playerSeasons.playerId))
+    .where(
+      and(
+        eq(playerSeasons.seasonId, sid),
+        eq(playerSeasons.teamStatus, "FA"),
+        sql`${playerSeasons.contractOffer} is not null`
+      )
+    );
+}
+
+/**
+ * Sign a free agent atomically: move the player to the team + apply the contract,
+ * and debit the team's cash, in one transaction (was a non-transactional
+ * player.save() + Team Assets cell edit that could half-fail).
+ */
+async function signFreeAgent(
+  playerSeasonId,
+  { teamId, salary, contractLength, loyalty, contractOffer, seasonId, exec } = {}
+) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  const run = async (tx) => {
+    await tx
+      .update(playerSeasons)
+      .set({
+        teamId,
+        teamStatus: "ROSTERED",
+        salary: salary != null ? String(salary) : null,
+        contractLength: contractLength ?? null,
+        loyalty: loyalty ?? null,
+        contractOffer: contractOffer ?? null,
+        signed: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(playerSeasons.id, playerSeasonId));
+    await addTeamCash(teamId, -Number(salary || 0), { seasonId: sid, exec: tx });
+  };
+  // Use the caller's transaction if given (tests roll back); else our own.
+  return exec ? run(exec) : db.transaction(run);
 }
 
 // ---- injuries --------------------------------------------------------------
@@ -445,6 +502,37 @@ async function appendMiscRow(sheet, raw, { seasonId } = {}) {
     .values({ seasonId: sid, sheet: sheetName, rowIndex: nextIdx, raw });
 }
 
+/**
+ * Persist a whole mutated Data blob (all tabs) for one player — used by the
+ * offseason batch (multi-key boosts/declines). ATTRIBUTES upsert into
+ * player_attributes; BADGES/HOTZONE/TENDENCIES/VITALS replace the JSONB column.
+ */
+async function savePlayerBlob(playerSeasonId, blob, { exec = db } = {}) {
+  for (const tab of blob) {
+    if (!tab || !tab.data) continue;
+    if (tab.tab === "ATTRIBUTES") {
+      for (const [code, value] of Object.entries(tab.data)) {
+        const v = parseInt(value);
+        if (Number.isNaN(v)) continue;
+        await savePlayerKey(playerSeasonId, "ATTRIBUTES", code, v, exec);
+      }
+    } else if (JSONB_TAB_COLUMN[tab.tab]) {
+      await exec
+        .update(playerSeasons)
+        .set({ [JSONB_TAB_COLUMN[tab.tab]]: tab.data, updatedAt: new Date() })
+        .where(eq(playerSeasons.id, playerSeasonId));
+    }
+  }
+}
+
+/** Set arbitrary player_seasons columns (e.g. offseason age/contract rollover). */
+async function updatePlayerSeasonFields(playerSeasonId, fields, { exec = db } = {}) {
+  await exec
+    .update(playerSeasons)
+    .set({ ...fields, updatedAt: new Date() })
+    .where(eq(playerSeasons.id, playerSeasonId));
+}
+
 /** Atomic team-cash delta for the season (was: Team Assets Cash cell math). */
 async function addTeamCash(teamId, delta, { seasonId, exec = db } = {}) {
   const sid = seasonId || (await getCurrentSeasonId());
@@ -465,12 +553,16 @@ module.exports = {
   loadPlayersWithData,
   buildDataBlob,
   savePlayerKey,
+  savePlayerBlob,
+  updatePlayerSeasonFields,
   addTeamCash,
   appendMiscRow,
   addInjury,
   getActiveInjuries,
   clearInjury,
   countTeamGamesSince,
+  getFreeAgentsWithOffers,
+  signFreeAgent,
   parseBool,
   MISC_SHEETS,
 };

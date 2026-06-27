@@ -15,6 +15,7 @@ const {
   savePlayerKey,
   addTeamCash,
   getValidTeams,
+  signFreeAgent,
 } = require("../dbHelper");
 
 const hasDb = !!process.env.DATABASE_URL;
@@ -85,6 +86,64 @@ test("savePlayerKey + addTeamCash mutate the right stores, then roll back", asyn
     before,
     "3PT_SHOT was rolled back (prod untouched)"
   );
+});
+
+test("signFreeAgent moves the player to the team + debits cash atomically (rolled back)", async () => {
+  if (!hasDb) return;
+  const { db, schema } = getDb();
+  const sid = await getCurrentSeasonId();
+  const team = (await getValidTeams())[0];
+  const cashBefore = team.cash;
+  const ps = await loadPlayersWithData({ teamStatuses: ["ROSTERED"] });
+  const p = ps.find((x) => x.teamId !== team.teamId);
+  assert.ok(p, "need a player not already on the target team");
+
+  let insideRan = false;
+  await assert.rejects(
+    db.transaction(async (tx) => {
+      await signFreeAgent(p.playerSeasonId, {
+        teamId: team.teamId,
+        salary: 5,
+        contractLength: 1,
+        loyalty: 7,
+        contractOffer: { Team: team.name, Cash: "5" },
+        seasonId: sid,
+        exec: tx,
+      });
+
+      const row = await tx
+        .select({
+          teamId: schema.playerSeasons.teamId,
+          status: schema.playerSeasons.teamStatus,
+          signed: schema.playerSeasons.signed,
+        })
+        .from(schema.playerSeasons)
+        .where(eq(schema.playerSeasons.id, p.playerSeasonId));
+      assert.strictEqual(String(row[0].teamId), String(team.teamId), "moved to team");
+      assert.strictEqual(row[0].status, "ROSTERED", "status ROSTERED");
+      assert.strictEqual(row[0].signed, true, "signed flag set");
+
+      const cashRow = await tx
+        .select({ cash: schema.teamSeasons.cash })
+        .from(schema.teamSeasons)
+        .where(
+          and(
+            eq(schema.teamSeasons.seasonId, sid),
+            eq(schema.teamSeasons.teamId, team.teamId)
+          )
+        );
+      assert.strictEqual(Number(cashRow[0].cash), cashBefore - 5, "cash debited by 5");
+
+      insideRan = true;
+      throw new Error("ROLLBACK_SENTINEL");
+    }),
+    /ROLLBACK_SENTINEL/
+  );
+  assert.ok(insideRan, "transaction body executed");
+
+  // confirm prod unchanged
+  const teamAfter = (await getValidTeams()).find((t) => t.teamId === team.teamId);
+  assert.strictEqual(teamAfter.cash, cashBefore, "team cash rolled back");
 });
 
 test.after(async () => {
