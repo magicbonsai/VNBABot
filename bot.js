@@ -12,6 +12,7 @@ const {
 } = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const { offSeasonPaperWork } = require("./app/helpers/offSeason");
+const { getSeasonFlag } = require("./app/helpers/dbHelper");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -266,21 +267,12 @@ const SaturdayJob = new CronJob("0 13 * * 6", function () {
 
 const dailyInjuryReportJob = new CronJob("0 11 * * *", function () {
   (async () => {
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    });
-
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const globalsSheet = sheets[sheetIds.globalVars];
-
-    const doInjuriesVar = await globalsSheet
-      .getRows()
-      .then((rows) => rows.find((row) => row.Global == "doInjuries"));
-    console.log("daily injury job", doInjuriesVar);
-    if (doInjuriesVar.Status == "FALSE") {
+    // Gate on the `doInjuries` feature flag (was: Globals sheet, now the DB).
+    // Skip only when the flag is explicitly off; a missing flag runs (its
+    // historical default) instead of throwing like the old Sheets code did.
+    const doInjuries = await getSeasonFlag("doInjuries");
+    console.log("daily injury job — doInjuries flag:", doInjuries);
+    if (doInjuries === false) {
       return;
     }
     generateInjuries();
@@ -294,21 +286,10 @@ const dailyRemoveInjuryJob = new CronJob("15 11 * * *", function () {
 
 const runReportWithCheck = (isWeekend) => {
   (async () => {
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    });
-
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const globalsSheet = sheets[sheetIds.globalVars];
-
-    const doBoostsVar = await globalsSheet
-      .getRows()
-      .then((rows) => rows.find((row) => row.Global == "doBoosts"));
-    console.log("daily injury job", doBoostsVar);
-    if (doBoostsVar.Status == "FALSE") {
+    // Gate on the `doBoosts` feature flag (was: Globals sheet, now the DB).
+    const doBoosts = await getSeasonFlag("doBoosts");
+    console.log("dev/boost report — doBoosts flag:", doBoosts);
+    if (doBoosts === false) {
       return;
     }
     runDevReport(isWeekend);
