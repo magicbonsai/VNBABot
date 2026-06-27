@@ -517,9 +517,16 @@ async function savePlayerBlob(playerSeasonId, blob, { exec = db } = {}) {
         await savePlayerKey(playerSeasonId, "ATTRIBUTES", code, v, exec);
       }
     } else if (JSONB_TAB_COLUMN[tab.tab]) {
+      // Drop any "NaN" entries (a delta applied to a key the player lacks) so we
+      // never poison the JSONB column.
+      const clean = {};
+      for (const [k, v] of Object.entries(tab.data)) {
+        if (v === "NaN" || (typeof v === "number" && Number.isNaN(v))) continue;
+        clean[k] = v;
+      }
       await exec
         .update(playerSeasons)
-        .set({ [JSONB_TAB_COLUMN[tab.tab]]: tab.data, updatedAt: new Date() })
+        .set({ [JSONB_TAB_COLUMN[tab.tab]]: clean, updatedAt: new Date() })
         .where(eq(playerSeasons.id, playerSeasonId));
     }
   }
