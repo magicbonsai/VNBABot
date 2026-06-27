@@ -3,7 +3,6 @@ const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const _ = require("lodash");
 const scrape = require("./app/helpers/boxScraper");
-const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayers, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
 const {
@@ -179,10 +178,6 @@ const dedueCommand = (prompt, msg) => {
       ]);
 
       console.log(schedule.flat(2));
-      break;
-
-    case "checkroster":
-      rosterCheckCommand(msg);
       break;
 
     case "generateplayers":
