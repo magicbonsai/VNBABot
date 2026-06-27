@@ -6,7 +6,7 @@
 const test = require("node:test");
 const assert = require("node:assert");
 
-// Require at top so @vnba/db's dotenv.config() loads the bot's .env first.
+// Require at top so @youmkim/vnba-db's dotenv.config() loads the bot's .env first.
 const retirementCheck = require("../retirementCheck");
 const { getDb } = require("../dbHelper");
 const hasDb = !!process.env.DATABASE_URL;

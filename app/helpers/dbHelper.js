@@ -3,7 +3,7 @@
  *
  * The bot used to open one Google Spreadsheet per season (via GOOGLE_SHEETS_KEY)
  * and read/write tabs. The data now lives in Supabase Postgres, accessed through
- * the SHARED `@vnba/db` package (the same Drizzle schema + node-postgres client
+ * the SHARED `@youmkim/vnba-db` package (the same Drizzle schema + node-postgres client
  * the web app uses). This module centralizes:
  *
  *   1. the shared client      (getDb)
@@ -17,7 +17,7 @@
  * Postgres is one DB for all 34, so season scoping is mandatory.
  */
 
-const { db, schema } = require("@vnba/db");
+const { db, schema } = require("@youmkim/vnba-db");
 const { eq, and, inArray, desc, sql } = require("drizzle-orm");
 
 const {
