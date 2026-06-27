@@ -20,7 +20,13 @@ test("parseBool: lenient stringly-typed truthiness", () => {
 });
 
 const hasDb = !!process.env.DATABASE_URL;
-const dbTest = hasDb ? test : test.skip;
+// Node 16's test runner has no test.skip(); guard inside instead so the suite
+// runs (as no-ops) without a DATABASE_URL rather than crashing.
+const dbTest = (name, fn) =>
+  test(name, async (t) => {
+    if (!hasDb) return;
+    return fn(t);
+  });
 
 dbTest("getCurrentSeasonId returns a numeric id", async () => {
   const { getCurrentSeasonId } = require("../dbHelper");

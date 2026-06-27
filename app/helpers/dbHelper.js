@@ -18,17 +18,30 @@
  */
 
 const { db, schema } = require("@vnba/db");
-const { eq, and, inArray, desc } = require("drizzle-orm");
+const { eq, and, inArray, desc, sql } = require("drizzle-orm");
 
 const {
   seasons,
   teams,
   players,
   playerSeasons,
+  playerAttributes,
+  attributeDefinitions,
   miscSheetRows,
   seasonFlags,
   teamSeasons,
+  injuries,
+  games,
 } = schema;
+
+// The bot's rich-data tabs map to different DB stores: ATTRIBUTES is the
+// normalized player_attributes table; the rest are JSONB columns on player_seasons.
+const JSONB_TAB_COLUMN = {
+  BADGES: "badges",
+  HOTZONE: "hotzones",
+  TENDENCIES: "tendencies",
+  VITALS: "vitals",
+};
 
 // The misc_sheet_rows.sheet values are the original spreadsheet TAB TITLES, not
 // the sheetHelper gid-keys. Map the logical name the bot uses -> the DB string.
@@ -39,6 +52,12 @@ const MISC_SHEETS = {
   availableCoaches: "Available Coaches",
   offseasonTraining: "Offseason Training",
   tradeBlock: "Trade Block",
+  // Append-only / streamer-sync sheets — kept as raw JSONB for now (not yet
+  // backfilled; the bot writes to them, the streamer workflow is likely dead).
+  news: "News",
+  updates: "Roj Updates",
+  requestQueue: "Request Queue",
+  reportArchive: "Report Archive",
 };
 
 /** Lenient truthiness for the stringly-typed sheet values ("TRUE"/"true"/"1"). */
@@ -220,6 +239,221 @@ async function getPlayerSeasons(opts = {}) {
   return minAge != null ? rows.filter((r) => r.age != null && r.age >= minAge) : rows;
 }
 
+// ---- player rich-data: load/save adapter -----------------------------------
+// The bot's event logic operates on the old Player List "Data" blob — a
+// [{ module, tab, data }] array. These helpers reconstruct that shape from the
+// normalized DB (so the intricate event/clamp logic ports unchanged) and write
+// single key mutations back to the correct store.
+
+/** Build the old Data-blob array from a player's normalized fields. */
+function buildDataBlob({ attributes, badges, hotzones, tendencies, vitals }) {
+  return [
+    { module: "PLAYER", tab: "VITALS", data: vitals || {} },
+    { module: "PLAYER", tab: "ATTRIBUTES", data: attributes || {} },
+    { module: "PLAYER", tab: "BADGES", data: badges || {} },
+    { module: "PLAYER", tab: "HOTZONE", data: hotzones || {} },
+    { module: "PLAYER", tab: "TENDENCIES", data: tendencies || {} },
+  ];
+}
+
+/**
+ * Load players for a season as old-style rows the report/event logic understands:
+ * { Name, Team, Age, playerSeasonId, teamId, teamStatus, Data: blob }.
+ * Team is the team name for rostered players, "FA"/"Rookie" otherwise.
+ */
+async function loadPlayersWithData({ seasonId, teamStatuses } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  const conds = [eq(playerSeasons.seasonId, sid)];
+  if (teamStatuses && teamStatuses.length) {
+    conds.push(inArray(playerSeasons.teamStatus, teamStatuses));
+  }
+  const rows = await db
+    .select({
+      playerSeasonId: playerSeasons.id,
+      playerId: players.id,
+      name: players.fullName,
+      teamId: playerSeasons.teamId,
+      teamName: teams.name,
+      teamStatus: playerSeasons.teamStatus,
+      age: playerSeasons.age,
+      badges: playerSeasons.badges,
+      hotzones: playerSeasons.hotzones,
+      tendencies: playerSeasons.tendencies,
+      vitals: playerSeasons.vitals,
+    })
+    .from(playerSeasons)
+    .innerJoin(players, eq(players.id, playerSeasons.playerId))
+    .leftJoin(teams, eq(teams.id, playerSeasons.teamId))
+    .where(and(...conds));
+
+  const ids = rows.map((r) => r.playerSeasonId);
+  const attrRows = ids.length
+    ? await db
+        .select({
+          psId: playerAttributes.playerSeasonId,
+          code: playerAttributes.attrCode,
+          value: playerAttributes.value,
+        })
+        .from(playerAttributes)
+        .where(inArray(playerAttributes.playerSeasonId, ids))
+    : [];
+  const attrByPs = new Map();
+  for (const a of attrRows) {
+    if (!attrByPs.has(a.psId)) attrByPs.set(a.psId, {});
+    attrByPs.get(a.psId)[a.code] = a.value;
+  }
+
+  return rows.map((r) => ({
+    Name: r.name,
+    Team:
+      r.teamStatus === "FA"
+        ? "FA"
+        : r.teamStatus === "ROOKIE"
+        ? "Rookie"
+        : r.teamName,
+    Age: r.age,
+    playerSeasonId: r.playerSeasonId,
+    playerId: r.playerId,
+    teamId: r.teamId,
+    teamStatus: r.teamStatus,
+    Data: buildDataBlob({
+      attributes: attrByPs.get(r.playerSeasonId) || {},
+      badges: r.badges,
+      hotzones: r.hotzones,
+      tendencies: r.tendencies,
+      vitals: r.vitals,
+    }),
+  }));
+}
+
+/**
+ * Write a single rich-data key for one player to the correct store.
+ * ATTRIBUTES -> player_attributes (upsert; ensures the attribute_definitions FK
+ * exists). BADGES/HOTZONE/TENDENCIES -> jsonb_set on the matching JSONB column.
+ * `value` is the already-clamped numeric value. Accepts an optional drizzle
+ * executor (tx) so callers can batch in a transaction.
+ */
+async function savePlayerKey(playerSeasonId, tab, key, value, exec = db) {
+  if (tab === "ATTRIBUTES") {
+    await exec
+      .insert(attributeDefinitions)
+      .values({ code: key, displayName: key, isCurated: false })
+      .onConflictDoNothing();
+    await exec
+      .insert(playerAttributes)
+      .values({ playerSeasonId, attrCode: key, value })
+      .onConflictDoUpdate({
+        target: [playerAttributes.playerSeasonId, playerAttributes.attrCode],
+        set: { value },
+      });
+    return;
+  }
+  const col = JSONB_TAB_COLUMN[tab];
+  if (!col || col === "vitals") {
+    throw new Error(`savePlayerKey: unsupported tab "${tab}"`);
+  }
+  await exec
+    .update(playerSeasons)
+    .set({
+      [col]: sql`jsonb_set(coalesce(${playerSeasons[col]}, '{}'::jsonb), ${sql`ARRAY[${key}]`}::text[], to_jsonb(${value}::numeric), true)`,
+      updatedAt: new Date(),
+    })
+    .where(eq(playerSeasons.id, playerSeasonId));
+}
+
+// ---- injuries --------------------------------------------------------------
+
+/** Record an injury (injuries table) and mark the player_season's status. */
+async function addInjury(playerSeasonId, injury, { exec = db } = {}) {
+  const { injuryName, durationGames, dnp, affectedLow, affectedHigh, startedDate, raw } = injury;
+  await exec.insert(injuries).values({
+    playerSeasonId,
+    injuryName,
+    durationGames,
+    dnp: !!dnp,
+    affectedLow: affectedLow ?? null,
+    affectedHigh: affectedHigh ?? null,
+    startedDate: startedDate || null,
+    active: true,
+    raw: raw || null,
+  });
+  await exec
+    .update(playerSeasons)
+    .set({ status: injuryName, updatedAt: new Date() })
+    .where(eq(playerSeasons.id, playerSeasonId));
+}
+
+/** Active injuries for the season, joined to player/team. */
+async function getActiveInjuries({ seasonId } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  return db
+    .select({
+      injuryId: injuries.id,
+      playerSeasonId: injuries.playerSeasonId,
+      injuryName: injuries.injuryName,
+      durationGames: injuries.durationGames,
+      startedDate: injuries.startedDate,
+      playerName: players.fullName,
+      teamId: playerSeasons.teamId,
+      teamName: teams.name,
+    })
+    .from(injuries)
+    .innerJoin(playerSeasons, eq(playerSeasons.id, injuries.playerSeasonId))
+    .innerJoin(players, eq(players.id, playerSeasons.playerId))
+    .leftJoin(teams, eq(teams.id, playerSeasons.teamId))
+    .where(and(eq(injuries.active, true), eq(playerSeasons.seasonId, sid)));
+}
+
+/** Mark an injury resolved and set the player back to HEALTHY. */
+async function clearInjury(injuryId, playerSeasonId, { exec = db } = {}) {
+  await exec.update(injuries).set({ active: false }).where(eq(injuries.id, injuryId));
+  await exec
+    .update(playerSeasons)
+    .set({ status: "HEALTHY", updatedAt: new Date() })
+    .where(eq(playerSeasons.id, playerSeasonId));
+}
+
+/** Count a team's games on/after `sinceDate` (ISO string) — replaces the old
+ *  Schedule-sheet date counting for injury expiry. */
+async function countTeamGamesSince(teamId, sinceDate, { seasonId } = {}) {
+  if (teamId == null) return 0;
+  const sid = seasonId || (await getCurrentSeasonId());
+  const conds = [
+    eq(games.seasonId, sid),
+    sql`(${games.homeTeamId} = ${teamId} or ${games.awayTeamId} = ${teamId})`,
+  ];
+  if (sinceDate) conds.push(sql`${games.gameDate} >= ${sinceDate}`);
+  const rows = await db.select({ n: sql`count(*)` }).from(games).where(and(...conds));
+  return Number(rows[0].n);
+}
+
+/**
+ * Append a raw row to an un-normalized sheet (Roj Updates, Request Queue,
+ * Report Archive). Allocates the next row_index for (season, sheet). Not
+ * concurrency-safe, which is fine for the single-process, low-volume bot.
+ */
+async function appendMiscRow(sheet, raw, { seasonId } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  const sheetName = MISC_SHEETS[sheet] || sheet;
+  const max = await db
+    .select({ m: sql`coalesce(max(${miscSheetRows.rowIndex}), -1)` })
+    .from(miscSheetRows)
+    .where(and(eq(miscSheetRows.seasonId, sid), eq(miscSheetRows.sheet, sheetName)));
+  const nextIdx = Number(max[0].m) + 1;
+  await db
+    .insert(miscSheetRows)
+    .values({ seasonId: sid, sheet: sheetName, rowIndex: nextIdx, raw });
+}
+
+/** Atomic team-cash delta for the season (was: Team Assets Cash cell math). */
+async function addTeamCash(teamId, delta, { seasonId, exec = db } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  await exec
+    .update(teamSeasons)
+    .set({ cash: sql`coalesce(${teamSeasons.cash}, 0) + ${delta}` })
+    .where(and(eq(teamSeasons.seasonId, sid), eq(teamSeasons.teamId, teamId)));
+}
+
 module.exports = {
   getDb,
   getCurrentSeasonId,
@@ -228,6 +462,15 @@ module.exports = {
   getTeamDictionary,
   getValidTeams,
   getPlayerSeasons,
+  loadPlayersWithData,
+  buildDataBlob,
+  savePlayerKey,
+  addTeamCash,
+  appendMiscRow,
+  addInjury,
+  getActiveInjuries,
+  clearInjury,
+  countTeamGamesSince,
   parseBool,
   MISC_SHEETS,
 };

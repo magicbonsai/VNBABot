@@ -1,26 +1,33 @@
-const { postRojTweet, postSmithyTweet } = require("../helpers/tweetHelper");
-const { sheetIds, colIdx } = require("../helpers/sheetHelper");
 const { CHANNEL_IDS } = require("../../consts");
 const { rojEvents, tabMap } = require("./consts");
 const _ = require("lodash");
-require("dotenv").config();
-
-const { GoogleSpreadsheet } = require("google-spreadsheet");
-const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
 const rwc = require("random-weighted-choice");
 const faker = require("faker");
+require("dotenv").config();
+
+const {
+  loadPlayersWithData,
+  getValidTeams,
+  getMiscRows,
+  savePlayerKey,
+  addTeamCash,
+  appendMiscRow,
+} = require("../helpers/dbHelper");
+
 faker.setLocale("en");
 
+// Pure transform on the old Data blob (unchanged from the Sheets version): apply
+// a clamped delta to one key on one tab and return the new blob string. Used to
+// compute the new value; the DB write happens in updatePlayerObject.
 const updateJSON = (tabKey, data, updateKey = {}) => {
   if (_.isEmpty(updateKey)) {
     return data;
   }
   const { key, value } = updateKey;
-  console.log(updateKey)
   const { multiplier = 1, upperBound } = tabMap[tabKey] || {};
   const valuesFromJSON = JSON.parse(data);
-  const selectedTab = valuesFromJSON.find(page => page.tab === tabKey);
-  const selectedIndex = valuesFromJSON.findIndex(page => page.tab === tabKey);
+  const selectedTab = valuesFromJSON.find((page) => page.tab === tabKey);
+  const selectedIndex = valuesFromJSON.findIndex((page) => page.tab === tabKey);
   let newData = selectedTab.data;
   const currentKey = selectedTab.data[key] === "NaN" ? 0 : selectedTab.data[key];
   const newKeyValue = parseInt(currentKey) + value * multiplier;
@@ -30,552 +37,275 @@ const updateJSON = (tabKey, data, updateKey = {}) => {
 
   return JSON.stringify([
     ...valuesFromJSON.slice(0, selectedIndex),
-    {
-      module: "PLAYER",
-      tab: tabKey,
-      data: newData
-    },
-    ...valuesFromJSON.slice(selectedIndex + 1)
+    { module: "PLAYER", tab: tabKey, data: newData },
+    ...valuesFromJSON.slice(selectedIndex + 1),
   ]);
 };
 
-// create a JSON description object that shows what got updated on a player recently.
-// Right now all it does it show the weight of the value in question, in the future
-// I should probably augment it to show new and old values.
-
+// Builds a JSON description of recent changes (pure; reused by the Request Queue
+// writers). Resolve the team to a real value before writing, never a =VLOOKUP.
 const createChangeListJSON = (type, updateKey, existingJSON = "{}") => {
-  const valueAsJSON = !!existingJSON
-    ? JSON.parse(existingJSON)
-    : JSON.parse("{}");
-  const updateObject = {
-    STATS: {
-      [type]: [updateKey]
+  const valueAsJSON = !!existingJSON ? JSON.parse(existingJSON) : JSON.parse("{}");
+  const updateObject = { STATS: { [type]: [updateKey] } };
+  const mergedObject = _.mergeWith(valueAsJSON, updateObject, (objValue, srcValue) => {
+    if (_.isArray(objValue)) {
+      return objValue.concat(srcValue);
     }
-  };
-  const mergedObject = _.mergeWith(
-    valueAsJSON,
-    updateObject,
-    (objValue, srcValue) => {
-      if (_.isArray(objValue)) {
-        return objValue.concat(srcValue);
-      }
-    }
-  );
+  });
   return JSON.stringify(mergedObject);
 };
 
-//API format: (playerRow, sheets, type, updateKey)
-// sheets provided must be the most up to date local
-
-async function updatePlayerObject(playerRow, doc, type, updateKey) {
-  const { Name: playerName } = playerRow;
-  await doc.loadInfo();
-  const sheets = doc.sheetsById;
-  // const requestQueue = sheets[sheetIds.requestQueue];
-  const players = sheets[sheetIds.players];
-  const playerRows = await players.getRows();
-  // const requestQueueRows = await requestQueue.getRows();
-  // updating the player list
-  // Find the most update to date info on the player
-  let playerRowToUpdate = playerRows.find(row => row.Name === playerName);
-  const { Team, Data: oldData } = playerRowToUpdate || {};
-  const newJSON = updateJSON(type, oldData, updateKey);
-  playerRowToUpdate["Data"] = newJSON;
-  await playerRowToUpdate.save();
-
-  //updating the request queue
-  // const requestRowToUpdate = requestQueueRows.find(
-  //   row => row.Player === playerName && !row["Done?"]
-  // );
-  // if (requestRowToUpdate) {
-  //   const { Description: existingJSON } = requestRowToUpdate;
-  //   const changeListJSON = createChangeListJSON(type, updateKey, existingJSON);
-  //   // There is an existing row so update the data that already exists
-  //   requestRowToUpdate["Date"] = new Date().toLocaleString().split(",")[0];
-  //   requestRowToUpdate["Data"] = newJSON;
-  //   requestRowToUpdate[
-  //     "Team"
-  //   ] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
-  //   requestRowToUpdate["Description"] = changeListJSON;
-  //   await requestRowToUpdate.save();
-  // } else {
-  //   // push up a new Row
-  //   const newRow = {
-  //     Date: new Date().toLocaleString().split(",")[0],
-  //     Player: playerName,
-  //     Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
-  //     Description: createChangeListJSON(type, updateKey),
-  //     Data: newJSON,
-  //     "Done?": undefined
-  //   };
-  //   await requestQueue.addRow(newRow);
-  // }
-  return;
+// Apply a single rich-data mutation to a player and persist it. `playerRow` is a
+// loadPlayersWithData() row (carries playerSeasonId + the Data blob). Computes the
+// clamped value via updateJSON, writes just that key, and refreshes the in-memory
+// blob so later events in the same run see the change.
+async function updatePlayerObject(playerRow, type, updateKey) {
+  const newBlobStr = updateJSON(type, JSON.stringify(playerRow.Data), updateKey);
+  const newBlob = JSON.parse(newBlobStr);
+  const tab = newBlob.find((p) => p.tab === type);
+  const newValue = parseInt(tab.data[updateKey.key]);
+  if (Number.isNaN(newValue)) {
+    console.warn(`updatePlayerObject: skipping NaN write for ${playerRow.Name} ${type}.${updateKey.key}`);
+    return;
+  }
+  await savePlayerKey(playerRow.playerSeasonId, type, updateKey.key, newValue);
+  playerRow.Data = newBlob; // keep local copy fresh across multiple events
 }
 
-async function updateAssets(playerRow, doc, type, updateKey) {
-  const { Team } = playerRow;
+// Team-asset change (ASSETS/Cash). Only Cash is driven by events today.
+async function updateAssets(playerRow, type, updateKey) {
   const { key, value } = updateKey;
-  await doc.loadInfo();
-  const sheets = doc.sheetsById;
-  const teamAssetsSheet = sheets[sheetIds.teamAssets];
-  const teamAssetsRows = await teamAssetsSheet.getRows();
-
-  //sheets header takes up one row so we increment index by one
-  const rowIdxToUpdate = teamAssetsRows.findIndex(row => row.Team == Team) + 1;
-  const colIdxToUpdate = colIdx[type][key];
-
-  await teamAssetsSheet.loadCells();
-  const cellToUpdate = teamAssetsSheet.getCell(rowIdxToUpdate, colIdxToUpdate);
-  const oldValue = parseInt(cellToUpdate.value);
-  const newValue = oldValue + value;
-
-  cellToUpdate.value = newValue;
-  console.log(key, Team, oldValue, newValue);
-  await teamAssetsSheet.saveUpdatedCells();
-  return;
+  if (key !== "Cash") {
+    console.warn(`updateAssets: unsupported asset key "${key}" — skipped`);
+    return;
+  }
+  if (!playerRow.teamId) return; // FA has no team to credit
+  await addTeamCash(playerRow.teamId, value);
 }
 
-// Add a task for streamers to do on players or other things that can't be done easily through the player JSON
-
-async function addManualTask(playerRow, doc, type, updateKey) {
-  const { Name, Team } = playerRow;
+// A streamer task that can't be applied via the player JSON (height/wingspan).
+// Kept as a raw "Roj Updates" append for now (team resolved to a real value).
+async function addManualTask(playerRow, type, updateKey) {
   const { key, value: { infoString } = {} } = updateKey;
-  await doc.loadInfo();
-  const sheets = doc.sheetsById;
-  const rojUpdatesSheet = sheets[sheetIds.updates];
-
-  await rojUpdatesSheet.addRow({
+  await appendMiscRow("updates", {
     Date: new Date().toLocaleString().split(",")[0],
-    Player: Name,
-    "Current Team": `=VLOOKUP("${Name}", 'Player List'!$A$1:$P, 7, FALSE)`,
-    Team: Team,
+    Player: playerRow.Name,
+    "Current Team": playerRow.Team,
+    Team: playerRow.Team,
     Event: key,
-    Tweet: infoString
+    Tweet: infoString,
   });
 }
-
-//API format for all updateFunctions: (playerRow, doc, type, updateKey)
 
 const updateFunctionMap = {
   MANUAL: addManualTask,
   ATTRIBUTES: updatePlayerObject,
   HOTZONE: updatePlayerObject,
   BADGES: updatePlayerObject,
-  ASSETS: updateAssets
+  TENDENCIES: updatePlayerObject,
+  ASSETS: updateAssets,
 };
 
-async function runEvent(playerRowsToUse, weights, doc) {
+// Run one event. Flavor events that return a plain string (no mutation) are
+// handled gracefully instead of crashing the run (the Sheets version would throw).
+async function runEvent(playerRowsToUse, weights) {
   const eventId = rwc(weights);
   const { fn, selectionFn = _.sample } = rojEvents[eventId] || {};
+  if (!fn) return { messageString: "" };
   const playerRowToUse = selectionFn(playerRowsToUse);
-  const { type, updateKey, messageString } = fn(playerRowToUse);
-  console.log("result", type, updateKey, playerRowToUse.Name);
-  const updateFunction = updateFunctionMap[type];
-  await updateFunction(playerRowToUse, doc, type, updateKey);
-  return {
-    team: playerRowToUse.Team,
-    name: playerRowToUse.Name,
-    messageString
-  };
-}
-
-async function runDevEvent(playerRowToUse, weights, doc) {
-  const eventId = rwc(weights);
-  const { fn } = rojEvents[eventId] || {};
-  const { type, updateKey, messageString } = fn(playerRowToUse);
-  console.log("result", type, updateKey, playerRowToUse.Name);
-  const updateFunction = updateFunctionMap[type];
-  await updateFunction(playerRowToUse, doc, type, updateKey);
-  return {
-    team: playerRowToUse.Team,
-    name: playerRowToUse.Name,
-    messageString
-  };
-}
-
-async function runDeclineEvent(playerRowToUse, weights, doc) {
-  const eventId = rwc(weights);
-  const { fn } = rojEvents[eventId] || {};
-  const { type, updateKey, messageString } = fn(playerRowToUse, true);
-  updateKey.value = updateKey.value * -1;
-  console.log("result", type, updateKey, playerRowToUse.Name);
-  const updateFunction = updateFunctionMap[type];
-  await updateFunction(playerRowToUse, doc, type, updateKey);
-  return {
-    team: playerRowToUse.Team,
-    name: playerRowToUse.Name,
-    messageString: `${playerRowToUse.Name} ${updateKey.key} ${updateKey.value}`
-  };
-}
-
-const toWeights = (weights, faWeights) => team => {
-  switch (team) {
-    case "FA":
-      return faWeights;
-    default:
-      return weights;
+  if (!playerRowToUse) return { messageString: "" };
+  const result = fn(playerRowToUse);
+  if (!result || typeof result !== "object" || !result.type) {
+    return {
+      team: playerRowToUse.Team,
+      name: playerRowToUse.Name,
+      messageString: typeof result === "string" ? result : "",
+    };
   }
-};
+  const { type, updateKey, messageString } = result;
+  const updateFunction = updateFunctionMap[type];
+  if (updateFunction) await updateFunction(playerRowToUse, type, updateKey);
+  return { team: playerRowToUse.Team, name: playerRowToUse.Name, messageString };
+}
 
-const runReportWith =
-  discordClient =>
-  (numberOfEvents = 3, forceTeam) => {
-    (async function main() {
-      await doc.useServiceAccountAuth({
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-      });
-      await doc.loadInfo();
+async function runDevEvent(playerRowToUse, weights) {
+  const eventId = rwc(weights);
+  const { fn } = rojEvents[eventId] || {};
+  if (!fn) return { messageString: "" };
+  const result = fn(playerRowToUse);
+  if (!result || typeof result !== "object" || !result.type) {
+    return { team: playerRowToUse.Team, name: playerRowToUse.Name, messageString: typeof result === "string" ? result : "" };
+  }
+  const { type, updateKey, messageString } = result;
+  const updateFunction = updateFunctionMap[type];
+  if (updateFunction) await updateFunction(playerRowToUse, type, updateKey);
+  return { team: playerRowToUse.Team, name: playerRowToUse.Name, messageString };
+}
 
-      const sheets = doc.sheetsById;
-      const assets = sheets[sheetIds.teamAssets];
-      const events = sheets[sheetIds.news];
-      const players = sheets[sheetIds.players];
-      const archive = sheets[sheetIds.reportArchive];
-
-      const playerRows = await players.getRows();
-      const validTeams = await assets.getRows().then(rows => {
-        return rows
-          .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
-          .map(row => {
-            return row.Team;
-          });
-      });
-      const weights = await events.getRows().then(rows => {
-        return rows.map(row => {
-          return {
-            id: row.event,
-            weight: parseFloat(row.prob)
-          };
-        });
-      });
-
-      const faWeights = await events.getRows().then(rows => {
-        return rows
-          .filter(row => row.isBoost)
-          .map(row => {
-            return {
-              id: row.event,
-              weight: parseFloat(row.prob)
-            };
-          });
-      });
-
-      const weightsByTeam = toWeights(weights, faWeights);
-
-      //for all valid teams run a set of events
-
-      // allUpdates = {
-      //   team_name: [array of messages]
-      //   ...etc
-      // }
-      const shuffledTeams = _.shuffle(validTeams);
-      const allTeams = [...shuffledTeams, "FA"];
-
-      const allUpdates = await allTeams.reduce(async (memo, currentValue) => {
-        const acc = await memo;
-        // we need to refresh the local copy of the doc after every iteration of the loop.
-        const playerRowsToUse = playerRows.filter(
-          player => player.Team === currentValue
-        );
-        console.log("Team", currentValue);
-        let arrayOfResults = [];
-        for (i = 0; i < numberOfEvents; i++) {
-          const {
-            messageString
-            // pass the doc all the way up to the updateFunction
-          } = await runEvent(playerRowsToUse, weightsByTeam(currentValue), doc);
-          // the updateFunction will use the relevant function
-          // and also update the relevant sheets (hopefully)
-          arrayOfResults = [...arrayOfResults, `${messageString}\n`];
-        }
-        return [
-          ...acc,
-          {
-            team: currentValue,
-            messages: arrayOfResults
-          }
-        ];
-      }, []);
-
-      console.log("allUpdates", allUpdates);
-
-      const fullDiscordMessageMap = [
-        `Here is the Twice-Weekly report for ${
-          new Date().toLocaleString().split(",")[0]
-        }:\n\n`,
-        ...allUpdates.map(value => {
-          const { team, messages } = value;
-          const allMessages = messages.join("");
-          return `\nReport for the **${team}**:\n${allMessages}\n\n`;
-        })
-      ];
-
-      const payload = allUpdates
-        .map(value => {
-          const { team, messages } = value;
-          const allMessages = messages.join("");
-          return `\nReport for the **${team}**:\n${allMessages}\n`;
-        })
-        .join("");
-
-      const fullPayload = `Here is the Twice-Weekly report for ${
-        new Date().toLocaleString().split(",")[0]
-      }:\n\n`.concat(payload);
-
-      fullDiscordMessageMap.forEach(message =>
-        discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message)
-      );
-
-      await archive.addRow({
-        Date: new Date().toLocaleString().split(",")[0],
-        Content: fullPayload
-      });
-    })();
+async function runDeclineEvent(playerRowToUse, weights) {
+  const eventId = rwc(weights);
+  const { fn } = rojEvents[eventId] || {};
+  if (!fn) return { messageString: "" };
+  const result = fn(playerRowToUse, true);
+  if (!result || typeof result !== "object" || !result.type) {
+    return { team: playerRowToUse.Team, name: playerRowToUse.Name, messageString: typeof result === "string" ? result : "" };
+  }
+  const { type, updateKey, messageString } = result;
+  updateKey.value = updateKey.value * -1;
+  const updateFunction = updateFunctionMap[type];
+  if (updateFunction) await updateFunction(playerRowToUse, type, updateKey);
+  return {
+    team: playerRowToUse.Team,
+    name: playerRowToUse.Name,
+    messageString: `${playerRowToUse.Name} ${updateKey.key} ${updateKey.value}`,
   };
+}
 
-const runDevReportWith = discordClient => isWeekend => {
-  (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
+const toWeights = (weights, faWeights) => (team) =>
+  team === "FA" ? faWeights : weights;
 
-    const sheets = doc.sheetsById;
-    const assets = sheets[sheetIds.teamAssets];
-    const events = sheets[sheetIds.news];
-    const players = sheets[sheetIds.players];
-    const archive = sheets[sheetIds.reportArchive];
+// Event probabilities used to live in the "News" tab (event/prob/isBoost). That
+// data isn't in the DB yet, so we read it from misc_sheet_rows when present and
+// otherwise fall back to these defaults. Only events that return a mutation
+// object are weighted (flavor/string events are driven elsewhere).
+const DEFAULT_NEWS_WEIGHTS = [
+  { id: "boost", weight: 0.4 },
+  { id: "badge", weight: 0.2 },
+  { id: "hotzone", weight: 0.15 },
+  { id: "budget", weight: 0.1 },
+  { id: "growth", weight: 0.075 },
+  { id: "wingspan", weight: 0.075 },
+];
+const isBoostId = (id) => ["boost", "badge", "hotzone"].includes(id);
 
-    const playerRows = await players.getRows();
-    const validTeams = await assets.getRows().then(rows => {
-      return rows
-        .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
-        .map(row => {
-          return row.Team;
-        });
-    });
-    const weights = await events.getRows().then(rows => {
-      return rows.map(row => {
-        return {
-          id: row.event,
-          weight: parseFloat(row.prob)
-        };
-      });
-    });
+async function loadEventWeights() {
+  const rows = await getMiscRows("news");
+  if (rows.length) {
+    const all = rows
+      .map((r) => ({ id: r.event, weight: parseFloat(r.prob), isBoost: r.isBoost }))
+      .filter((w) => w.id && !Number.isNaN(w.weight));
+    return {
+      all: all.map(({ id, weight }) => ({ id, weight })),
+      boost: all.filter((w) => w.isBoost).map(({ id, weight }) => ({ id, weight })),
+    };
+  }
+  console.warn("rojBot: no News event weights in DB — using DEFAULT_NEWS_WEIGHTS");
+  return {
+    all: DEFAULT_NEWS_WEIGHTS,
+    boost: DEFAULT_NEWS_WEIGHTS.filter((w) => isBoostId(w.id)),
+  };
+}
 
-    const faWeights = await events.getRows().then(rows => {
-      return rows
-        .filter(row => row.isBoost)
-        .map(row => {
-          return {
-            id: row.event,
-            weight: parseFloat(row.prob)
-          };
-        });
-    });
+const today = () => new Date().toLocaleString().split(",")[0];
 
-    const weightsByTeam = toWeights(weights, faWeights);
-
-    //for all valid teams run a set of events
-
-    // allUpdates = {
-    //   team_name: [array of messages]
-    //   ...etc
-    // }
-    const shuffledTeams = _.shuffle(validTeams);
-    const allTeams = [...shuffledTeams, "FA"];
-
-    const allUpdates = await allTeams.reduce(async (memo, currentValue) => {
-      const acc = await memo;
-      // we need to refresh the local copy of the doc after every iteration of the loop.
-      const playerRowsToUse = playerRows.filter(
-        player => player.Team === currentValue && parseInt(player.Age) < 5
-      );
-      console.log("Team", currentValue);
-      let arrayOfResults = [];
-
-      const numberOfRuns = {
-        1: 2,
-        2: 1,
-        3: !!isWeekend ? 1 : 0,
-        4: !!isWeekend ? 0 : 1
-      };
-
-      for (playerRow of playerRowsToUse) {
-        for (let i = 0; i < numberOfRuns[parseInt(playerRow.Age)]; i++) {
-          const {
-            messageString
-            // pass the doc all the way up to the updateFunction
-          } = await runDevEvent(playerRow, weightsByTeam(currentValue), doc);
-          // the updateFunction will use the relevant function
-          // and also update the relevant sheets (hopefully)
-          arrayOfResults = [...arrayOfResults, `${messageString}\n`];
-        }
-      }
-      return [
-        ...acc,
-        {
-          team: currentValue,
-          messages: arrayOfResults
-        }
-      ];
-    }, []);
-
-    console.log("allUpdates", allUpdates);
-
-    const fullDiscordMessageMap = [
-      `Here is the Twice-Weekly report for ${
-        new Date().toLocaleString().split(",")[0]
-      }:\n\n`,
-      ...allUpdates.map(value => {
-        const { team, messages } = value;
-        const allMessages = messages.join("");
-        return `\nReport for the **${team}**:\n${allMessages}\n\n`;
-      })
-    ];
-
-    const payload = allUpdates
-      .map(value => {
-        const { team, messages } = value;
-        const allMessages = messages.join("");
-        return `\nReport for the **${team}**:\n${allMessages}\n`;
-      })
-      .join("");
-
-    const fullPayload = `Here is the Twice-Weekly report for ${
-      new Date().toLocaleString().split(",")[0]
-    }:\n\n`.concat(payload);
-
-    fullDiscordMessageMap.forEach(message =>
-      discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message)
-    );
-
-    await archive.addRow({
-      Date: new Date().toLocaleString().split(",")[0],
-      Content: fullPayload
-    });
-  })();
+const sendReport = (discordClient, headline, allUpdates) => {
+  const messages = [
+    `${headline} for ${today()}:\n\n`,
+    ...allUpdates.map(({ team, messages }) => `\nReport for the **${team}**:\n${messages.join("")}\n\n`),
+  ];
+  messages.forEach((message) =>
+    discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message)
+  );
+  const payload = `${headline} for ${today()}:\n\n`.concat(
+    allUpdates.map(({ team, messages }) => `\nReport for the **${team}**:\n${messages.join("")}\n`).join("")
+  );
+  return payload;
 };
 
-const runDeclineReportWith = discordClient => () => {
-  (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
+// Twice-weekly news report: N random events per team (+ FA).
+const runReportWith = (discordClient) => async (numberOfEvents = 3) => {
+  const [playerRows, validTeams, weightsObj] = await Promise.all([
+    loadPlayersWithData(),
+    getValidTeams(),
+    loadEventWeights(),
+  ]);
+  const weightsByTeam = toWeights(weightsObj.all, weightsObj.boost);
+  const allTeams = [..._.shuffle(validTeams.map((t) => t.name)), "FA"];
 
-    const sheets = doc.sheetsById;
-    const assets = sheets[sheetIds.teamAssets];
-    const events = sheets[sheetIds.news];
-    const players = sheets[sheetIds.players];
-    const archive = sheets[sheetIds.reportArchive];
+  const allUpdates = [];
+  for (const team of allTeams) {
+    const playerRowsToUse = playerRows.filter((p) => p.Team === team);
+    if (!playerRowsToUse.length) {
+      allUpdates.push({ team, messages: [] });
+      continue;
+    }
+    const arrayOfResults = [];
+    for (let i = 0; i < numberOfEvents; i++) {
+      const { messageString } = await runEvent(playerRowsToUse, weightsByTeam(team));
+      if (messageString) arrayOfResults.push(`${messageString}\n`);
+    }
+    allUpdates.push({ team, messages: arrayOfResults });
+  }
 
-    const playerRows = await players.getRows();
-    const validTeams = await assets.getRows().then(rows => {
-      return rows
-        .filter(row => row.Frozen === "FALSE" && row.Real === "TRUE")
-        .map(row => {
-          return row.Team;
-        });
-    });
-
-    const declineEvents = ["draft", "boost", "badge"];
-    const weights = await events.getRows().then(rows => {
-      return rows
-        .filter(row => declineEvents.includes(row.event))
-        .map(row => {
-          return {
-            id: row.event,
-            weight: parseFloat(row.prob)
-          };
-        });
-    });
-
-    const weightsByTeam = weights;
-
-    //for all valid teams run a set of events
-
-    // allUpdates = {
-    //   team_name: [array of messages]
-    //   ...etc
-    // }
-    const shuffledTeams = _.shuffle(validTeams);
-    const allTeams = [...shuffledTeams, "FA"];
-
-    const allUpdates = await allTeams.reduce(async (memo, currentValue) => {
-      const acc = await memo;
-      // we need to refresh the local copy of the doc after every iteration of the loop.
-      const playerRowsToUse = playerRows.filter(
-        player => player.Team === currentValue && parseInt(player.Age) > 5
-      );
-      console.log("Team", currentValue);
-      let arrayOfResults = [];
-
-      for (playerRow of playerRowsToUse) {
-        for (let i = 0; i < 25; i++) {
-          const {
-            messageString
-            // pass the doc all the way up to the updateFunction
-          } = await runDeclineEvent(playerRow, weightsByTeam, doc);
-          // the updateFunction will use the relevant function
-          // and also update the relevant sheets (hopefully)
-          arrayOfResults = [...arrayOfResults, `${messageString}\n`];
-        }
-      }
-      return [
-        ...acc,
-        {
-          team: currentValue,
-          messages: arrayOfResults
-        }
-      ];
-    }, []);
-
-    console.log("allUpdates", allUpdates);
-
-    const fullDiscordMessageMap = [
-      `Here is the Decline report for ${
-        new Date().toLocaleString().split(",")[0]
-      }:\n\n`,
-      ...allUpdates.map(value => {
-        const { team, messages } = value;
-        const allMessages = messages.join("");
-        return `\nReport for the **${team}**:\n${allMessages}\n\n`;
-      })
-    ];
-
-    const payload = allUpdates
-      .map(value => {
-        const { team, messages } = value;
-        const allMessages = messages.join("");
-        return `\nReport for the **${team}**:\n${allMessages}\n`;
-      })
-      .join("");
-
-    const fullPayload = `Here is the Decline report for ${
-      new Date().toLocaleString().split(",")[0]
-    }:\n\n`.concat(payload);
-
-    fullDiscordMessageMap.forEach(message =>
-      discordClient.channels.cache.get(CHANNEL_IDS.updates).send(message)
-    );
-
-    await archive.addRow({
-      Date: new Date().toLocaleString().split(",")[0],
-      Content: fullPayload
-    });
-  })();
+  const payload = sendReport(discordClient, "Here is the Twice-Weekly report", allUpdates);
+  await appendMiscRow("reportArchive", { Date: today(), Content: payload });
 };
 
-const capSpeed = async (player, doc) => {
-  const { Data } = player;
-  const parsedData = JSON.parse(Data);
-  const vitals = parsedData.find(page => page.tab === "VITALS").data;
-  const attributes = parsedData.find(page => page.tab === "ATTRIBUTES").data;
+// Youth development report: age-scaled boosts for players under 5.
+const runDevReportWith = (discordClient) => async (isWeekend) => {
+  const [playerRows, validTeams, weightsObj] = await Promise.all([
+    loadPlayersWithData(),
+    getValidTeams(),
+    loadEventWeights(),
+  ]);
+  const weightsByTeam = toWeights(weightsObj.all, weightsObj.boost);
+  const allTeams = [..._.shuffle(validTeams.map((t) => t.name)), "FA"];
+  const numberOfRuns = { 1: 2, 2: 1, 3: isWeekend ? 1 : 0, 4: isWeekend ? 0 : 1 };
+
+  const allUpdates = [];
+  for (const team of allTeams) {
+    const playerRowsToUse = playerRows.filter(
+      (p) => p.Team === team && parseInt(p.Age) < 5
+    );
+    const arrayOfResults = [];
+    for (const playerRow of playerRowsToUse) {
+      const runs = numberOfRuns[parseInt(playerRow.Age)] || 0;
+      for (let i = 0; i < runs; i++) {
+        const { messageString } = await runDevEvent(playerRow, weightsByTeam(team));
+        if (messageString) arrayOfResults.push(`${messageString}\n`);
+      }
+    }
+    allUpdates.push({ team, messages: arrayOfResults });
+  }
+
+  const payload = sendReport(discordClient, "Here is the Twice-Weekly report", allUpdates);
+  await appendMiscRow("reportArchive", { Date: today(), Content: payload });
+};
+
+// Decline report: attribute/badge declines for players over 5.
+const runDeclineReportWith = (discordClient) => async () => {
+  const [playerRows, validTeams, weightsObj] = await Promise.all([
+    loadPlayersWithData(),
+    getValidTeams(),
+    loadEventWeights(),
+  ]);
+  // Only decline-capable events that return a mutation object.
+  const declineWeights = weightsObj.all.filter((w) => ["boost", "badge"].includes(w.id));
+  const allTeams = [..._.shuffle(validTeams.map((t) => t.name)), "FA"];
+
+  const allUpdates = [];
+  for (const team of allTeams) {
+    const playerRowsToUse = playerRows.filter(
+      (p) => p.Team === team && parseInt(p.Age) > 5
+    );
+    const arrayOfResults = [];
+    for (const playerRow of playerRowsToUse) {
+      for (let i = 0; i < 25; i++) {
+        const { messageString } = await runDeclineEvent(playerRow, declineWeights);
+        if (messageString) arrayOfResults.push(`${messageString}\n`);
+      }
+    }
+    allUpdates.push({ team, messages: arrayOfResults });
+  }
+
+  const payload = sendReport(discordClient, "Here is the Decline report", allUpdates);
+  await appendMiscRow("reportArchive", { Date: today(), Content: payload });
+};
+
+// Cap athleticism attributes by player height.
+const capSpeed = async (player) => {
+  const vitals = player.Data.find((page) => page.tab === "VITALS").data;
+  const attributes = player.Data.find((page) => page.tab === "ATTRIBUTES").data;
   const playerHeight = parseInt(vitals.HEIGHT_CM);
   const athleticismKeys = ["SPEED", "SPEED_WITH_BALL", "ACCELERATION"];
 
@@ -586,81 +316,43 @@ const capSpeed = async (player, doc) => {
   const maxAthleticismValue = (baseAthleticismAttr + capDiff) * 3;
   const maxAthleticismAttr = baseAthleticismAttr + capDiff + 25;
 
-  console.log(player.Name);
-  console.log(playerHeight);
-  console.log(playerHeightInInches);
-  console.log(maxAthleticismAttr);
-  console.log(maxAthleticismValue);
-
   for (const aKey of athleticismKeys) {
     const attrValue = parseInt(attributes[aKey]);
     const attr = attrValue / 3 + 25;
-    if (parseInt(attributes[aKey]) > maxAthleticismValue) {
+    if (attrValue > maxAthleticismValue) {
       const athDiff = maxAthleticismAttr - attr;
-      await updatePlayerObject(player, doc, "ATTRIBUTES", {
-        key: aKey,
-        value: athDiff
-      });
+      await updatePlayerObject(player, "ATTRIBUTES", { key: aKey, value: athDiff });
     }
   }
 };
 
 const capSpeedWithHeight = () => {
-  (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
-
-    const sheets = doc.sheetsById;
-    const players = sheets[sheetIds.players];
-
-    const playerRows = await players.getRows();
-
-    for (playerRow of playerRows) {
-      await capSpeed(playerRow, doc);
+  return (async function main() {
+    const players = await loadPlayersWithData();
+    for (const playerRow of players) {
+      await capSpeed(playerRow);
     }
-
     console.log("athleticism capped");
   })();
 };
 
-const fixNanValue = async (player, doc) => {
-  const { Data } = player;
-  const parsedData = JSON.parse(Data);
-  const tendencies = parsedData.find(page => page.tab === "TENDENCIES").data;
-
+// Replace "NaN" tendency values with a random 1-99 value.
+const fixNanValue = async (player) => {
+  const tendenciesTab = player.Data.find((page) => page.tab === "TENDENCIES");
+  const tendencies = tendenciesTab ? tendenciesTab.data : {};
   for (const tkey of _.keys(tendencies)) {
     if (tendencies[tkey] === "NaN") {
-      console.log(tkey);
-      const newNum = _.random(1, 99);
-      await updatePlayerObject(player, doc, "TENDENCIES", {
-        key: tkey,
-        value: _.random(1, 99)
-      });
+      await updatePlayerObject(player, "TENDENCIES", { key: tkey, value: _.random(1, 99) });
     }
   }
 };
 
 const fixNanValues = () => {
-  (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
-
-    const sheets = doc.sheetsById;
-    const players = sheets[sheetIds.players];
-
-    const playerRows = await players.getRows();
-
-    for (playerRow of playerRows) {
-      console.log(playerRow.Name);
-      await fixNanValue(playerRow, doc);
+  return (async function main() {
+    const players = await loadPlayersWithData();
+    for (const playerRow of players) {
+      await fixNanValue(playerRow);
     }
-
     console.log("NaN fixed");
   })();
 };
@@ -672,5 +364,6 @@ module.exports = {
   createChangeListJSON,
   capSpeedWithHeight,
   fixNanValues,
-  updateJSON
+  updateJSON,
+  updatePlayerObject,
 };
