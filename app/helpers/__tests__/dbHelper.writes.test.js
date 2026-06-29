@@ -18,6 +18,9 @@ const {
   signFreeAgent,
   createRookie,
   saveTrikov,
+  retirePlayers,
+  setSeasonFlag,
+  getSeasonFlag,
 } = require("../dbHelper");
 
 const hasDb = !!process.env.DATABASE_URL;
@@ -217,6 +220,81 @@ test("saveTrikov writes trikov_value + trikov_detail (rolled back)", async () =>
     /ROLLBACK_SENTINEL/
   );
   assert.ok(insideRan, "transaction body executed");
+});
+
+test("retirePlayers sets RETIRED + clears team into prior_team_id (rolled back)", async () => {
+  if (!hasDb) return;
+  const { db, schema } = getDb();
+  const p = (await loadPlayersWithData({ teamStatuses: ["ROSTERED"] })).find(
+    (x) => x.teamId != null
+  );
+  assert.ok(p, "need a rostered player with a team");
+
+  let insideRan = false;
+  await assert.rejects(
+    db.transaction(async (tx) => {
+      await retirePlayers([p.playerSeasonId], { exec: tx });
+      const row = await tx
+        .select({
+          status: schema.playerSeasons.teamStatus,
+          teamId: schema.playerSeasons.teamId,
+          prior: schema.playerSeasons.priorTeamId,
+        })
+        .from(schema.playerSeasons)
+        .where(eq(schema.playerSeasons.id, p.playerSeasonId));
+      assert.strictEqual(row[0].status, "RETIRED", "status RETIRED");
+      assert.strictEqual(row[0].teamId, null, "team_id cleared");
+      assert.strictEqual(
+        String(row[0].prior),
+        String(p.teamId),
+        "prior_team_id captured the old team"
+      );
+
+      insideRan = true;
+      throw new Error("ROLLBACK_SENTINEL");
+    }),
+    /ROLLBACK_SENTINEL/
+  );
+  assert.ok(insideRan, "transaction body executed");
+
+  const after = (await loadPlayersWithData({ teamStatuses: ["ROSTERED"] })).find(
+    (x) => x.playerSeasonId === p.playerSeasonId
+  );
+  assert.ok(after, "player still ROSTERED in prod (retire rolled back)");
+});
+
+test("setSeasonFlag upserts a boolean flag (rolled back)", async () => {
+  if (!hasDb) return;
+  const { db } = getDb();
+  const sid = await getCurrentSeasonId();
+
+  let insideRan = false;
+  await assert.rejects(
+    db.transaction(async (tx) => {
+      await setSeasonFlag("zzTestFlag", true, { seasonId: sid, exec: tx });
+      assert.strictEqual(
+        await getSeasonFlag("zzTestFlag", { seasonId: sid, exec: tx }),
+        true,
+        "flag upserted to true"
+      );
+      // upsert again (conflict path) flips it
+      await setSeasonFlag("zzTestFlag", false, { seasonId: sid, exec: tx });
+      assert.strictEqual(
+        await getSeasonFlag("zzTestFlag", { seasonId: sid, exec: tx }),
+        false,
+        "flag upsert updates the existing row"
+      );
+      insideRan = true;
+      throw new Error("ROLLBACK_SENTINEL");
+    }),
+    /ROLLBACK_SENTINEL/
+  );
+  assert.ok(insideRan, "transaction body executed");
+  assert.notStrictEqual(
+    await getSeasonFlag("zzTestFlag", { seasonId: sid }),
+    false,
+    "test flag did not persist to prod"
+  );
 });
 
 test.after(async () => {

@@ -152,15 +152,38 @@ async function deleteMiscRowById(id, { exec = db } = {}) {
  *          non-boolean value OR doesn't exist for the season. Callers that need
  *          to distinguish "off" from "absent" should query the row directly.
  */
-async function getSeasonFlag(name, { seasonId } = {}) {
+async function getSeasonFlag(name, { seasonId, exec = db } = {}) {
   const sid = seasonId || (await getCurrentSeasonId());
-  const rows = await db
+  const rows = await exec
     .select({ value: seasonFlags.value })
     .from(seasonFlags)
     .where(and(eq(seasonFlags.seasonId, sid), eq(seasonFlags.name, name)))
     .limit(1);
   if (!rows.length) return null;
   return rows[0].value;
+}
+
+/**
+ * Upsert a typed season flag (keyed on the unique (season_id, name) index).
+ * Boolean flags go in `value`; a non-boolean keeps its string in `raw_value`.
+ * Used to record once-per-season events like `retirementProcessed`. Accepts an
+ * optional executor (tx) so a caller can set it inside the same transaction.
+ */
+async function setSeasonFlag(name, value, { seasonId, rawValue, exec = db } = {}) {
+  const sid = seasonId || (await getCurrentSeasonId());
+  const isBool = typeof value === "boolean";
+  const row = {
+    value: isBool ? value : null,
+    rawValue: rawValue ?? (isBool ? null : String(value)),
+    updatedAt: new Date(),
+  };
+  await exec
+    .insert(seasonFlags)
+    .values({ seasonId: sid, name, ...row })
+    .onConflictDoUpdate({
+      target: [seasonFlags.seasonId, seasonFlags.name],
+      set: row,
+    });
 }
 
 // ---- teams ----------------------------------------------------------------
@@ -610,6 +633,27 @@ async function savePlayerBlob(playerSeasonId, blob, { exec = db } = {}) {
   }
 }
 
+/**
+ * Retire players: set team_status='RETIRED', move their current team into
+ * prior_team_id, and clear team_id (they leave their roster). Postgres evaluates
+ * all SET expressions against the OLD row, so `prior_team_id = team_id, team_id =
+ * NULL` captures the team correctly in one statement. Row-level idempotent —
+ * re-retiring an already-RETIRED (team_id NULL) player is a harmless no-op.
+ * Accepts an optional executor (tx) so the caller can batch + roll back.
+ */
+async function retirePlayers(playerSeasonIds, { exec = db } = {}) {
+  if (!playerSeasonIds || !playerSeasonIds.length) return;
+  await exec
+    .update(playerSeasons)
+    .set({
+      teamStatus: "RETIRED",
+      priorTeamId: sql`${playerSeasons.teamId}`,
+      teamId: null,
+      updatedAt: new Date(),
+    })
+    .where(inArray(playerSeasons.id, playerSeasonIds));
+}
+
 /** Set arbitrary player_seasons columns (e.g. offseason age/contract rollover). */
 async function updatePlayerSeasonFields(playerSeasonId, fields, { exec = db } = {}) {
   await exec
@@ -833,6 +877,7 @@ module.exports = {
   getCurrentSeasonId,
   getMiscRows,
   getSeasonFlag,
+  setSeasonFlag,
   getTeamDictionary,
   getValidTeams,
   getPlayerSeasons,
@@ -841,6 +886,7 @@ module.exports = {
   savePlayerKey,
   savePlayerBlob,
   updatePlayerSeasonFields,
+  retirePlayers,
   saveTrikov,
   assembleTrikovInput,
   addTeamCash,
