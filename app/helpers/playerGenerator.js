@@ -1,12 +1,17 @@
-const { GoogleSpreadsheet } = require("google-spreadsheet");
 const rwc = require("random-weighted-choice");
 const rn = require("random-normal");
 const _ = require("lodash");
 const faker = require("faker");
 faker.setLocale("en");
-const { sheetIds } = require("./sheetHelper");
 const { tendencyDictionary, toIsoTendencies } = require("./tendencyDictionary");
 const { hotzones: hotzoneKeys } = require("../bots/consts");
+const {
+  appendMiscRow,
+  getMiscRowsWithMeta,
+  deleteMiscRowById,
+  createRookie,
+  getDb,
+} = require("./dbHelper");
 
 // NBA2k attribute formula to be readable by the 2ktools
 // 0 - 222
@@ -754,86 +759,69 @@ function toDeltaString(valueDelta) {
     .join(",  ");
 }
 
+// Cap the leveling loop so a row that can't reach its target can't spin forever
+// (the Sheets version had no bound).
+const MAX_LEVEL_ITERATIONS = 100;
+
 function runBatch(batchNum) {
-  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-  const { generatedPlayers: genPlayersId, players: playerListId } = sheetIds;
   return (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const genPlayers = sheets[genPlayersId];
-    const playerListSheet = sheets[playerListId];
-    const playersToBatch = genPlayers.getRows().then(rows => {
-      return rows.filter(row => {
-        // return row.Batch === batchNum && !row.IgnoreBatch;
-        return !row.IgnoreBatch;
-      });
-    });
-    playersToBatch.then(rows => {
-      // newRows.every(row => row.delta == "neutral");
-      let newRows = rows;
-      while (!newRows.every(row => row.PrevDelta == "neutral")) {
-        newRows = newRows.map(row => {
-          const data = row.Values;
-          const name = row.Name;
-          const delta = toDelta(row.AttributeTotal, row.TargetAttributeTotal);
-          // const rowOverall = delta == "neutral" ? row.Overall : "";
-          const { newValues, attrDelta, attributeTotal, badgeTotal } =
-            updateValues(name, data, delta) || {};
-          return {
-            ...row,
-            AttributeTotal: attributeTotal,
-            BadgeTotal: badgeTotal,
-            Values: JSON.stringify(newValues),
-            Batch: delta == "neutral" ? row.Batch : parseInt(row.Batch) + 1,
-            PrevDelta: delta,
-            DeltaValues:
-              delta == "neutral"
-                ? row.DeltaValues
-                : `${row.DeltaValues}, ${toDeltaString(attrDelta)}}`
-          };
-        });
-      }
-      const playerListRows = newRows.map(row => {
-        const { Name, Height, Weight, AttributeTotal, Position, Role, Values } =
-          row;
-        return {
-          Name,
-          Height,
-          Weight,
-          Team: "Rookie",
-          AttributeTotal,
-          Position,
-          Type: Role,
-          Data: Values,
-          Age: "0"
+    const staged = await getMiscRowsWithMeta("generatedPlayers");
+    const toBatch = staged.filter((s) => !s.raw.IgnoreBatch);
+    if (!toBatch.length) {
+      console.log("runBatch: no staged players to promote");
+      return;
+    }
+
+    // Level each staged row toward its TargetAttributeTotal (no target => neutral,
+    // i.e. promoted as-is). Bounded to avoid the old unbounded loop.
+    const leveled = toBatch.map(({ id, raw }) => {
+      let row = { ...raw };
+      let iterations = 0;
+      while (
+        toDelta(row.AttributeTotal, row.TargetAttributeTotal) !== "neutral" &&
+        iterations < MAX_LEVEL_ITERATIONS
+      ) {
+        const delta = toDelta(row.AttributeTotal, row.TargetAttributeTotal);
+        const { newValues, attrDelta, attributeTotal, badgeTotal } =
+          updateValues(row.Name, row.Values, delta) || {};
+        row = {
+          ...row,
+          AttributeTotal: attributeTotal,
+          BadgeTotal: badgeTotal,
+          Values: JSON.stringify(newValues),
+          Batch: parseInt(row.Batch || 0) + 1,
+          PrevDelta: delta,
+          DeltaValues: `${row.DeltaValues}, ${toDeltaString(attrDelta)}`,
         };
-      });
-      return (async () => {
-        await genPlayers.addRows(newRows);
-        await playerListSheet.addRows(playerListRows);
-      })();
+        iterations += 1;
+      }
+      return { id, raw: row };
     });
+
+    // Promote each into real player rows, then delete the consumed staging row
+    // (replaces the old append-duplication of leveled rows back into the sheet).
+    const { db } = getDb();
+    let promoted = 0;
+    let skipped = 0;
+    for (const { id, raw } of leveled) {
+      const result = await db.transaction(async (tx) => {
+        const r = await createRookie(raw, { exec: tx });
+        await deleteMiscRowById(id, { exec: tx });
+        return r;
+      });
+      if (result.skipped) skipped += 1;
+      else promoted += 1;
+      console.log(result.skipped ? `skipped (exists): ${raw.Name}` : `promoted: ${raw.Name}`);
+    }
+    console.log(`runBatch: promoted ${promoted}, skipped ${skipped}`);
   })();
 }
 
 // typeString is of gwb
 function generatePlayers(typeString) {
   if (!typeString) return;
-  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-  const { generatedPlayers: genPlayersId } = sheetIds;
   return (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const generatedPlayersSheet = sheets[genPlayersId];
-    const rowsToAdd = await typeString.split("").map(char => {
+    const rowsToAdd = typeString.split("").map(char => {
       const playerType = letterMapping[char];
       const {
         data: attributes,
@@ -881,10 +869,10 @@ function generatePlayers(typeString) {
         DeltaValues: "N/A"
       };
     });
-    (async () => {
-      await generatedPlayersSheet.addRows(rowsToAdd);
-    })();
-    console.log(`${rowsToAdd.length} players generated.`);
+    for (const row of rowsToAdd) {
+      await appendMiscRow("generatedPlayers", row);
+    }
+    console.log(`${rowsToAdd.length} players generated (staged).`);
     return rowsToAdd;
   })();
 }

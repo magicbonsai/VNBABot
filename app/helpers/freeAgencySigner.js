@@ -1,179 +1,80 @@
-const { sheetIds, colIdx } = require("./sheetHelper");
 const { CHANNEL_IDS } = require("../../consts");
 const _ = require("lodash");
-require("dotenv").config();
-
-const { GoogleSpreadsheet } = require("google-spreadsheet");
-const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
 const { createChangeListJSON } = require("../bots/rojBot");
+const {
+  getFreeAgentsWithOffers,
+  getTeamDictionary,
+  signFreeAgent,
+  appendMiscRow,
+} = require("./dbHelper");
 
-const toContractLength = cash => {
+const today = () => new Date().toLocaleString().split(",")[0];
+
+const toContractLength = (cash) => {
   if (cash < 15) return 1;
   if (cash < 40) return 2;
   return 3;
 };
 
-const signFAsWith =
-  discordClient =>
-  (numOfSignings = 10) => {
-    (async function main() {
-      await doc.useServiceAccountAuth({
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-      });
-      await doc.loadInfo();
-      console.log("numSignings", numOfSignings);
-      const sheets = doc.sheetsById;
-      const playerSheet = sheets[sheetIds.players];
-      const archive = sheets[sheetIds.reportArchive];
+// Run a round of Free Agency: pick up to N free agents that carry a contract
+// offer and sign each (move to the offered team, set contract + a fresh random
+// loyalty, debit the team's cash). Each signing is one atomic transaction now,
+// instead of the old non-transactional player.save() + Team Assets cell edit.
+const signFAsWith = (discordClient) => (numOfSignings = 10) => {
+  return (async function main() {
+    console.log("numSignings", numOfSignings);
+    const fas = await getFreeAgentsWithOffers();
+    const candidates = fas.filter((f) => f.contractOffer && f.contractOffer.Team);
+    const signedRows = _.sampleSize(candidates, numOfSignings);
 
-      const signedRows = await playerSheet.getRows().then(rows => {
-        const filteredRows = rows.filter(row => {
-          const { Team, ["Contract Offer"]: contractOffer } = row;
-          // don't look at any row w/o a contractOffer json
-          if (!contractOffer) return false;
-          const fullOffer = JSON.parse(contractOffer);
-          return Team == "FA" && !!fullOffer;
-        });
-        return _.sampleSize(filteredRows, numOfSignings);
-      });
+    if (!signedRows.length) {
+      return discordClient.channels.cache
+        .get(CHANNEL_IDS.transactions)
+        .send("Apparently, no one was given an offer on this round of Free Agency.");
+    }
 
-      // If there are no signed rows, then no one put down offers during this round
-
-      if (!signedRows.length) {
-        return discordClient.channels.cache
-          .get(CHANNEL_IDS.transactions)
-          .send(
-            "Apparently, no one was given an offer on this round of Free Agency."
-          );
+    const dict = await getTeamDictionary();
+    const allSignings = [];
+    for (const fa of signedRows) {
+      const offer = fa.contractOffer; // already a JSONB object
+      const { Team: newTeam, Cash, Minutes } = offer;
+      const newTeamId = dict.byName.get(String(newTeam).toLowerCase());
+      if (!newTeamId) {
+        console.warn(`signFA: could not resolve team "${newTeam}" for ${fa.fullName}`);
+        continue;
       }
-      //get all FA rows w/ contracts: filter by contract row and team row
-      //randomly select 10 or numOfSignings w/ lodash.sampleSize
+      const newLoyalty = _.random(1, 10);
+      const contractLength = toContractLength(parseInt(Cash));
 
-      //Change Team name to winning contract offer
-
-      const allSignings = await signedRows.reduce(
-        async (memo, currentValue = {}) => {
-          const acc = await memo;
-          await doc.loadInfo();
-          const sheets = doc.sheetsById;
-          const playerSheet = sheets[sheetIds.players];
-          const teamAssetsSheet = sheets[sheetIds.teamAssets];
-          const teamAssetsRows = await teamAssetsSheet.getRows();
-          const playerRows = await playerSheet.getRows();
-          const requestQueue = sheets[sheetIds.requestQueue];
-          const requestQueueRows = await requestQueue.getRows();
-
-          const { Name: playerName, ["Contract Offer"]: contractOffer } =
-            currentValue;
-
-          const contractJson = JSON.parse(contractOffer);
-
-          const { Team: newTeam, Cash, Minutes } = contractJson;
-
-          // Update the player Row with the new team + contract length
-
-          let playerRowToUpdate = playerRows.find(
-            row => row.Name === playerName
-          );
-          const { Data } = playerRowToUpdate;
-          const newLoyalty = _.random(1, 10);
-          playerRowToUpdate["Team"] = newTeam;
-          playerRowToUpdate["Salary"] = Cash;
-          playerRowToUpdate["Contract Length"] = toContractLength(
-            parseInt(Cash)
-          );
-          playerRowToUpdate["Loyalty"] = newLoyalty;
-          playerRowToUpdate["Contract Offer"] = JSON.stringify({
-            ...contractJson,
-            Loyalty: newLoyalty
-          });
-          console.log("newRow", playerName, newTeam);
-          await playerRowToUpdate.save();
-
-          // Update the request rows so the player is in the correct tab for Streamers
-
-          const requestRowToUpdate = requestQueueRows.find(
-            row => row.Player === playerName && !row["Done?"]
-          );
-          if (requestRowToUpdate) {
-            const { Description: existingJSON } = requestRowToUpdate;
-            const changeListJSON = createChangeListJSON(
-              "TEAM",
-              newTeam,
-              existingJSON
-            );
-            // There is an existing row so update the data that already exists
-            requestRowToUpdate["Date"] = new Date()
-              .toLocaleString()
-              .split(",")[0];
-            requestRowToUpdate[
-              "Team"
-            ] = `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`;
-            requestRowToUpdate["Description"] = changeListJSON;
-            await requestRowToUpdate.save();
-          } else {
-            // push up a new Row
-            const newRow = {
-              Date: new Date().toLocaleString().split(",")[0],
-              Player: playerName,
-              Team: `=VLOOKUP("${playerName}", 'Player List'!$A$1:$R, 7, FALSE)`,
-              Data: Data,
-              Description: createChangeListJSON("TEAM", newTeam),
-              "Done?": undefined
-            };
-            await requestQueue.addRow(newRow);
-          }
-
-          // update team Assets cash
-          const rowIdxToUpdate =
-            teamAssetsRows.findIndex(row => row.Team == newTeam) + 1;
-          const colIdxToUpdate = colIdx["ASSETS"]["Cash"];
-
-          await teamAssetsSheet.loadCells();
-          const cellToUpdate = teamAssetsSheet.getCell(
-            rowIdxToUpdate,
-            colIdxToUpdate
-          );
-          const oldValue = parseInt(cellToUpdate.value);
-          const newValue = oldValue - parseInt(Cash);
-
-          cellToUpdate.value = newValue;
-          await teamAssetsSheet.saveUpdatedCells();
-
-          // return relevant info to parse into a discord message
-          return [
-            ...acc,
-            {
-              player: playerName,
-              team: newTeam,
-              cash: Cash,
-              minutes: Minutes,
-              contractLength: toContractLength(parseInt(Cash))
-            }
-          ];
-        },
-        []
-      );
-
-      const fullDiscordMessageMap = allSignings.map(
-        ({ player, team, cash, minutes, contractLength }) => {
-          return `\nThe **${team}** have signed **${player}** to a ${contractLength} season contract worth ${cash} Cash and ${minutes} minutes. \n`;
-        }
-      );
-
-      // send a discord msg to the channel
-      fullDiscordMessageMap.forEach(message =>
-        discordClient.channels.cache.get(CHANNEL_IDS.transactions).send(message)
-      );
-
-      // for safety purposes, save a row to the archive
-
-      await archive.addRow({
-        Date: new Date().toLocaleString().split(",")[0],
-        Content: fullDiscordMessageMap.join("")
+      await signFreeAgent(fa.playerSeasonId, {
+        teamId: newTeamId,
+        salary: Cash,
+        contractLength,
+        loyalty: newLoyalty,
+        contractOffer: { ...offer, Loyalty: newLoyalty },
       });
-    })();
-  };
+
+      // Streamer record — kept minimal (team resolved to a real value).
+      await appendMiscRow("requestQueue", {
+        Date: today(),
+        Player: fa.fullName,
+        Team: newTeam,
+        Description: createChangeListJSON("TEAM", newTeam),
+      });
+
+      console.log("signed", fa.fullName, "->", newTeam);
+      allSignings.push({ player: fa.fullName, team: newTeam, cash: Cash, minutes: Minutes, contractLength });
+    }
+
+    const messages = allSignings.map(
+      ({ player, team, cash, minutes, contractLength }) =>
+        `\nThe **${team}** have signed **${player}** to a ${contractLength} season contract worth ${cash} Cash and ${minutes} minutes. \n`
+    );
+    messages.forEach((message) =>
+      discordClient.channels.cache.get(CHANNEL_IDS.transactions).send(message)
+    );
+    await appendMiscRow("reportArchive", { Date: today(), Content: messages.join("") });
+  })();
+};
 
 module.exports = { signFAsWith };

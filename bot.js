@@ -3,7 +3,6 @@ const CronJob = require("cron").CronJob;
 const robin = require("roundrobin");
 const _ = require("lodash");
 const scrape = require("./app/helpers/boxScraper");
-const rosterCheckCommand = require("./app/helpers/rosterChecker");
 const { generatePlayers, runBatch } = require("./app/helpers/playerGenerator");
 const { generateCoach } = require("./app/helpers/coachGenerator");
 const {
@@ -12,6 +11,13 @@ const {
 } = require("./app/helpers/injuryReport");
 const retirementCheck = require("./app/helpers/retirementCheck");
 const { offSeasonPaperWork } = require("./app/helpers/offSeason");
+const {
+  getSeasonFlag,
+  getValidTeams,
+  getPlayerSeasons,
+  saveTrikov,
+  assembleTrikovInput,
+} = require("./app/helpers/dbHelper");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -22,7 +28,6 @@ const {
   updatePlayers,
 } = require("./app/router/services");
 const { signFAsWith } = require("./app/helpers/freeAgencySigner");
-const { sheetIds } = require("./app/helpers/sheetHelper");
 const { CHANNEL_IDS } = require("./consts");
 require("dotenv").config();
 const client = new Client({
@@ -51,7 +56,6 @@ const {
   getRandomTweet,
 } = require("./app/helpers/tweetHelper");
 const R = require("./custom-r-script");
-const { GoogleSpreadsheet } = require("google-spreadsheet");
 
 const runDevReport = runDevReportWith(client);
 const runDeclineReport = runDeclineReportWith(client);
@@ -175,10 +179,6 @@ const dedueCommand = (prompt, msg) => {
       console.log(schedule.flat(2));
       break;
 
-    case "checkroster":
-      rosterCheckCommand(msg);
-      break;
-
     case "generateplayers":
       generatePlayers(words[1]);
       if (process.env.environment === "PRODUCTION") {
@@ -266,21 +266,12 @@ const SaturdayJob = new CronJob("0 13 * * 6", function () {
 
 const dailyInjuryReportJob = new CronJob("0 11 * * *", function () {
   (async () => {
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    });
-
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const globalsSheet = sheets[sheetIds.globalVars];
-
-    const doInjuriesVar = await globalsSheet
-      .getRows()
-      .then((rows) => rows.find((row) => row.Global == "doInjuries"));
-    console.log("daily injury job", doInjuriesVar);
-    if (doInjuriesVar.Status == "FALSE") {
+    // Gate on the `doInjuries` feature flag (was: Globals sheet, now the DB).
+    // Skip only when the flag is explicitly off; a missing flag runs (its
+    // historical default) instead of throwing like the old Sheets code did.
+    const doInjuries = await getSeasonFlag("doInjuries");
+    console.log("daily injury job — doInjuries flag:", doInjuries);
+    if (doInjuries === false) {
       return;
     }
     generateInjuries();
@@ -294,21 +285,10 @@ const dailyRemoveInjuryJob = new CronJob("15 11 * * *", function () {
 
 const runReportWithCheck = (isWeekend) => {
   (async () => {
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    });
-
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const globalsSheet = sheets[sheetIds.globalVars];
-
-    const doBoostsVar = await globalsSheet
-      .getRows()
-      .then((rows) => rows.find((row) => row.Global == "doBoosts"));
-    console.log("daily injury job", doBoostsVar);
-    if (doBoostsVar.Status == "FALSE") {
+    // Gate on the `doBoosts` feature flag (was: Globals sheet, now the DB).
+    const doBoosts = await getSeasonFlag("doBoosts");
+    console.log("dev/boost report — doBoosts flag:", doBoosts);
+    if (doBoosts === false) {
       return;
     }
     runDevReport(isWeekend);
@@ -334,28 +314,21 @@ dailyRemoveInjuryJob.start();
 // vtwitter.start();
 
 const generateSocialTweet = () => {
-  (async () => {
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    });
+  return (async () => {
+    // Reads from the DB now: non-frozen real teams + their rostered players,
+    // shaped into the fields getRandomTweet expects (Name/Team/Image, colors/Logo).
+    const validTeams = await getValidTeams();
+    const teamNames = new Set(validTeams.map((t) => t.name));
+    const roster = await getPlayerSeasons({ teamStatuses: ["ROSTERED"] });
 
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const players = sheets[sheetIds.players];
-    const teamAssets = sheets[sheetIds.teamAssets];
-
-    const teamAssetsRows = (await teamAssets.getRows()).filter(
-      (team) => team.Frozen !== "TRUE",
-    );
-
-    const playerListRows = (await players.getRows()).filter(
-      (player) =>
-        player.Team !== "Rookie" &&
-        player.Team !== "FA" &&
-        teamAssetsRows.map((t) => t.Team).includes(player.Team),
-    );
+    const playerListRows = roster
+      .filter((p) => teamNames.has(p.teamName))
+      .map((p) => ({ Team: p.teamName, Name: p.fullName, Image: p.imageUrl }));
+    const teamAssetsRows = validTeams.map((t) => ({
+      Team: t.name,
+      "Primary Color": t.primaryColor,
+      Logo: t.logo,
+    }));
 
     await getRandomTweet(
       client.channels.cache.get(CHANNEL_IDS.vtwitter),
@@ -365,121 +338,68 @@ const generateSocialTweet = () => {
   })();
 };
 
+// TriKov player valuations. The bot now assembles the R pipeline's input FROM
+// the DB (dbHelper.assembleTrikovInput: playerList, 3-season League Leaders,
+// teamAssets, playerAttributes) and passes it to ex-sync.R via .data(); the R
+// only reads the feature-weights CONFIG sheet now (bot ML config). Results are
+// written back to player_seasons.trikov_value + trikov_detail. (The R changes
+// need verification in an R runtime; the Team Assets pick valuations ->
+// draft_picks.trikov_value are deferred with the draft-pick refinement.)
 const triKovAnalysis = () => {
-  R("ex-sync.R")
-    .data({})
-    .call({ warn: -1 }, (err, d) => {
+  return (async () => {
+    let input;
+    try {
+      input = await assembleTrikovInput();
+    } catch (e) {
+      console.error("triKov: failed to assemble input from DB", e);
+      return;
+    }
+    R("ex-sync.R")
+      .data(input)
+      .call({ warn: -1 }, (err, d) => {
       (async function main() {
-        const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-        await doc.useServiceAccountAuth({
-          client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-        });
-        await doc.loadInfo();
-        const sheets = doc.sheetsByTitle;
-        const players = sheets["Player List"];
-        const teamAssets = sheets["Team Assets"];
-
-        const teamAssetsRows = await teamAssets.getRows();
-        const playerListRows = await players.getRows();
-
-        const cashValues = {};
-        const knnCashValues = {};
-        console.log(err);
-        console.log(d);
-
-        for (let i = 0; i < d[0].length; i++) {
-          cashValues[d[0][i].Name] = [d[0][i], d[2][i], d[4][i]];
-        }
-
-        for (let i = 0; i < d[1].length; i++) {
-          knnCashValues[d[1][i].Player] = [d[1][i], d[3][i], d[5][i]];
-        }
-
-        await players.loadCells();
-        await teamAssets.loadCells();
-
-        playerListRows.forEach((row) => {
+        try {
+          if (err) console.log("triKov R error:", err);
+          const cashValues = {};
+          const knnCashValues = {};
+          for (let i = 0; i < d[0].length; i++) {
+            cashValues[d[0][i].Name] = [d[0][i], d[2][i], d[4][i]];
+          }
+          for (let i = 0; i < d[1].length; i++) {
+            knnCashValues[d[1][i].Player] = [d[1][i], d[3][i], d[5][i]];
+          }
           const meanCVs = [0, 1, 2].map((num) =>
             _.mean(_.values(cashValues).map((p) => p[num].Cash_Value)),
           );
           const meanKNNs = [0, 1, 2].map((num) =>
-            _.mean(
-              _.values(knnCashValues).map((p) => p[num].continuous_target),
-            ),
+            _.mean(_.values(knnCashValues).map((p) => p[num].continuous_target)),
           );
-          players.getCell(row.rowNumber - 1, 23).value = cashValues[row.Name]
-            ? _.mean(
-                cashValues[row.Name].map(
-                  (cr, index) =>
-                    (cr.Cash_Value / meanCVs[index]) * _.mean(meanCVs),
-                ),
-              )
-            : knnCashValues[row.Name]
-              ? _.mean(
-                  knnCashValues[row.Name].map(
-                    (knn, index) =>
-                      (knn.continuous_target / meanKNNs[index]) *
-                      _.mean(meanKNNs),
-                  ),
-                )
-              : 0;
 
-          players.getCell(row.rowNumber - 1, 27).value = cashValues[row.Name]
-            ? cashValues[row.Name][0].Cash_Value
-            : knnCashValues[row.Name]
-              ? knnCashValues[row.Name][0].continuous_target
-              : 0;
-
-          players.getCell(row.rowNumber - 1, 28).value = cashValues[row.Name]
-            ? cashValues[row.Name][1].Cash_Value
-            : knnCashValues[row.Name]
-              ? knnCashValues[row.Name][1].continuous_target
-              : 0;
-
-          players.getCell(row.rowNumber - 1, 29).value = cashValues[row.Name]
-            ? cashValues[row.Name][2].Cash_Value
-            : knnCashValues[row.Name]
-              ? knnCashValues[row.Name][2].continuous_target
-              : 0;
-
-          players.getCell(row.rowNumber - 1, 30).value = knnCashValues[row.Name]
-            ? _.uniq([
-                knnCashValues[row.Name][0]["neighbor1"],
-                knnCashValues[row.Name][1]["neighbor1"],
-                knnCashValues[row.Name][2]["neighbor1"],
-              ]).join(", ")
-            : 0;
-        });
-
-        teamAssetsRows.forEach((row) => {
-          const picks = row["Draft Picks"]
-            .split(", ")
-            .map((str) => str.replace(/\s+/g, ""));
-
-          const miscPicks = row["Misc Draft Picks"]
-            .split(", ")
-            .map((str) => str.replace(/\s+/g, ""));
-
-          teamAssets.getCell(row.rowNumber - 1, 6).value = picks
-            .map((pick) => {
-              return cashValues[pick]
-                ? _.mean(cashValues[pick].map((cr) => cr.Cash_Value))
+          const roster = await getPlayerSeasons();
+          for (const player of roster) {
+            const name = player.fullName;
+            const cv = cashValues[name];
+            const knn = knnCashValues[name];
+            const blended = cv
+              ? _.mean(cv.map((cr, i) => (cr.Cash_Value / meanCVs[i]) * _.mean(meanCVs)))
+              : knn
+                ? _.mean(knn.map((k, i) => (k.continuous_target / meanKNNs[i]) * _.mean(meanKNNs)))
                 : 0;
-            })
-            .join(", ");
-
-          teamAssets.getCell(row.rowNumber - 1, 7).value = miscPicks
-            .map((pick) => {
-              return cashValues[pick]
-                ? _.mean(cashValues[pick].map((cr) => cr.Cash_Value))
-                : 0;
-            })
-            .join(", ");
-        });
-
-        await players.saveUpdatedCells();
-        await teamAssets.saveUpdatedCells();
+            const model = (i) =>
+              cv ? cv[i].Cash_Value : knn ? knn[i].continuous_target : 0;
+            const neighbors = knn
+              ? _.uniq([knn[0].neighbor1, knn[1].neighbor1, knn[2].neighbor1]).join(", ")
+              : null;
+            await saveTrikov(player.playerSeasonId, {
+              value: blended,
+              detail: { model1: model(0), model2: model(1), model3: model(2), neighbors },
+            });
+          }
+          console.log("triKov valuations written to DB");
+        } catch (e) {
+          console.error("triKov write failed", e);
+        }
       })();
     });
+  })();
 };

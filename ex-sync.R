@@ -368,20 +368,43 @@ getPlayerComparisons = function(assetValues, playerAttributes, categoryValues) {
   return(result)
 }
 
+# Build the merged 3-season player stats from DB-fed tables (replaces
+# getPlayerStats: no sheet reads, no header-row skipping, Height already in
+# inches, Salary already numeric — the bot pre-shapes these in JS).
+buildPlayerStatsFull = function(playerStats, playerStatsOld, playerStatsOld2, playerList, teamAssets, minThreshold = 8) {
+  allStats = rbindlist(list(
+    playerStats[, Season := "Current"],
+    playerStatsOld[, Season := "Last"],
+    playerStatsOld2[, Season := "Last_2"]
+  ), use.names = TRUE, fill = TRUE)
+  playerStatsFull = merge(
+    playerList[, .(Player, Name, Current_Team = Team, Overall, Position, Height, Weight, Contract_Length, Age, Salary, Type)],
+    allStats, by = "Player", all.x = TRUE)
+  playerStatsFull = playerStatsFull[!is.na(Minutes) & Minutes >= minThreshold]
+  playerStatsFull = playerStatsFull[Games_Played >= 3]
+  playerStatsFull = playerStatsFull[Games_Played * Minutes >= 50]
+  playerStatsFull = playerStatsFull[toupper(Team) %in% toupper(teamAssets[Real == TRUE]$Team)]
+  playerStatsFull[, Overall := Overall + (Position == "PG" | Position == "C") * 3 + (Position == "SG") * 2]
+  return(playerStatsFull)
+}
+
+# === DB-fed inputs (Sheets -> Postgres migration) =============================
+# playerList / playerStats(x3) / teamAssets / playerAttributes now arrive via the
+# bot's r-script .data() payload (see VNBABot dbHelper.assembleTrikovInput, which
+# reads Supabase) and are attached above by attach(input[[1]]). Only the
+# feature-weights config still reads the config sheet (bot ML config, not season
+# data). NOTE: written for the migration but NOT YET VERIFIED in an R runtime —
+# run against a real .data() payload and reconcile (esp. the Type convention
+# "G"/"W"/"B" vs the backfilled player_type, and column-order assumptions in
+# normalizeStats / getPlayerComparisons) before relying on the output.
 categoryValues1 = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 1)
 categoryValues2 = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 2)
 categoryValues3 = getCategoryValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 3)
 
-teamAssets = getAssetValues("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
-
-playerList = getPlayerList("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051")
-playerStats = getPlayerStats("https://docs.google.com/spreadsheets/d/1INS-TKERe24QAyJCkhkhWBQK4eAWF8RVffhN1BZNRtA/edit?pli=1#gid=1367256051", 
-                             "https://docs.google.com/spreadsheets/d/1noWjKTsgxAaTlK2gdSJmNcHSiySgGfTlRlLUgE8Q6k4/edit#gid=1367256051",
-                             "https://docs.google.com/spreadsheets/d/1bpImNDVYWfJJ8DY4-36_onMhjVt_kt3GFLPWc_7EqsU/",
-                             playerList,
-                             teamAssets)
-                          
-playerAttributes = getPlayerAttributes(playerList)
+teamAssets = as.data.table(teamAssets)
+playerList = as.data.table(playerList)
+playerStats = buildPlayerStatsFull(as.data.table(playerStats), as.data.table(playerStatsOld), as.data.table(playerStatsOld2), playerList, teamAssets)
+playerAttributes = as.data.table(playerAttributes)
 
 # Bot 1                          
 normalizedStats1 = normalizeStats(playerStats, categoryValues1)

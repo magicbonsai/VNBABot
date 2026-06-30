@@ -1,8 +1,7 @@
-const { GoogleSpreadsheet } = require("google-spreadsheet");
 const _ = require("lodash");
 const faker = require("faker");
 faker.setLocale("en");
-const { sheetIds } = require("./sheetHelper");
+const { getMiscRows, appendMiscRow } = require("./dbHelper");
 
 function getRandomInt(min, max) {
   min = Math.ceil(min);
@@ -16,21 +15,14 @@ const getMax = (object) => {
 };
 
 function generateCoach() {
-  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEETS_KEY);
-  const { retiredPlayers: rPlayersId, availableCoaches: coachesId } = sheetIds;
   return (async function main() {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    });
-    await doc.loadInfo();
-    const sheets = doc.sheetsById;
-    const retiredPlayersSheet = sheets[rPlayersId];
-    const coachesSheet = sheets[coachesId];
-    const retiredPlayers = await retiredPlayersSheet.getRows();
-    const chosenPlayer = _.sample(
-      retiredPlayers.filter((player) => !!player.FaceID),
-    );
+    // Borrow a retired player's name + FaceID (read from misc_sheet_rows now).
+    const retiredPlayers = await getMiscRows("retiredPlayers");
+    const chosenPlayer = _.sample(retiredPlayers.filter((player) => !!player.FaceID));
+    if (!chosenPlayer) {
+      console.warn("generateCoach: no retired player with a FaceID available");
+      return;
+    }
     const name = chosenPlayer.Name;
     const faceID = chosenPlayer.FaceID;
     const filteredFaces = [...cyberFaces];
@@ -95,25 +87,24 @@ function generateCoach() {
         DEFENSE_PROFICIENCY: prof.Defense.toString(),
       },
     };
-    (async () => {
-      await coachesSheet.addRow({
-        "Coach Name": name,
-        Data: JSON.stringify([vitals, attributes, style]),
-        Playbook: _.sample(nbaTeams),
-        "Zone Usage": getRandomInt(20, 100),
-        "Run Plays": getRandomInt(50, 100),
-        "Performance Consideration": getRandomInt(1, 100),
-        "Defensive Aggression": _.sample(defensiveAggression),
-        "Defensive Focus": _.sample(defensiveFocus),
-        "Offensive Focus": _.sample(offensiveFocus),
-        "Offensive Rebounding": _.sample(oRebounding),
-        "Defensive Rebounding": _.sample(dRebounding),
-        "Offensive Tempo": _.sample(oTempo),
-        "Bench Utilization": getRandomInt(1, 100),
-        "Help Defense": getRandomInt(1, 100),
-        FaceID: faceID,
-      });
-    })();
+    // Append the new coach (was a fire-and-forget, un-awaited addRow — now awaited).
+    await appendMiscRow("availableCoaches", {
+      "Coach Name": name,
+      Data: JSON.stringify([vitals, attributes, style]),
+      Playbook: _.sample(nbaTeams),
+      "Zone Usage": getRandomInt(20, 100),
+      "Run Plays": getRandomInt(50, 100),
+      "Performance Consideration": getRandomInt(1, 100),
+      "Defensive Aggression": _.sample(defensiveAggression),
+      "Defensive Focus": _.sample(defensiveFocus),
+      "Offensive Focus": _.sample(offensiveFocus),
+      "Offensive Rebounding": _.sample(oRebounding),
+      "Defensive Rebounding": _.sample(dRebounding),
+      "Offensive Tempo": _.sample(oTempo),
+      "Bench Utilization": getRandomInt(1, 100),
+      "Help Defense": getRandomInt(1, 100),
+      FaceID: faceID,
+    });
   })();
 }
 
